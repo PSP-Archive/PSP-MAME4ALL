@@ -37,11 +37,11 @@ PROG   = $(NAME).elf
 PSPDEV = $(shell psp-config -P)
 PSPSDK = $(shell psp-config -p)
 
-DEFAULT_CFLAGS  = -march=allegrex -G0 -DPSP -I$(PSPDEV)/include -I$(PSPDEV)/include/SDL -I$(PSPSDK)/include
+DEFAULT_CFLAGS  = -march=allegrex -G0 -DPSP -I$(PSPDEV)/include -I$(PSPDEV)/include/SDL -I$(PSPSDK)/include -Wno-narrowing
 ifdef PSP_RES
 DEFAULT_CFLAGS += -DPSP_RES
 endif
-LDFLAGS      = -L$(PSPDEV)/lib -lstdc++ -lSDL_mixer -lSDL -lSDL_gfx -lm -lGL -lvorbisidec
+LDFLAGS      = -L$(PSPDEV)/lib -lstdc++ -lSDL_mixer -lSDL -lSDL_gfx -lm -lGL -lvorbisidec -lmikmod -lm -lpspirkeyb
 LDFLAGS     += -L$(PSPSDK)/lib -lpspvfpu -lpspdebug -lpspgu -lpspctrl -lpspge -lpspdisplay -lpsphprm -lpspsdk -lpsprtc -lpspaudio -lc -lpspuser -lpsputility -lpspkernel -lpspnet_inet -lpsppower 
 
 MORE_CFLAGS += -Os -mhard-float -msingle-float -DVERSION=\"$(VER)$(REV)\"
@@ -91,7 +91,7 @@ endif
 
 EBOOT.PBP : $(PROG)
 	mksfo "  $(NAME) PSP v$(VER)$(REV)$(SUBREV)" src/psp/$(NAME).sfo
-	pack-pbp EBOOT.PBP src/psp/$(NAME).sfo src/psp/$(NAME)-eboot-icon-$(SUBREV).png NULL NULL NULL NULL $(PROG) NULL
+	pack-pbp EBOOT.PBP src/psp/$(NAME).sfo src/psp/mame4all-eboot-icon-.png NULL NULL NULL NULL $(PROG) NULL
 
 clean:
 	$(RM) EBOOT.PBP src/psp/$(NAME).sfo $(PROG) $(OBJS) $(OBJS_CPU) $(DRIVERS)
