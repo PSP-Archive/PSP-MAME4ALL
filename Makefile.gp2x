@@ -1,0 +1,57 @@
+NAME   = mame_gp2x
+RM     = rm -f
+#CC     = arm-elf-g++
+#CXX    = arm-elf-g++
+CC     = arm-linux-g++
+CXX    = arm-linux-g++
+LD     = arm-linux-g++
+AS     = arm-linux-g++
+
+STRIP  = arm-linux-strip
+
+GP2X=1
+
+DEVKIT=C:/DEVKITGP2X
+#DEVKIT=E:/tmp/franxis/devkitGP2X
+#DEVKIT=$(GP2XDEV)
+
+GPLIBS = -L$(DEVKIT)/sysroot/usr/lib/
+INCLUDES = -I$(DEVKIT)/sysroot/usr/include
+
+PROG   = $(NAME).gpe
+
+DEFAULT_CFLAGS = -mcpu=arm920t -mtune=arm920 -DGP2X $(INCLUDES)
+MORE_CFLAGS += -O3 -msoft-float -ffast-math -fstrict-aliasing -mstructure-size-boundary=32 -fexpensive-optimizations 
+MORE_CFLAGS += -fweb -frename-registers -fomit-frame-pointer 
+MORE_CFLAGS += -falign-functions=32 -falign-loops -falign-labels -falign-jumps 
+MORE_CFLAGS += -finline -finline-functions -fno-builtin -fno-common 
+
+#DEFAULT_CFLAGS = -mcpu=arm920t -mtune=arm920t -mfloat-abi=soft -DGP2X $(INCLUDES)
+#MORE_CFLAGS += -O3 -ftracer -fstrength-reduce -Wall -funroll-loops -fomit-frame-pointer -fstrict-aliasing -ffast-math 
+
+MORE_CFLAGS += -Isrc -Isrc/gp2x 
+MORE_CFLAGS += -DLSB_FIRST -DSIGNED_SAMPLES -DACORN -DINLINE="static __inline" 
+MORE_CFLAGS += -Isrc/z80 -Isrc/m6502 -Isrc/m6809 -Isrc/i86 -Isrc/tms34010 -Isrc/tms9900 
+MORE_CFLAGS += -DMMUHACK 
+#MORE_CFLAGS += -fshort-double 
+MORE_CFLAGS += -Wall 
+
+LDFLAGS      = -static
+
+include config.mk
+MORE_CFLAGS += $(DEFS)
+
+CFLAGS  = $(DEFAULT_CFLAGS) $(MORE_CFLAGS)
+CPPFLAGS  = $(DEFAULT_CFLAGS) $(MORE_CFLAGS)
+ASFLAGS =  -c $(DEFAULT_CFLAGS) $(MORE_CFLAGS)
+
+all: $(PROG)
+
+include objs.mk
+
+$(PROG): $(OBJS) $(OBJS_CPU) $(DRIVERS)
+	$(LD) $(CFLAGS) $(DEFAULT_CFLAGS) $(MORE_CFLAGS) $(LDFLAGS) -o $(PROG) $(OBJS_CPU) $(DRIVERS) $(OBJS) $(GPLIBS) -lm -lpthread -s
+	$(STRIP) $(PROG)
+
+clean:
+	$(RM) $(PROG) $(OBJS_CPU) $(DRIVERS) $(OBJS)

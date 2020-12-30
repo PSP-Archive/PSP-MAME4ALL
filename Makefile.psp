@@ -1,0 +1,98 @@
+NAME   = Mame4All
+VER    = 4.9
+REV    = r2
+SUBREV =
+O      = o
+RM     = rm -f
+CC     = psp-gcc
+CXX    = psp-g++
+AS     = psp-c++
+FIXIMP = psp-fixup-imports
+STRIP  = psp-strip
+PACK   = psp-packer
+PSP=1
+
+# comment out following lines to disable specific implementation with its roms support, see config.mk and objs.mk
+MAME4ALL_GOLD=1
+MAME4ALL_AGED=1
+MAME4ALL_CLASSIC=1
+
+# uncomment following lines to enable specific driver support, but less free memory for others emus
+DRIVER_NEOGEO=1
+DRIVER_CPS1=1
+
+# enable use of full PSP resolution of 480x272
+PSP_RES=1
+
+# enable usermode build, for firmware > 1.50
+PSP_USERMODE=1
+
+# enable extra memory on PSP-2000 model
+PSP_2K=1
+
+#disable use of splash screen and background image, will free 1mb of memory
+#NO_IMAGES=1
+
+PROG   = $(NAME).elf
+PSPDEV = $(shell psp-config -P)
+PSPSDK = $(shell psp-config -p)
+
+DEFAULT_CFLAGS  = -march=allegrex -G0 -DPSP -I$(PSPDEV)/include -I$(PSPDEV)/include/SDL -I$(PSPSDK)/include
+ifdef PSP_RES
+DEFAULT_CFLAGS += -DPSP_RES
+endif
+LDFLAGS      = -L$(PSPDEV)/lib -lstdc++ -lSDL_mixer -lSDL -lSDL_gfx -lm -lGL -lvorbisidec
+LDFLAGS     += -L$(PSPSDK)/lib -lpspvfpu -lpspdebug -lpspgu -lpspctrl -lpspge -lpspdisplay -lpsphprm -lpspsdk -lpsprtc -lpspaudio -lc -lpspuser -lpsputility -lpspkernel -lpspnet_inet -lpsppower 
+
+MORE_CFLAGS += -Os -mhard-float -msingle-float -DVERSION=\"$(VER)$(REV)\"
+
+#-O2 options
+#MORE_CFLAGS += -fthread-jumps -fcrossjumping -foptimize-sibling-calls -fcse-follow-jumps -fcse-skip-blocks -fexpensive-optimizations 
+#MORE_CFLAGS += -fgcse -fgcse-lm -fstrength-reduce -frerun-cse-after-loop -frerun-loop-opt
+#MORE_CFLAGS += -fcaller-saves -fpeephole2 -fschedule-insns -fschedule-insns2 -fsched-interblock -fsched-spec
+#MORE_CFLAGS += -fregmove -fstrict-aliasing -fdelete-null-pointer-checks -freorder-blocks -freorder-functions
+MORE_CFLAGS += -falign-functions -falign-jumps -falign-loops -falign-labels -ftree-vrp -ftree-pre
+
+#-O3 options
+#MORE_CFLAGS += -finline-functions -funswitch-loops -fgcse-after-reload
+
+MORE_CFLAGS += -Isrc -Isrc/sdl 
+MORE_CFLAGS += -DLSB_FIRST -DSIGNED_SAMPLES -DACORN -DINLINE="static __inline__" -DSOUND_THREADED -D__64BIT__
+MORE_CFLAGS += -Isrc/z80 -Isrc/m6502 -Isrc/m6809 -Isrc/i86 -Isrc/tms34010 -Isrc/tms9900 
+MORE_CFLAGS += -DM68000_CORE -DUSE_OLD_LIST_INIT -DDATA_PREFIX=\"data/\" -DROM_PREFIX=\"example\"
+ifdef PSP_USERMODE
+MORE_CFLAGS += -DPSP_USERMODE -D_PSP_FW_VERSION=152
+endif
+ifdef PSP_2K
+MORE_CFLAGS += -DPSP_2K
+endif
+ifdef NO_IMAGES
+MORE_CFLAGS += -DNO_IMAGES
+endif
+
+include config.mk
+
+MORE_CFLAGS += -DMITSHM $(DEFS) -DUNZIP_SUPPORT -DZLIB -DHAVE_MKSTEMP -DHAVE_STRINGS_H -DACCEPT_SIZE_T=\"int\"
+
+CFLAGS  = $(DEFAULT_CFLAGS) $(MORE_CFLAGS)
+CPPFLAGS  = $(DEFAULT_CFLAGS) $(MORE_CFLAGS)
+
+all: EBOOT.PBP
+
+include objs.mk
+
+$(PROG): $(OBJS) $(OBJS_CPU) $(DRIVERS)
+	$(CC) $(CFLAGS) -o $(PROG) $(OBJS_CPU) $(DRIVERS) $(OBJS) $(LDFLAGS)
+	$(FIXIMP) $(PROG)
+	$(STRIP) $(PROG)
+ifndef PSP_USERMODE
+	$(PACK) $(PROG)
+endif
+
+EBOOT.PBP : $(PROG)
+	mksfo "  $(NAME) PSP v$(VER)$(REV)$(SUBREV)" src/psp/$(NAME).sfo
+	pack-pbp EBOOT.PBP src/psp/$(NAME).sfo src/psp/$(NAME)-eboot-icon-$(SUBREV).png NULL NULL NULL NULL $(PROG) NULL
+
+clean:
+	$(RM) EBOOT.PBP src/psp/$(NAME).sfo $(PROG) $(OBJS) $(OBJS_CPU) $(DRIVERS)
+

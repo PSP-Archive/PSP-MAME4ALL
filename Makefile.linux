@@ -1,0 +1,110 @@
+NAME   = mame4all
+O      = o
+RM     = rm -f
+CC     = gcc
+CXX    = g++
+AS     = c++
+STRIP  = strip
+
+PROG   = $(NAME)
+
+ifeq ($(target), aged)
+MAME4ALL_AGED=1
+else
+ifeq ($(target), classic)
+MAME4ALL_CLASSIC=1
+else
+ifeq ($(target), gold)
+MAME4ALL_GOLD=1
+else
+MAME4ALL_AGED=1
+MAME4ALL_CLASSIC=1
+MAME4ALL_GOLD=1
+endif
+endif
+endif
+
+DEFAULT_CFLAGS = `sdl-config --cflags`
+LDFLAGS        = `sdl-config --libs` -lSDL_mixer -lz
+
+MORE_CFLAGS = -O3 -DDATA_PREFIX=\"data/\"  -DROM_PREFIX=\"example\"
+
+#MORE_CFLAGS += -W -Wall -Wno-sign-compare -Wno-unused -Wpointer-arith -Wbad-function-cast -Wcast-align -Waggregate-return -Wshadow -Wstrict-prototypes 
+
+#MORE_CFLAGS += -std=c99
+
+MORE_CFLAGS += -O3 -fstrict-aliasing -fexpensive-optimizations -falign-functions -fweb -frename-registers -fomit-frame-pointer -ffast-math
+
+MORE_CFLAGS += -finline -finline-functions -fno-builtin -fno-common -Isrc -Isrc/sdl
+
+MORE_CFLAGS += -DLSB_FIRST -DSIGNED_SAMPLES -DACORN -DINLINE="static __inline__"
+
+MORE_CFLAGS +=	-Isrc/z80 -Isrc/m6502 -Isrc/m6809 -Isrc/i86 -Isrc/tms34010 -Isrc/tms9900 
+
+include config.mk
+
+MORE_CFLAGS += -DMITSHM $(DEFS) -DUNZIP_SUPPORT -DZLIB -DHAVE_MKSTEMP -DHAVE_STRINGS_H '-DACCEPT_SIZE_T=int'
+
+CFLAGS  = $(DEFAULT_CFLAGS) $(MORE_CFLAGS)
+CPPFLAGS  = $(DEFAULT_CFLAGS) $(MORE_CFLAGS)
+
+all: $(PROG)
+
+NASM_OPTS=-f elf -DUSE_MAME_FETCH  -DELF_OBJECT_CODE
+
+src/fame/fame.o: src/fame/fame.asm
+	nasm -f elf -o src/fame/fame.o src/fame/fame.asm
+
+src/raze/raze/raze1.asm: src/raze/raze/raze.asm
+	nasm $(NASM_OPTS) -e src/raze/raze/raze.asm -o src/raze/raze/raze1.asm -Isrc/raze/raze/
+
+src/raze/raze/raze_1.asm: src/raze/raze/raze.asm
+	sed -e "s/z80_set_reti/z80_set_reti_1/g" -e "s/z80_set_out/z80_set_out_1/g" -e "s/z80_set_in/z80_set_in_1/g" -e "s/z80_add_write/z80_add_write_1/g" -e "s/z80_add_read/z80_add_read_1/g" -e "s/z80_map_write/z80_map_write_1/g" -e "s/z80_map_read/z80_map_read_1/g" -e "s/z80_map_fetch/z80_map_fetch_1/g" -e "s/z80_end_memmap/z80_end_memmap_1/g" -e "s/z80_init_memmap/z80_init_memmap_1/g" -e "s/z80_set_reg/z80_set_reg_1/g" -e "s/z80_get_reg/z80_get_reg_1/g" -e "s/z80_do_wait_states/z80_do_wait_states_1/g" -e "s/z80_skip_idle/z80_skip_idle_1/g" -e "s/z80_stop_emulating/z80_stop_emulating_1/g" -e "s/z80_get_cycles_elapsed/z80_get_cycles_elapsed_1/g" -e "s/z80_get_context/z80_get_context_1/g" -e "s/z80_emulate/z80_emulate_1/g" -e "s/z80_set_fetch_callback/z80_set_fetch_callback_1/g" -e "s/z80_reset/z80_reset_1/g" -e "s/z80_raise_IRQ/z80_raise_IRQ_1/g" -e "s/z80_lower_IRQ/z80_lower_IRQ_1/g" -e "s/z80_cause_NMI/z80_cause_NMI_1/g" -e "s/z80_set_context/z80_set_context_1/g" src/raze/raze/raze.asm > src/raze/raze/1.asm
+	nasm $(NASM_OPTS) -e src/raze/raze/1.asm -o src/raze/raze/raze_1.asm -Isrc/raze/raze/
+	
+src/raze/raze/raze_2.asm: src/raze/raze/raze.asm
+	sed -e "s/z80_set_reti/z80_set_reti_2/g" -e "s/z80_set_out/z80_set_out_2/g" -e "s/z80_set_in/z80_set_in_2/g" -e "s/z80_add_write/z80_add_write_2/g" -e "s/z80_add_read/z80_add_read_2/g" -e "s/z80_map_write/z80_map_write_2/g" -e "s/z80_map_read/z80_map_read_2/g" -e "s/z80_map_fetch/z80_map_fetch_2/g" -e "s/z80_end_memmap/z80_end_memmap_2/g" -e "s/z80_init_memmap/z80_init_memmap_2/g" -e "s/z80_set_reg/z80_set_reg_2/g" -e "s/z80_get_reg/z80_get_reg_2/g" -e "s/z80_do_wait_states/z80_do_wait_states_2/g" -e "s/z80_skip_idle/z80_skip_idle_2/g" -e "s/z80_stop_emulating/z80_stop_emulating_2/g" -e "s/z80_get_cycles_elapsed/z80_get_cycles_elapsed_2/g" -e "s/z80_get_context/z80_get_context_2/g" -e "s/z80_emulate/z80_emulate_2/g" -e "s/z80_set_fetch_callback/z80_set_fetch_callback_2/g" -e "s/z80_reset/z80_reset_2/g" -e "s/z80_raise_IRQ/z80_raise_IRQ_2/g" -e "s/z80_lower_IRQ/z80_lower_IRQ_2/g" -e "s/z80_cause_NMI/z80_cause_NMI_2/g" -e "s/z80_set_context/z80_set_context_2/g" src/raze/raze/raze.asm > src/raze/raze/2.asm
+	nasm $(NASM_OPTS) -e src/raze/raze/2.asm -o src/raze/raze/raze_2.asm -Isrc/raze/raze/
+	
+src/raze/raze/raze_3.asm: src/raze/raze/raze.asm
+	sed -e "s/z80_set_reti/z80_set_reti_3/g" -e "s/z80_set_out/z80_set_out_3/g" -e "s/z80_set_in/z80_set_in_3/g" -e "s/z80_add_write/z80_add_write_3/g" -e "s/z80_add_read/z80_add_read_3/g" -e "s/z80_map_write/z80_map_write_3/g" -e "s/z80_map_read/z80_map_read_3/g" -e "s/z80_map_fetch/z80_map_fetch_3/g" -e "s/z80_end_memmap/z80_end_memmap_3/g" -e "s/z80_init_memmap/z80_init_memmap_3/g" -e "s/z80_set_reg/z80_set_reg_3/g" -e "s/z80_get_reg/z80_get_reg_3/g" -e "s/z80_do_wait_states/z80_do_wait_states_3/g" -e "s/z80_skip_idle/z80_skip_idle_3/g" -e "s/z80_stop_emulating/z80_stop_emulating_3/g" -e "s/z80_get_cycles_elapsed/z80_get_cycles_elapsed_3/g" -e "s/z80_get_context/z80_get_context_3/g" -e "s/z80_emulate/z80_emulate_3/g" -e "s/z80_set_fetch_callback/z80_set_fetch_callback_3/g" -e "s/z80_reset/z80_reset_3/g" -e "s/z80_raise_IRQ/z80_raise_IRQ_3/g" -e "s/z80_lower_IRQ/z80_lower_IRQ_3/g" -e "s/z80_cause_NMI/z80_cause_NMI_3/g" -e "s/z80_set_context/z80_set_context_3/g" src/raze/raze/raze.asm > src/raze/raze/3.asm
+	nasm $(NASM_OPTS) -e src/raze/raze/3.asm -o src/raze/raze/raze_3.asm -Isrc/raze/raze/
+	
+src/raze/raze/raze_4.asm: src/raze/raze/raze.asm
+	sed -e "s/z80_set_reti/z80_set_reti_4/g" -e "s/z80_set_out/z80_set_out_4/g" -e "s/z80_set_in/z80_set_in_4/g" -e "s/z80_add_write/z80_add_write_4/g" -e "s/z80_add_read/z80_add_read_4/g" -e "s/z80_map_write/z80_map_write_4/g" -e "s/z80_map_read/z80_map_read_4/g" -e "s/z80_map_fetch/z80_map_fetch_4/g" -e "s/z80_end_memmap/z80_end_memmap_4/g" -e "s/z80_init_memmap/z80_init_memmap_4/g" -e "s/z80_set_reg/z80_set_reg_4/g" -e "s/z80_get_reg/z80_get_reg_4/g" -e "s/z80_do_wait_states/z80_do_wait_states_4/g" -e "s/z80_skip_idle/z80_skip_idle_4/g" -e "s/z80_stop_emulating/z80_stop_emulating_4/g" -e "s/z80_get_cycles_elapsed/z80_get_cycles_elapsed_4/g" -e "s/z80_get_context/z80_get_context_4/g" -e "s/z80_emulate/z80_emulate_4/g" -e "s/z80_set_fetch_callback/z80_set_fetch_callback_4/g" -e "s/z80_reset/z80_reset_4/g" -e "s/z80_raise_IRQ/z80_raise_IRQ_4/g" -e "s/z80_lower_IRQ/z80_lower_IRQ_4/g" -e "s/z80_cause_NMI/z80_cause_NMI_4/g" -e "s/z80_set_context/z80_set_context_4/g" src/raze/raze/raze.asm > src/raze/raze/4.asm
+	nasm $(NASM_OPTS) -e src/raze/raze/4.asm -o src/raze/raze/raze_4.asm -Isrc/raze/raze/
+	
+src/raze/raze/raze.o: src/raze/raze/raze1.asm
+	nasm $(NASM_OPTS) src/raze/raze/raze1.asm -o src/raze/raze/raze.o -psrc/raze/raze/raze.reg
+
+src/raze/raze/raze_1.o: src/raze/raze/raze_1.asm
+	nasm $(NASM_OPTS) src/raze/raze/raze_1.asm -o src/raze/raze/raze_1.o -psrc/raze/raze/raze.reg
+	rm -f src/raze/raze/1.asm
+
+src/raze/raze/raze_2.o: src/raze/raze/raze_2.asm
+	nasm $(NASM_OPTS) src/raze/raze/raze_2.asm -o src/raze/raze/raze_2.o -psrc/raze/raze/raze.reg
+	rm -f src/raze/raze/2.asm
+
+src/raze/raze/raze_3.o: src/raze/raze/raze_3.asm
+	nasm $(NASM_OPTS) src/raze/raze/raze_3.asm -o src/raze/raze/raze_3.o -psrc/raze/raze/raze.reg
+	rm -f src/raze/raze/3.asm
+
+src/raze/raze/raze_4.o: src/raze/raze/raze_4.asm
+	nasm $(NASM_OPTS) src/raze/raze/raze_4.asm -o src/raze/raze/raze_4.o -psrc/raze/raze/raze.reg
+	rm -f src/raze/raze/4.asm
+
+
+
+include objs.mk
+
+
+$(PROG): $(OBJS) $(OBJS_CPU) $(DRIVERS)
+	$(CC) $(CFLAGS) -o $(PROG) $(OBJS_CPU) $(DRIVERS) $(OBJS) $(LDFLAGS)
+	$(STRIP) $(PROG)
+
+run: $(PROG)
+	./$(PROG)
+
+clean:
+	$(RM) $(PROG) $(OBJS) src/raze/raze/raze1.asm src/raze/raze/raze_1.asm src/raze/raze/raze_2.asm src/raze/raze/raze_3.asm src/raze/raze/raze_4.asm src/raze/raze/1.asm src/raze/raze/2.asm src/raze/raze/3.asm src/raze/raze/4.asm
+
