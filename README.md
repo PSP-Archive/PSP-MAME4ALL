@@ -9,16 +9,17 @@ http://wiki.gp2x.org/articles/m/a/m/MAME_GP2X.html#Supported_Games_1139_romset
 
 ## Supported games
 
-There are 1204 different supported romsets. For more details, see "gamelist.txt" file within the release. Games have to be copied into the /roms/ folder.
+There are 1204 different supported romsets. For more details, see the [gamelist.txt](https://github.com/PSP-Archive/PSP-MAME4ALL/blob/main/data/gamelist.txt) file within the release. Games have to be copied into the /roms/ folder.
 
 ### ROM names
 
 Folder names or ZIP file names are listed on "gamelist.txt" file.
+
 Romsets have to be MAME 0.34 final version ones (December 1998), but there are also some new added romsets from later MAME versions, as well as modified romsets.
 
-Please use "clrmame_roms.dat" file to convert romsets from other MAME versions to the ones used by this version for GP2X, using ClrMAME Pro utility.
+Please use the [clrmame_roms.dat](https://github.com/PSP-Archive/PSP-MAME4ALL/blob/main/data/clrmame_roms.dat) file to convert romsets from other MAME versions, by using the ClrMAME Pro utility.
 
-NOTE: File and directory names in Linux are case-sensitive. Put all file and directory names using low case!.
+NOTE: File and directory names are case sensitive. Put all file and directory names in lower case.
 
 ## Controls
 
