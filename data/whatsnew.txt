@@ -1,0 +1,549 @@
+
+MAME GP2X 5.1 (November 30, 2007)
+---------------------------------
+
+Slaanesh:
+- Added Knuckle Joe (kncljoe) (from MAME 0.37b12).
+- Updated Warp Warp. Now playable with full sound.
+- Bug fix to Sega Ninja (and clones) in Sega System 8 driver. Background was not correct.
+- Added improved MSM5205 ADPCM sound system. This is currently separated to the old MSM5205 core. 
+  Only Knuckle Joe uses this but there is potential to update many other games to the improved MSM5205 (e.g. Rygar).
+- Added FRAC definitions (useful for adding MAME 0.36+ drivers).
+
+Franxis:
+- Due to the fact the GP2X TV-Out PAL runs at 50 Hz, the video rate is now limited to 50 Hz when using the TV-Out PAL mode,
+  to improve the video output and to avoid slowdowns using the VSync option.
+- Anyway my recommendation to play with TV-Out is: NTSC mode, high overclocking, VSync+DblBuff and frameskip=0.
+
+- Thanks to all paypal donators: EvilDragon (www.gp32x.de), Federico Mazza, Nandove, Videogame Stuff, Denis Evans, Ricardo Cabello,
+Elías Ballesteros, J.Antonio Serralvo Martín, bagmouse7, Suj, funkyferdy, Gieese, Vincent Cleaver, William Burnett, Bleeg,
+Martin Dolphin, Ilarri, Glen Stones, Dr.Konami, Augusto Carlos Pérez Arriaza, Charles Box, Borochi, Kayday, George Tavoulareas,
+Timofonic, Fabrice Canava, Redox, Javitotrader, remowilliams, Scott Contrera, Jinhyun Seo, Craigix (www.gp2x.co.uk), Shane Monroe,
+Simon Beattie, Stefan Braunstein, DaveC, Colin Bradshaw, Dana Rodolico, Revod, Michael Evers, Riccardo Pizzi, Fosfy45, Dj Syto,
+Rob Pittman, Stefan Mueller, Musa, Unai, Sascha Reuter, Globalwide Technologies Limited, Juan Rivera-Novoa, Mark Carin, SBock,
+Julio Catalina Piedrahita, techFreak (www.gp2xtr.com), Darius Hardy, Charles Andre, Matt Brimelow, McOskar, Daniel PP Saurborn,
+Picayuco, Kojote (www.pdroms.com), Knoxximus, Tony Watterson, Matthew Forman, naples39, NEO (www.elotrolado.net), Patrick Mettes,
+Angel Molero Grueso, Lubidog, Smiths (www.emuholic.com), retromander, Ruben Villar, Snakefd99cb, Harkaitz, BZFrank, Sang Kim,
+phoda, Caesaris, Furanchu, Selcuk Cegit, K-Navis, Estaño, Jeff Hong, Jasmot, Igboo, Sergio Onorati, Julien Perret, Cheap Impostor,
+Gianluca Lazzari, Niche IP Solutions, Jason, Thomas Seban, Miq01, Paul Carter, Freddy Deniau, Mustafa Beciragic, Ian Rawlings,
+Domenico Calcagno, pongplaya, Aruseman, Anarchy (www.hardcore-gamer.net), www.gp32spain.com, www.gp2xspain.com, Darkman, Chaos Engineer,
+Ian Buxton, Martin M Pedersen, Philip Trottman, Gary Ross, Fat Agnus, Austin Holdsworth, Paul Johns, Gaterooze, Elizabeth Burrow, Godmil,
+rooster, Dark_Warlock, Danilo Gadza, Gadget, Hando (www.gp32x.com), Gary Miller, AOJ, John Huxley, X-Code BirraMaster, Jorge Gavela Alvarez,
+Halo9, b._.o._.b, James Perry, Pughead, Beb, Luis Fernando González Barreto, Frank Bukor, Oliver Lewandowski, Alberto Martin Martin,
+Holger Lenz, Carlos Arozarena, Hobbes.
+
+MAME GP2X 5.0 (November 23, 2007)
+---------------------------------
+
+- Border TV-Out emulation. See the readme.txt for the information to activate it.
+- The controls have been changed for coherence with other applications (B is the first button).
+- The PUSH button in the F200 is emulated pressing Up+Down+Left+Right simultaneously.
+
+MAME GP2X 4.9 (November 03, 2007)
+---------------------------------
+
+- The GP2X F200 compatibility has been fixed. It seems to be a bug in the new firmware 4.0.
+  The 15360 and 33075 Hz sound frequencies don't run (16000 and 32000 Hz frequencies are now used instead).
+  Thanks to Eclipse for his help testing in the F200.
+- The Z80 C core has been replaced by the MAME 0.53 one. It is more accurate and not slower. Thanks to TTYman.
+
+MAME GP2X 4.8 (October 10, 2007)
+--------------------------------
+
+- Some GP2X F-100 MK1 consoles do not like the 120hz LCD refresh rate (the screen gets bright).
+  The 120hz mode is only activated now if the VSync option is activated. Thx, damned, for the report.
+- Other minor optimizations and bug-fixes.
+- Added a new game: Donkey Kong Factory (US) (dkongex). Thanks to Budbud.
+- Integrated the source code of the PSP port done by TTYman.
+
+MAME GP2X 4.7 (August 15, 2007)
+-------------------------------
+
+- Improved again the System 16 driver (MAME 0.36b4):
+  Several new games are playable (Out Run, Space Harrier, Super Hang-On, Bay Route, etc).
+  All games have now full sound (Moon Walker, Shadow Dancer, E-Swat, etc).
+  Several fixes in some games (e.g. Hang-On has no graphic errors now).
+- The SEGAPCM, RF5C68 and YM2612 sound cores have been added (required by several System 16 games).
+- Modified romsets: MAME 0.36b4: alexkidd, aliensyn, altbeas2, altbeast, astormbl, atomicp, aurail, bodyslam, 
+  dduxbl, eswatbl, fantzone, fpointbl, goldnaxa, goldnaxe, hangon, hwchamp, mjleague, moonwlkb, passshtb, 
+  quartet, quartet2, riotcity, sdi, shdancer, shdancrj, shinobi, shinobl, tetrisbl, timscanr, tturf, tturfbl, 
+  wb3, wb3bl, wrestwar.
+- New romsets: MAME 0.36b4: alexkida, aliensya, aliensyb, astorm, auraila, bayrouta, bayroute, bayrtbl1, 
+  bayrtbl2, endurob2, endurobl, enduror, eswat, fpoint, goldnabl, goldnaxb, goldnaxc, moonwalk, outrun, 
+  outruna, outrunb, passsht, shangon, shangonb, sharrier, shdancbl, shinobia, tetris, wb3a.
+- Updated Cyclone M68k core by Notaz. The trace mode and the address error emulation have been added.
+- 1202 romsets are now supported!. The ClrMAME DAT has been also updated with the latest romsets.
+
+MAME GP2X 4.6 (July 27, 2007)
+-----------------------------
+
+- Improved the System 16 driver (MAME 0.36b1): Several new System 16 games are playable (e.g. Moonwalker, Shadow Dancer, etc).
+- Added the Sprite Manager support, required for the new System 16 driver.
+- Updated UPD7759 sound core (MAME 0.36b1), to improve the digitized sound in the System 16 games.
+- Rainbow Islands has been fixed (MAME 0.36rc1).
+- Renegade has been fixed (MAME 0.36b6).
+- Modified romsets: MAME 0.36b1: alexkidd, aliensyn, altbeast, astormbl, aurail, dduxbl, eswatbl, fantzone, fpointbl,
+  goldnaxe, hwchamp, mjleague, passshtb, quartet2, sdi, shinobi, tetrisbl, timscanr, tturfbl, wb3bl, wrestwar.
+- New romsets: MAME 0.36b1: altbeas2, atomicp, bodyslam, goldnaxa, hangon, moonwlkb, quartet, riotcity, shdancer, shdancrj, 
+  shinobl, tturf, wb3.
+- Modified romsets: MAME 0.36rc1: rainbow, rainbowe, jumping.
+- Updated the ClrMAME Pro DAT with the updated romsets.
+- Fixed the "stuck" USB joypad problems. Thanks to Ark and TelcoLou.
+
+MAME GP2X 4.5 (July 22, 2007)
+-----------------------------
+
+Bug-fix release:
+- Fixed: Q-Sound music was playing too slowly (bug introduced in v4.1).
+- Fixed: FM Sound freezes after playing some games (bug introduced in v4.1).
+- Optimizations in the sound mixing code.
+
+MAME GP2X 4.4 (July 20, 2007)
+-----------------------------
+
+Bug-fix release:
+- Updated Cyclone core by Notaz (The UAE4ALL 0.7.0 one). It fixes Rastan, among other games.
+- Optimizations in the sound mixing code.
+
+MAME GP2X 4.3 (July 15, 2007)
+-----------------------------
+
+Bug-fix release:
+- TV-Out fixed. It was broken with the new VSync patch only applicable to the GP2X LCD screen.
+- A more exact VSync timing has been added, thanks to Notaz.
+- Default sound sample rate is again 15 KHz (instead of 22 KHz) due to popular demand.
+- An stupid bug in the DrZ80 interrupts handling has been solved, it was causing slowdowns in several games.
+
+MAME GP2X 4.2 (July 14, 2007)
+-----------------------------
+
+- Compatibility improvements in the Cyclone M68k core. Games like SpinMaster and Aero Fighters series are working again. Thx to Notaz.
+- Optimizations in the Cyclone M68k core. 23% of the code has been removed. Also some Picodrive specific hacks have been removed. Thx to Notaz.
+- Added the correct VSync code from Picodrive. Do not use auto-frameskip with VSync!. Thx to Notaz.
+- Added sound quality selector (11-44 KHz). Also some tweaks have been done in the sound library and it is more accurate.
+- Optimizations in the FM sound hardware libraries.
+- Minor changes in the DrZ80 and the CPS-1 interrupts handling.
+
+MAME GP2X 4.1 (June 24, 2007)
+-----------------------------
+
+Notaz:
+- Improved the Cyclone M68k core compatibility.
+E.g. Road Blasters lacked wrapper correct IRQs handling and Indiana Jones needed to know previous PC to emulate the protection chip.
+- All the games run perfectly now with the standard executable.
+- The compatible executable is removed because it is not needed now.
+- Some optimizations have been done to the Cyclone core.
+
+Slaanesh:
+- Added 6 new romsets from MAME 0.35-0.37b12:
+MAME 0.35: Wardner (World) (wardner), Wardna no Mori (Japan) (wardnerj), Pyros (US) (pyros), Funky Bee (funkybee), Sky Lancer (skylancr)
+MAME 0.37b12: Pandora's Palace (pandoras) (play it with video and audio clock at 100%)
+- Improvement to The New Zealand Story sound.
+- Improvement to Space Panic (now uses samples for sound).
+
+Pepe_Faruk:
+- Added 16 new romsets from MAME 0.35b8-0.35b13:
+MAME 0.35b8: Caveman Ninja (World Rev. 3) (cninja), Caveman Ninja (World Rev. 0) (cninja0), Caveman Ninja (US) (cninjau), Joe & Mac (Japan) (joemac), Stoneage (stoneage)
+MAME 0.35b11: Armed Formation (armedf), Terra Force (terraf), Terra Force (US) (terrafu)
+MAME 0.35b12: Combat School (combasc), Combat School (bootleg) (combascb), Double Dribble (ddribble)
+MAME 0.35b13: Cosmic Alien (cosmica), Devil Zone (devzone), Magical Spot II (magspot2), No Man´s Land (nomnlnd), No Man´s Land (Gotlieb) (nomnlndg)
+- Tilemaps have been added to Galivan and Dangar to fix some graphic errors.
+
+Franxis:
+- Compatibility improvements in the DrZ80 core. A lot of new games can be played correctly with the 'fast' executable. E.g. Black Tiger (not bootleg), 1943 (USA), Tehkan World Cup, Solomon's Key, Mr. Do, Ms. Pacman, etc.
+- 1943 has been fixed, it was broken in the previous release (v4.0).
+- The ClrMAME DAT has been updated with the latest romsets. An additional DAT for the samples has been added.
+
+MAME GP2X 4.0 (June 12, 2007)
+-----------------------------
+
+A lot of improvements done by Slaanesh:
+- Updated vlm5030 sound system. Provides speech and sound effects in a number of games like Yie Ar Kung Fu, Jail Break, Track and Field (and clones) or Salamander.
+- Updated DAC sound system. Please use audio clock 100% for DAC games as they rely heavily on precise timing. Ie. Donkey Kong, etc.
+- Update to FM sound system re: disappearing sound. Bug REALLY fixed this time. :-).
+- Added tilemapping code. Useful for adding new games and improving existing games.
+- Updated Xain'D Sleena to use tilemaps. Large increase in speed. Plays nicely at 240Mhz.
+- Updated Ghost'n Goblins to tilemaps. More tilemap games to come!.
+- Fixed bug introduced in 3.9 re: samples not playing in Gorf, Wizard of Wor and Berzerk.
+- Update to Sega System 8 games. Speed to games like Choplifter.
+- Fixed Wonderboy in Monster Land (bootleg). Now playable with good sound.
+- Bug fix to Time Pilot (memory leak).
+Thanks, Slaanesh for all your hard work!
+
+- More accurate speed (e.g. 60 fps instead of 64 fps).
+- Some optimizations in the sound thread.
+
+MAME GP2X 3.9 (May 27, 2007)
+----------------------------
+
+A lot of improvements done by Slaanesh:
+- Updated threaded sound core. Restart with each game for better reliability. No more disappearing sound for games.
+- Major bug fix in FM sound, no more disappearing sound in FM based games! ie. Bobble Bobble, Black Tiger, MANY others.
+- Bug fix to YM3812 sound system. Fixes for sampled instruments handling.
+- Sample sound code adjusted. Should play better. Specific fixes with samples in Galaga (explosion), Star Trek, Gorf and Berzerk.
+  Note: Star Trek requires new sample set.
+- Bug fixes (memory leaks) in core MAME code: unzip, palette and other common functions. 
+- Bug fixes (memory leaks) in game drivers: 1943, Break Thru, Black Tiger, Commando, Sega System 8 games, Atari System 1 & 2 games (Gauntlet, Xybots, etc).
+- Some debug code has been added to detect new memory leaks.
+- Protection emulated in Solomon's Key.
+- Updated driver for Return of the Jedi.
+- Bobble Bobble sounds didn't sync correctly with video and audio clock at 100%. Fixed.
+- Optimizations in the Sega System 8 video hardware. Games like Choplifter running significantly better now.
+Thanks, Slaanesh for all your hard work!
+
+- DrZ80 compatibility improvements. More games are now compatible: Windjammers, Tokio, Bobble Bobble, etc.
+- Added Turtle Ship (turtship) (MAME 0.35b1). It has been also added to the ClrMAME DAT. 1139 romsets are now supported!.
+- Tehkan World Cup can now be played with two players using USB joypads. Thx to Pepe_Faruk.
+- Small bugfix in the MMUHack flush-cache calls. Thx to Notaz.
+
+MAME GP2X 3.8 (May 13, 2007)
+----------------------------
+
+- DIP-Switches support.
+- Merge witch Chui's MAME4ALL Alpha v2.
+- Sarge controls fixed.
+- Fix in the samples support. Thx, Slaanesh.
+- New icons by DaveC have been included.
+
+MAME GP2X 3.7 (November 28, 2006)
+---------------------------------
+
+- New playable games added by Pepe_Faruk (joserod@ya.com) (MAME 0.35b11):
+Ambush (ambush), Galivan - Cosmo Police (set 1) (galivan), Galivan - Cosmo Police (set 2) (galivan2),
+Dangar - Ufo Robo (set 1) (dangar), Dangar - Ufo Robo (set 2) (dangar2), Dangar - Ufo Robo (bootleg) (dangarb).
+- Updated the ClrMAME Pro DAT with the latest romsets.
+- Some compatibility fixes in the DrZ80 core.
+- Some changes to get better timing and sound.
+- Video Sync Off option works again.
+
+MAME GP2X 3.6 (November 15, 2006)
+---------------------------------
+
+- Fixed: The sound was muted after playing games with encrypted roms (e.g. CPS-1 Q-Sound games). Thanks to Chui: http://chui.dcemu.co.uk/index.html
+- Fixed: Bosconian (among many others) are working again, the problem stands since v2.2. Thanks to Chui: http://chui.dcemu.co.uk/index.html
+- Fixed: Sound in Battle Zone fixed. Thanks to Slaanesh: http://users.bigpond.net.au/mame/gp32/
+- Fixed: Pang and Super Pang were not running since v3.4.
+- Fixed: When closing game Berzerk the GP2X hangs-up.
+- Added the auto-run capability. If you want to use this feature, turn on autorun in the settings menu of the GP2X. Thanks to subcon959.
+
+MAME GP2X 3.5 (November 12, 2006)
+---------------------------------
+
+- Fixed: No sound after playing some games. The problem was located in the streams sound library.
+- Fixed: Crashes on exit. The problem seemed to be in the unmapping of the upper memory area (32-64 Mb).
+- Fixed: Timing was not ok sometimes. Better sound quality now in some of the oldest games.
+- Fixed: Some messages in the loading game screen were corrupted.
+
+MAME GP2X 3.4 (November 10, 2006)
+---------------------------------
+
+- Sound in CPS-1 Q-Sound games (Cadillacs & Dinosaurs, Punisher and Warriors of Fate).
+  Only running with standard executable (not the fast one).
+  Anyway those games run nicely with full sound now.
+  Thanks to the work of Chui: http://chui.dcemu.co.uk/index.html
+- FAME/C core integrated but not used by MAME GP2X yet, maybe it could be useful for other ports without M68000 asm cores.
+  Thanks to the work of Chui and Fox64k: http://chui.dcemu.co.uk/index.html
+- Improved memcpy() asm function to copy with 64 bytes blocks instead of 32 bytes. Better performance in some games.
+- Better explained messages when there are problems reading or verifying the roms.
+
+MAME GP2X 3.3 (November 01, 2006)
+---------------------------------
+
+Added the modifications done by Slaanesh for MAME GP32 2.3: http://users.bigpond.net.au/mame/gp32/
+- New playable games: The Empire Strikes Back, Canyon Bomber, Canyon Bomber (prototype), Marine Boy, Wanted and Tropical Angel.
+- Complete fix to Exerion (and clones). Added background graphics video handling. Now works perfectly.
+- Complete fix to Twin Cobra (and clones). Now it is completely playable.
+- Optimizations and fixes in H6280 core (e.g. Sly Spy runs faster).
+- Compatibility fixes in M6502 & M6809 cores.
+- Improved sound in Gorf, Space Invaders, Donkey Kong Jr.
+Thanks Slaanesh for all your hard work in MAME GP32!.
+
+- If no USB Joypads are detected, all four players are controlled with the GP2X built-in joypad.
+- Some minor optimizations to M6809 core.
+- New romsets: Canyon Bomber (canyon), Canyon Bomber (prototype) (canbprot), Marine Boy (marineb), Tropical Angel (troangel) and Wanted (wanted).
+- Modified romsets: Twin Cobra (Romstar) (twincobu), Kyukyoku Tiger (ktiger) and Exerion (exerion).
+- clrmame.dat updated with new romsets.
+- Modified samples: Donkey Kong Jr (dkongjr) and Space Invaders (invaders). Get the update HERE: http://www.gp32x.de/cgi-bin/cfiles.cgi?0,0,0,0,5,1044
+
+MAME GP2X 3.2 (October 22, 2006)
+--------------------------------
+
+- Some improvements in the auto-frameskip. Some more fps.
+- Default video sync option is now named "Video Sync Normal". New option "Video Sync Off" to make games run as fast as possible
+  without any synchronization delay. Some more fps. This is mainly useful to play CPS-1 games (Street Fighter 2 runs very well now).
+  Older games will run too fast.
+- Some old optimizations in the CPS-1 renderer done by Chui (they were deactivated due to some incompatibilities, only useful in the
+  default view: not scaled and not rotated video mode). 
+- GP2X Clock selector is now selectable from 66 to 300 MHz. Lower frequencies can be used to play oldest games saving batteries.
+  Thx, Reiboul, for the suggestion.
+- The menu now runs at 66 MHz, to save batteries.
+- In pause mode, the clock frequency is lowered to 66 MHz, to save batteries.
+- A new option to do not switch to TATE mode controls automatically when in TATE mode.
+  See the readme.txt for the information to activate this function. Thx, colt chillin', for the suggestion.
+
+MAME GP2X 3.1 (October 13, 2006)
+--------------------------------
+
+- A better approach for upper memory allocation/deallocation, as explained in http://wiki.gp2x.org/wiki/Using_the_upper_32MB_of_memory
+  Most big Neo·Geo games now run ok (Metal Slug 2, Blazing Star, etc).
+  I recommend to play those games with high overclocking, video clock at 100% and audio clock at 100%.
+- Elevator Action runs ok again. Thx, TelcoLou, for the error report.
+- Solved the problem about the PAUSE message not hidden when unpausing some specific games. Thx, maRRRc!, for the error report.
+
+MAME GP2X 3.0 (October 07, 2006)
+--------------------------------
+
+- RAM Tweaks implemented. See the readme.txt for the information to activate them (the emulator runs aproximately 8% faster).
+  Thanks to god_at_hell for the CPU/LCD/RAM-Tweaker utility and also to Craigix for the suggestion.
+- Added the ability to play in two players mode with only one USB Joypad (Player 1 = Builtin Joypad, Player 2 = USB Joypad #1).
+  See the readme.txt for the information to activate this function. Thanks to GnoStiC.
+- Some code fixes to get more stability.
+
+MAME GP2X 2.9 (October 04, 2006)
+--------------------------------
+
+- No more sound glitches. Sound should be ok now for all games.
+- Added FPS Counter (Show/Hide it with Y+L+R).
+- More stability.
+- VSync should work again and with correct timing.
+
+MAME GP2X 2.8 (September 29, 2006)
+----------------------------------
+
+- New faster threaded sound core.
+  No choppy sound. Games running too slow, e.g. Iron Horse, now run ok. Other games need less overclocking to run at 100%, etc.
+- MMU Hack runs better and more stable.
+- Full 4 USB Joypad Support through the GP2X Interface Board.
+- Added spinner control via the shoulder buttons to Tron, Discs of Tron and Mad Planets. Thx, Sean Poyser.
+- Added the use of diagonals to Q*Bert and derivatives. Thx, Sean Poyser.
+
+MAME GP2X 2.7 (September 16, 2006)
+----------------------------------
+
+- Squidge MMU Hack included. Some speed improvements in the framerate and also in the biggest Neo·Geo games.
+  Thanks to Squidge, NK, Reesy, Pepone and Kounch for the information and help.
+- USB Joypad support through the GP2X Interface Board. Thanks to GnoStiC for the integration of the USBJoy
+  library created by Puck2099.
+
+MAME GP2X 2.6 (September 06, 2006)
+----------------------------------
+
+- Updated M68000 ASM Cyclone 0.00861 core by Notaz.
+- Some corrections in the sample support (from MAME GP32 2.2). Thx, Slaanesh.
+- Fixed the bug related to GP2X clock frequency not changed when using the FEMAMEGP2X alternative frontend. Thx, Zaq121.
+
+MAME GP2X 2.5 (August 21, 2006)
+-------------------------------
+
+Added the modifications done by Slaanesh for MAME GP32 2.2: http://users.bigpond.net.au/mame/gp32/
+- Sample support!. Several games have full sound now (Phoenix, Donkey Kong, Zaxxon...).
+  The samples are available for download here: http://www.gp32x.de/cgi-bin/cfiles.cgi?0,0,0,0,5,1034
+- Z80 C core updated for improved compatibility. New games fully working (1942, Jungle King, Crazy Climber...).
+- Rearrange Taito sound effects driver to take priority over music channels. Means sound effects play now (Jungle King, Alpine Ski...).
+- Improved drivers: Berzerk, Frenzy, Quantum, Battlezone and Stargate.
+Thanks Slaanesh for all your hard work in MAME GP32!.
+
+- Added the possibility to use L+R+Start or L+R+Select to exit to the game selection menu.
+  This has been added to use the emulator without the Center push of the joystick, not available in some WIP D-pad replacements.
+  Thx, DaveC, for the suggestion.
+- Corrected the command line support for future external frontends, thx to Zaq121.
+
+MAME GP2X 2.4 (July 20, 2006)
+-----------------------------
+
+- Updated Cyclone 0.0086 core by Notaz. Golden Axe and Altered Beast now run ok!.
+- Optimizations in M6809 cpu core.
+- Speed improvements in Double Dragon and Xain'd Sleena.
+- Command line support for future external frontends, thx to Zaq121.
+- Controls fixed in Millipede, thx to Slaanesh.
+- Graphics fixes in Gauntlet.
+- Controls fixed in Tehkan World Cup.
+- Optimizations in H6280 cpu core.
+- Compiler optimization flags.
+- Fixed the LCD timing issue (washed screen). Thx, god_at_hell and Aruseman.
+- Squidge MMU hack and Hardware Blitter are implemented but deactivated due to several random problems (see source code) :-(.
+
+MAME GP2X 2.3 (A.K.A MAME4ALL Alpha 2) (May 07, 2006)
+-----------------------------------------------------
+
+- Bugs in previous MAME GP2X 2.2 solved:
+  Bug in the sound with some games (Bomb Jack, Pinball Action, etc).
+  Bug with games with I8085 processor (Phoenix runs with sound again).
+  Screen centering in the not scaled + rotated video mode.
+- Some changes from MAME GP32 2.0 and 2.1 by Slaanesh:
+  New playable games: Robocop, Hippodrome.
+  Sound improvements: Sly Spy, Midnight Resistance, Dark Seal, Juno First.
+  Control Improvements: Midnight Resistance, Heavy Barrel, Ikari Warriors, Victory Road, Defender.
+  Optimizations: Galaga.
+  Other improvements: Time Pilot, Pooyan, Tutankham, Gyruss.
+- Modified romset (MAME 0.35b5): Sly Spy (revision 3) (slyspy)
+- Support for 3 new romsets (MAME 0.35b5):
+  Boulderdash / Boulderdash Part 2 (bouldash), Sly Spy (revision 2) (slyspy2), Gate Of Doom (revision 4) (gatedoma)
+
+NOTE: The sound quality is worse in some games (CPS1, Neo·Geo, etc) due to the optimizations done in sound cores. To disable those
+hacks and get the same sound quality than in previous MAME GP2X versions, select "ACCURATE" sound option.
+
+MAME GP2X 2.2 (A.K.A MAME4ALL Alpha 1) (May 01, 2006)
+-----------------------------------------------------
+
+- MAME GP2X join forces with the great work done by Chui in MAME4ALL http://chui.dcemu.co.uk/mame4all.html
+  Now it is compatible with GP2X, Dreamcast, Windows y Linux, compiled in C or C++. There are several internal changes
+  in this release, and probably some bugs, please report them!.
+- Chui: Optimizations in graphic cores: TMNT, System 16, CPS-1, Contra, Toki, Aero Fighters, Last Duel y Atari System 1.
+- Chui: Optimizations in sound cores: Generic, Streams, FM, ADPCM, UDP7759, K007232 y YM2151.
+- Chui: Emulator boots faster because the initial check to find available games in the SD has been optimized.
+- Franxis: Compiled with GCC 4.1.0.
+- Franxis: Optimizations in rotated screen video mode.
+
+MAME GP2X 2.1 (April 07, 2006)
+------------------------------
+
+- Faster (optimizations in graphic and sound libraries).
+- Sound improvements in some classic games, e.g. Galaxian.
+- Improvements in Namco sound library. It makes games like Gaplus to sound ok. Thx, Slaanesh.
+- New clrmame.dat created by [MaD] updated up to MAME GP2X 2.1.
+
+MAME GP2X 2.0 (March 26, 2006)
+------------------------------
+
+- Some more optimizations.
+- Support for extra 32 Mb of upper RAM memory. New playable games: Pulstar, Waku Waku 7, etc.
+- Added 9 new romsets from MAME 0.35b9-0.35rc1 (total supported games now is 1124!):
+  MAME 0.35b9: Gaplus (set 1) (gaplus), Gaplus (set 2) (gaplusa), Galaga 3 (set 1) (galaga3), Galaga 3 (set 2) (galaga3a)
+  MAME 0.35b12: Salamander (salamand), Lifeforce (US) (lifefrce), Lifeforce (Japan) (lifefrcj), Mega Zone (megazone)
+  MAME 0.35rc1: Pang! 3 (Japan) (pang3)
+
+MAME GP2X 1.9 (March 16, 2006)
+------------------------------
+
+- Really faster (compiler settings, optimized memcpy in asm, etc).
+- Support for extra 16 Mb of upper RAM memory. Enough to play Metal Slug with sound for example. Thx, Rlyeh and Unai.
+- Some fixes in the sound (sound is not modified when a new game is selected and also during rotated scaled mode).
+- Some fixes in the video (video buffer is bigger and there is no problem now with any game in all video modes).
+- Street Fighter 2 Turbo fixed. Thx, Virucho28.
+- Internal changes: All code is compiled now with GCC 4.0.2 (Z80 C core fixed) and with maximum optimization (Minimal library fixed).
+
+MAME GP2X 1.8 (March 05, 2006)
+------------------------------
+
+- Auto-fire support.
+- Volume control really fixed. Also press VolUp+VolDown simultaneously to go back to default volume level.
+- New YM3812 sound core with better quality (MAME 0.35b6): Snow Bros, Hellfire, Gemini Wing, Bubble Bobble, etc.
+- Improvements in DrZ80 core: Now is compatible with Neo·Geo games. Thanks to Flubba.
+- Graphic improvements: Tokio.
+- Sound improvements: P.O.W, The Main Event, TMNT.
+- Performance improvements: Bubble Bobble, Contra, Ninja Kid 2, Psychic 5, Tehkan World Cup, The New Zealand Story, Tokio, Tumble Pop, Xybots.
+- New clrmame.dat created by [MaD] updated up to MAME GP2X 1.8.
+
+- Added 32 new romsets from MAME 0.35b2-b13 (total supported games now is 1115!):
+  MAME 0.35b2: The Main Event (version F) (mainevt2) 
+  MAME 0.35b8: TNK3 (tnk3), ASO (Armored Scrum Object) (aso), Athena (athena), Fighting Golf (fitegolf), Guerrilla War (gwar),
+  Bermuda Triangle (bermudat), Psycho Soldier (set 1) (psychos), Psycho Soldier (set 2) (psychosa), Chopper I (chopper),
+  The Legend of Air Cavalry (legofair), TouchDown Fever (tdfever), TouchDown Fever (Japanese) (tdfeverj)
+  MAME 0.35b10: Legend of Makaj (lomakaj), P-47 (World) (p47), P-47 (Japan) (p47j), 64th Street (64street), Earth Defense Force (edf),
+  RodLand (Japan) (rodlandj), Avenging Spirit (avspirit)
+  MAME 0.35b11: Cabal (US set 1) (cabal), Cabal (US set 2) (cabal2), Cabal (bootleg) (cabalbl), Goindol (goindol), Homo (homo)
+  MAME 0.35b12:	Prehistoric Isle in 1930 (World) (prehisle), Prehistoric Isle in 1930 (US) (prehislu), Genshi-Tou 1930's (gensitou)
+  MAME 0.35b13: Sichuan II (hack?) (sichuan2), Shisensho - Joshiryo-Hen (Japan) (shisen), Truxton / Tatsujin (truxton), Out Zone (outzone)
+
+- Modified romsets:
+  MAME 0.35b2: The Main Event (version Y) (mainevt)
+  MAME 0.35b8: Ikari Warriors (US) (ikari), Ikari Warriors (Japan) (ikarijp), Ikari Warriors (Japan bootleg) (ikarijpb), 
+  Victory Road (victroad), Dogou Souken (dogosoke)
+
+MAME GP2X 1.7 (February 23, 2006)
+---------------------------------
+
+- TV-Out support. Thanks, Kounch, for the information.
+- New option to configure video synchronization: Disabled, Double Buffer and VSync.
+- Support for more GP2X Clock speeds: 133-300 MHz (without flickering).
+- Volume control corrected.
+- Some improvements in the frontend.
+- Improvements in DrZ80 core: Flubba optimizations have been re-added over Reesy latest core. Also some fixes have been added.
+
+MAME GP2X 1.6 (February 18, 2006)
+---------------------------------
+
+- New option to configure GP2X clock frequency. Thanks to Hermes PS2R for the CpuCtrl library.
+- New option to save game configurations.
+- New versions of DrZ80 and Cyclone cores, with some compatibility improvements. Thanks to Reesy.
+- Hardware video scaling fixed in some games with big screen resolution (Spy Hunter, Paper Boy, Toobin, Super Sprint, etc).
+- Sound improvements in some games with video frequency different from 60 Hz (Green Beret, Iron Horse, Juno First, Popeye, etc).
+- Added a new frontend graphic skin created by Sike, dedicated to Warriors of Fate.
+
+MAME GP2X 1.5 (February 5, 2006)
+--------------------------------
+
+- Hardware video scaling / stretching in horizontal and vertical mode (faster).
+- Screen is updated now with a single video buffer (faster).
+- Added 20 new romsets from MAME 0.35b3 (total supported games now is 1083!):
+  Breywood (breywood), Cadillacs and Dinosaurs (World) (dino), Capcom World 2 (Japan) (cworld2j), Captain Silver (csilver), 
+  The Real Ghostbusters (3 player) (ghostb3), Gondomania (gondo), Last Mission (Rev 5) (lastmss2), Last Mission (Rev 6) (lastmiss), 
+  Mekyo Sensi (mekyosen), Muscle Bomber Duo (Japan) (mbomberj), Muscle Bomber Duo (World) (mbomber), Punisher (Japan) (punishrj), 
+  Punisher (World) (punisher), Quiz & Dragons (Japan) (qadj), Quiz & Dragons (US) (qad), Shackled (shackled), 
+  Slam Masters (World) (slammast), Super Real Darwin (srdarwin), Tenchi o Kurau 2 (Japan) (wofj), 
+  Warriors of Fate (World) (wof).
+- Added 2 new romsets from MAME 0.35b8: Tumble Pop (bootleg set 1) (tumblep) and Tumble Pop (bootleg set 2) (tumblep2).
+- Graphics fixed in Three Wonders (MAME 0.35b3 and MAME 0.35b6).
+- Speed fixed in Psycho Nicks Oscar (MAME 0.35b3).
+- Added a new frontend graphic skin created by Sike.
+- New clrmame.dat created by [MaD] updated up to MAME GP2X 1.5.
+
+MAME GP2X 1.4 (January 23, 2006)
+--------------------------------
+
+- Added 24 new romsets from MAME 0.35b1-b5 (total supported games now is 1061!):
+  MAME 0.35b1: Rolling Thunder (rthunder), Pocket Gal (pcktgal), Pocket Gal (bootleg) (pcktgalb)
+  MAME 0.35b2: Ikari Warriors (US) (ikari), Ikari Warriors (Japan) (ikarijp), Ikari Warriors (Japan bootleg) (ikarijpb),
+  Victory Road (victroad), Dogo Soken (dogosoke)
+  MAME 0.35b3: Gals Panic (galpanic), Street Fighter (World) (sf1), Street Fighter (US) (sf1us), Street Fighter (Japan) (sf1jp)
+  MAME 0.35b4: Aero Fighters (aerofgt), Turbo Force (turbofrc), Pang (World) (pang), Pang (bootleg) (pangb), Buster Bros (US) (bbros),
+  Super Pang (World) (spang), Block Block (World) (block), Power Spikes (Korea) (pspikes)
+  MAME 0.35b5: Hellfire (hellfire), Zero Wing (zerowing), Vimana (set 1) (vimana), Vimana (set 2) (vimana2)
+- Problem with relative paths in some consoles solved (Thx wotan_999, bleim).
+- Problem with not showed games at the end of the list solved (Thx virucho28).
+- New clrmame.dat created by [MaD] updated up to MAME GP2X 1.3. It adds the new supported games in previous versions and it solves the
+"NO ROM DUMP" in Neo·Geo games.
+- NOTES: To play Super Pang KEEP START PRESSED WHILE BOOTING THE FIRST TIME. Pang romset has been modified to MAME 0.35b4 one.
+
+MAME GP2X 1.3 (January 08, 2006)
+--------------------------------
+
+- Improvements in Cyclone compatibility.
+- Some bugs corrected in CPS-1 games (taken from MAME 0.35b2). Knights of the Round is running ok now, King of Dragons does not get
+  locked after first level, you can insert credits to continue the game, etc... Also there are new supported games (MAME 0.35b2 ROMs):
+  Final Fight (US) (ffightu), Street Fighter II (US rev A) (sf2a), Street Fighter II (US rev B) (sf2b), Street Fighter II (US rev E) (sf2e),
+  Three Wonders (US) (3wonders), Wonder 3 (Japan) (3wonderj), King of Dragons (Japan) (kodj), Captain Commando (US) (captcomu),
+  Captain Commando (Japan) (captcomj), Knights of the Round (Japan) (knightsj), Street Fighter II' - Champion Edition (World) (sf2ce),
+  Street Fighter II - Champion Edition (Japan) (sf2cej), Varth (Japan) (varthj), Street Fighter II' - Hyper Fighting (US) (sf2t),
+  Street Fighter II Turbo (Japan) (sf2tj)
+- Configurable controls, analog controls sensitivity and inverted X and Y axis.
+- You can fire now with volume controls in rotated screen mode.
+- Relative paths used now in the emulator, you can put the emulator in the folder you want in the SD card.
+
+MAME GP2X 1.2 (January 02, 2006)
+--------------------------------
+
+- Support for complete MAME 0.34 romset (1024 games). New available games for example: Liquid Kids, Shadow Warriors, TMNT, etc.
+- Video scaling / stretching corrected in some games, for example: Pang.
+- Whatsnew.txt is now available in spanish (novedades.txt), thanks to kolakola.
+- List of supported games corrected (gamelist.txt).
+
+MAME GP2X 1.1 (December 28, 2005)
+---------------------------------
+
+- Faster.
+- Better sound quality.
+- Better controls layout.
+- A new more compatible executable (it has original slow M68000 C core, test it with System 16 games for example)
+
+MAME GP2X 1.0 (December 24, 2005)
+---------------------------------
+
+- Merry christmas and happy new year, ho ho ho ;-).
+- First version of my MAME port for GP2X console. Based on MAME 0.34 and ported directly from my previous MAME GP32 port.
+- 904 games are now supported, almost all games in MAME 0.34.
+- I recommend the use of "CPU & LCD Tuner" program to overclock the GP2X to 250 MHz to play the most modern games. I have not integrated
+  the overclocking in the emulator yet.
+- Reesy DrZ80 core has been modified by Flubba to be faster and easier to maintain.
+- Software scaling / stretching based on Pepe_Faruk code. Hardware scaling / stretching not implemented yet.
