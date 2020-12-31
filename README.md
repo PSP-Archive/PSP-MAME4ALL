@@ -19,3 +19,10 @@ Romsets have to be MAME 0.34 final version ones (December 1998), but there are a
 Please use "clrmame_roms.dat" file to convert romsets from other MAME versions to the ones used by this version for GP2X, using ClrMAME Pro utility.
 
 NOTE: File and directory names in Linux are case-sensitive. Put all file and directory names using low case!.
+
+## Controls
+
+- SELECT: Insert credits. (SELECT+Up=credits 2P, SELECT+Right=credits 3P, SELECT+Down=credits 4P)
+- START: Play. (START+Up=Start 2P, START+Right=Start 3P, START+Down=Start 4P).
+- L+R: change screen orientation and activate/deactivate screen scale/stretch.
+- Hold L+R for one second: Pause. Press Home from this screen to exit to the MAME4ALL menu.
