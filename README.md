@@ -12,7 +12,7 @@ There are 1204 different supported romsets. For more details, see "gamelist.txt"
 ### ROM names
 
 Folder names or ZIP file names are listed on "gamelist.txt" file.
-Romsets have to be MAME 0.34 final version ones (December 1998), but they are also some new added romsets from later MAME versions, as well as modified romsets.
+Romsets have to be MAME 0.34 final version ones (December 1998), but there are also some new added romsets from later MAME versions, as well as modified romsets.
 
 Please use "clrmame_roms.dat" file to convert romsets from other MAME versions to the ones used by this version for GP2X, using ClrMAME Pro utility.
 
