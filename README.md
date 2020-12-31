@@ -17,13 +17,14 @@ Folder names or ZIP file names are listed on "gamelist.txt" file.
 
 Romsets have to be MAME 0.34 final version ones (December 1998), but there are also some new added romsets from later MAME versions, as well as modified romsets.
 
-Please use the [clrmame_roms.dat](https://github.com/PSP-Archive/PSP-MAME4ALL/blob/main/data/clrmame_roms.dat) file to convert romsets from other MAME versions, by using the ClrMAME Pro utility.
+Please use the [clrmame_roms.dat](https://github.com/PSP-Archive/PSP-MAME4ALL/blob/main/data/clrmame_roms.dat) file to convert romsets from other MAME versions, by using the ClrMAME Pro utility. The process is best explained by [this YouTube video](https://www.youtube.com/watch?v=_lssz2pAba8) - the only difference is that you will be using clrmame_roms.dat rather than other files.
 
 NOTE: File and directory names are case sensitive. Put all file and directory names in lower case.
 
 ## Controls
 
-- SELECT: Insert credits. (SELECT+Up=credits 2P, SELECT+Right=credits 3P, SELECT+Down=credits 4P)
-- START: Play. (START+Up=Start 2P, START+Right=Start 3P, START+Down=Start 4P).
+- SELECT: insert credits. (SELECT+Up=credits 2P, SELECT+Right=credits 3P, SELECT+Down=credits 4P)
+- START: play. (START+Up=Start 2P, START+Right=Start 3P, START+Down=Start 4P).
 - L+R: change screen orientation and activate/deactivate screen scale/stretch.
-- Hold L+R for one second: Pause. Press Home from this screen to exit to the MAME4ALL menu.
+- Hold L+R for one second: pause. Press Home from this screen to exit to the MAME4ALL menu.
+- Hold L and press HOME: reset emulation.
