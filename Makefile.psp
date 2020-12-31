@@ -1,6 +1,6 @@
 NAME   = Mame4All
-VER    = 4.9
-REV    = r2
+VER    = 5.1
+REV    = 
 SUBREV =
 O      = o
 RM     = rm -f
