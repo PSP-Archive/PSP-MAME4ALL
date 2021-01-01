@@ -9,7 +9,9 @@ http://wiki.gp2x.org/articles/m/a/m/MAME_GP2X.html#Supported_Games_1139_romset
 
 ## Supported games
 
-There are 1204 different supported romsets. For more details, see the [gamelist.txt](https://github.com/PSP-Archive/PSP-MAME4ALL/blob/main/data/gamelist.txt) file within the release. Games have to be copied into the /roms/ folder.
+The original GP2X port supported 1204 different romsets, listed on the [gamelist.txt](https://github.com/PSP-Archive/PSP-MAME4ALL/blob/main/data/gamelist.txt) file within the release. Compatibility for this PSP version is more limited.
+
+Games have to be copied into the /roms/ folder.
 
 ### ROM names
 
@@ -49,4 +51,4 @@ NOTE: File and directory names are case sensitive. Put all file and directory na
 		#endif
 		
 2. from the PSP-MAME4ALL folder:
-	`make -f Makefile.psp clean all; make -f Makefile.psp`
+	`make -f Makefile.psp clean-all; make all -f Makefile.psp
