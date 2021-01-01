@@ -186,7 +186,9 @@ int main(int argc,char **argv)
 
 	/* GP2X Video Init */
 	gp2x_video_init();
-
+	pspDebugScreenSetTextColor(0xffffffff);
+	pspDebugScreenPrintf("\n\nLoading MAME4ALL...");
+	
 	/* Set Video Mode */
 #ifdef PSP_RES
 	SetVideoScaling(480,480,272);
