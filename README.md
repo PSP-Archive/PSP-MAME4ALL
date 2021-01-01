@@ -33,6 +33,7 @@ NOTE: File and directory names are case sensitive. Put all file and directory na
 1. Tweaks to the PSP toolchain:
 	a. in newlib.h, undefine `_LDBL_EQ_DBL`
 	b. in std_abs.h, replace the `#ifndef __CORRECT_ISO_CPP_MATH_H_PROTO` block with this:
+	
 		```
 		#ifndef __CORRECT_ISO_CPP_MATH_H_PROTO
 		  //inline _GLIBCXX_CONSTEXPR double
@@ -48,5 +49,6 @@ NOTE: File and directory names are case sensitive. Put all file and directory na
 		  //{ return __builtin_fabsl(__x); }
 		#endif
 		```
+		
 2. from the PSP-MAME4ALL folder:
 	`make -f Makefile.psp clean all; make -f Makefile.psp`
