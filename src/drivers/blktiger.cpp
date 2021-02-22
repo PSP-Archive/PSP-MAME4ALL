@@ -38,19 +38,35 @@ int blktiger_vh_start(void);
 void blktiger_vh_stop(void);
 void blktiger_vh_screenrefresh(struct osd_bitmap *bitmap,int full_refresh);
 
+#ifdef USE_CZ80
+#include "cz80/cz80.h"
+extern cz80_struc *mame4all_cz80_struc;
+#else
+#ifdef USE_RAZE
+unsigned char Z80_GetD(void);
+#endif
+#endif
 
 
 /* this is a protection check. The game crashes (thru a jump to 0x8000) */
 /* if a read from this address doesn't return the value it expects. */
 static int blktiger_protection_r(int offset)
 {
-	Z80_Regs regs;
-
-
-	Z80_GetRegs(&regs);
 #ifndef USE_DRZ80 /* FRANXIS 01-09-2005 */
-	return regs.DE.B.h;
+#ifdef USE_CZ80
+	return (Cz80_Get_DE(mame4all_cz80_struc)>>8)&0xFF;
 #else
+#ifdef USE_RAZE
+	return Z80_GetD();
+#else
+	Z80_Regs regs;
+	Z80_GetRegs(&regs);
+	return regs.DE.B.h;
+#endif
+#endif
+#else
+	Z80_Regs regs;
+	Z80_GetRegs(&regs);
 	return (regs.Z80DE>>24)&0xFF;
 #endif
 }

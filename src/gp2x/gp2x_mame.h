@@ -2,12 +2,13 @@
 #define GP2X_MAME_H
 
 #ifdef GP2X
-//#define DEFAULT_SAMPLE_RATE 11025
-//#define DEFAULT_SAMPLE_RATE 15360
-#define DEFAULT_SAMPLE_RATE 22050
 #define memalloc_report(MSG)
-#else
+#endif
+
 #define DEFAULT_SAMPLE_RATE 22050
+
+#ifdef PSP
+#include "pspincludes.h"
 #endif
 
 #include "stdarg.h"

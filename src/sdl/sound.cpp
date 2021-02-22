@@ -2,6 +2,9 @@
 #include "minimal.h"
 
 #define SOUND_USESAMPLE_PATCH
+// #define SOUND_USEVOLUME_SHIFTS
+#define SOUND_USEACTIVE_SHIFTS
+#define SOUND_USEFLOAT_FREQS
 
 #ifdef DREAMCAST
 #include<kos.h>
@@ -28,7 +31,11 @@
 #define NUMVOICES 8
 #endif
 
+#ifdef PSP
 unsigned short num_voices = NUMVOICES;
+#else
+#define num_voices NUMVOICES
+#endif
 
 #define SAMPLE_NUMBER 1664
 
@@ -64,10 +71,23 @@ struct lpWaves {
 	unsigned int loop; /* loop 1 yes, 0 no */
 }__attribute__ ((__aligned__ (32)));
 
-struct lpWaves lpWave[16]; /* def for max num of voices */
+struct lpWaves lpWave[NUMVOICES]; /* def for max num of voices */
 unsigned int sound_enable = 0;
 unsigned int soundcard;
-unsigned int chn_max=0; /* Max Number of channels */
+
+static int chn_actives=1;
+#ifdef  SOUND_USEVOLUME_SHIFTS
+static unsigned char vol_shift[64]= {
+	32, 0, 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5,
+	5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 , 5, 5, 5, 5, 5,
+	5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+};
+#endif
+#ifdef  SOUND_USEACTIVE_SHIFTS
+#define ACTIVIES_SHIFT_BASE 6
+static int chn_actives_shift=ACTIVIES_SHIFT_BASE;
+#endif
 
 int sound_slice=default_sample_rate/60;
 
@@ -76,7 +96,7 @@ int sound_slice=default_sample_rate/60;
 #define sound_real_sample_rate_min (default_sample_rate-10)
 #define sound_real_sample_rate_max (default_sample_rate+10)
 #define mame4all_init_sound_slice()
-static short mixedAudio[default_sample_rate/30];
+static short mixedAudio[22050/30];
 #else
 extern short *mixedAudio;
 int sound_real_sample_rate=default_sample_rate;
@@ -86,66 +106,160 @@ void mame4all_init_sound_slice();
 #endif
 
 
-static void gp2x_sound_mixer_channel_step_16bits (signed short *stream, int len, const struct lpWaves *wave, const int t)
+static void gp2x_sound_mixer_channel_step_16bits (signed short *stream, int len, const struct lpWaves *wave)
 {
+#ifdef  SOUND_USEVOLUME_SHIFTS
 	const int vol=wave->volume;
+#else
+	const int vol=wave->volume;
+#endif
+#ifdef  SOUND_USEACTIVE_SHIFTS
+	const int chn_shift=chn_actives_shift;
+#endif
 	unsigned int pos=wave->len;
 	short *sample=(signed short *)wave->lpData;
 	if (sample)
 	do {
-		*(stream++)+=((*sample++)*vol)/(t<<6); /* Update, scale and mix sample */
+#ifdef  SOUND_USEVOLUME_SHIFTS
+#ifdef  SOUND_USEACTIVE_SHIFTS
+		*(stream++)+=((*sample++)<<vol)>>chn_shift;
+#else
+		*(stream++)+=((*sample++)<<vol)/(chn_actives<<6);
+#endif
+#else
+#ifdef  SOUND_USEACTIVE_SHIFTS
+		*(stream++)+=((*sample++)*vol)>>chn_shift; /* Update, scale and mix sample */
+#else
+		*(stream++)+=((*sample++)*vol)/(chn_actives<<6); /* Update, scale and mix sample */
+#endif
+#endif
 		if ((--pos)==0) { pos=wave->len; sample=(signed short *)wave->lpData; }
 	} while (--len);
 }
 
 #ifdef SOUND_USESAMPLE_PATCH
-static void gp2x_sound_mixer_channel_step_8bits (signed short *stream, int len, const struct lpWaves *wave, const int t)
+static void gp2x_sound_mixer_channel_step_8bits (signed short *stream, int len, const struct lpWaves *wave)
 {
+#ifdef  SOUND_USEVOLUME_SHIFTS
+	const int vol=8+wave->volume;
+#else
 	const int vol=wave->volume;
+#endif
+#ifdef  SOUND_USEACTIVE_SHIFTS
+	const int chn_shift=chn_actives_shift;
+#endif
 	unsigned int pos=wave->len;
 	signed char *sample=(signed char *)wave->lpData;
 	if (sample)
 	do {
-		*(stream++)+=((((signed short)(*sample++))<<8)*vol)/(t<<6); /* Update, scale and mix sample */
+#ifdef  SOUND_USEVOLUME_SHIFTS
+#ifdef  SOUND_USEACTIVE_SHIFTS
+		*(stream++)+=(((signed short)(*sample++))<<vol)>>chn_shift;
+#else
+		*(stream++)+=(((signed short)(*sample++))<<vol)/(chn_actives<<6);
+#endif
+#else
+#ifdef  SOUND_USEACTIVE_SHIFTS
+		*(stream++)+=((((signed short)(*sample++))<<8)*vol)>>chn_shift; /* Update, scale and mix sample */
+#else
+		*(stream++)+=((((signed short)(*sample++))<<8)*vol)/(chn_actives<<6); /* Update, scale and mix sample */
+#endif
+#endif
 		if ((--pos)==0) { pos=wave->len; sample=(signed char *)wave->lpData; }
 	} while (--len);
 }
 #endif
 
-static void gp2x_sound_mixer_channel_nostep_16bits (signed short *stream, const int len, const struct lpWaves *wave, const int t)
+static void gp2x_sound_mixer_channel_nostep_16bits (signed short *stream, const int len, const struct lpWaves *wave)
 {
+#ifdef  SOUND_USEVOLUME_SHIFTS
 	const int vol=wave->volume;
+#else
+	const int vol=wave->volume;
+#endif
+#ifdef  SOUND_USEACTIVE_SHIFTS
+	const int chn_shift=chn_actives_shift;
+#endif
 	unsigned int pos;
 	const signed short *sample=(const signed short *)wave->lpData;
 	unsigned int i=0;
+#ifdef SOUND_USEFLOAT_FREQS
+	float freq=((float)wave->freq)/((float)sound_real_sample_rate);
+#else
 	unsigned int freq=wave->freq;
+#endif
 	const unsigned int sample_len=wave->len;
 	if (sample)
 	do {
-		pos = (i*freq)/sound_real_sample_rate; while(pos>=sample_len) pos-=sample_len;	
-		*(stream++)+=((sample[pos])*vol)/(t<<6); /* Update, scale and mix sample */
+#ifdef SOUND_USEFLOAT_FREQS
+		pos = (unsigned)(((float)i)*freq);
+#else
+		pos = (i*freq)/sound_real_sample_rate;
+#endif
+		while(pos>=sample_len) pos-=sample_len;	
+#ifdef  SOUND_USEVOLUME_SHIFTS
+#ifdef  SOUND_USEACTIVE_SHIFTS
+		*(stream++)+=((sample[pos])<<vol)>>chn_shift;
+#else
+		*(stream++)+=((sample[pos])<<vol)/(chn_actives<<6);
+#endif
+#else
+#ifdef  SOUND_USEACTIVE_SHIFTS
+		*(stream++)+=((sample[pos])*vol)>>chn_shift; /* Update, scale and mix sample */
+#else
+		*(stream++)+=((sample[pos])*vol)/(chn_actives<<6); /* Update, scale and mix sample */
+#endif
+#endif
 	} while ((++i)<len);		
 }
 
 #ifdef SOUND_USESAMPLE_PATCH
-static void gp2x_sound_mixer_channel_nostep_8bits (signed short *stream, const int len, const struct lpWaves *wave, const int t)
+static void gp2x_sound_mixer_channel_nostep_8bits (signed short *stream, const int len, const struct lpWaves *wave)
 {
+#ifdef  SOUND_USEVOLUME_SHIFTS
+	const int vol=8+wave->volume;
+#else
 	const int vol=wave->volume;
+#endif
+#ifdef  SOUND_USEACTIVE_SHIFTS
+	const int chn_shift=chn_actives_shift;
+#endif
 	unsigned int pos;
 	const signed char *sample=(const signed char *)wave->lpData;
 	unsigned int i=0;
+#ifdef SOUND_USEFLOAT_FREQS
+	float freq=((float)wave->freq)/((float)sound_real_sample_rate);
+#else
 	unsigned int freq=wave->freq;
+#endif
 	const unsigned int sample_len=wave->len;
 	if (sample)
 	do {
-		pos = (i*freq)/sound_real_sample_rate; while(pos>=sample_len) pos-=sample_len;	
-		*(stream++)+=((((signed short)(sample[pos]))<<8)*vol)/(t<<6); /* Update, scale and mix sample */
-	} while ((++i)<len);		
+#ifdef SOUND_USEFLOAT_FREQS
+		pos = (unsigned)(((float)i)*freq);
+#else
+		pos = (i*freq)/sound_real_sample_rate;
+#endif
+		while(pos>=sample_len) pos-=sample_len;	
+#ifdef  SOUND_USEVOLUME_SHIFTS
+#ifdef  SOUND_USEACTIVE_SHIFTS
+		*(stream++)+=(((signed short)(sample[pos]))<<vol)>>chn_shift;
+#else
+		*(stream++)+=(((signed short)(sample[pos]))<<vol)/(chn_actives<<6);
+#endif
+#else
+#ifdef  SOUND_USEACTIVE_SHIFTS
+		*(stream++)+=((((signed short)(sample[pos]))<<8)*vol)>>chn_shift; /* Update, scale and mix sample */
+#else
+		*(stream++)+=((((signed short)(sample[pos]))<<8)*vol)/(chn_actives<<6); /* Update, scale and mix sample */
+#endif
+#endif
+	} while ((++i)<len);
 }
 #endif
 
 #ifdef SOUND_USESAMPLE_PATCH
-typedef void (*gp2x_sound_mixer_channel_func)(short *, const int, const struct lpWaves *, const int);
+typedef void (*gp2x_sound_mixer_channel_func)(short *, const int, const struct lpWaves *);
 static gp2x_sound_mixer_channel_func gp2x_sound_mixer_channel_step_array[2]=
 {
 	gp2x_sound_mixer_channel_step_8bits,
@@ -156,18 +270,16 @@ static gp2x_sound_mixer_channel_func gp2x_sound_mixer_channel_nostep_array[2]=
 	gp2x_sound_mixer_channel_nostep_8bits,
 	gp2x_sound_mixer_channel_nostep_16bits
 };
-#define gp2x_sound_mixer_channel_step(STR,LEN,WAV,T,BITS) gp2x_sound_mixer_channel_step_array[(BITS)>>4](STR,LEN,WAV,T)
-#define gp2x_sound_mixer_channel_nostep(STR,LEN,WAV,T,BITS) gp2x_sound_mixer_channel_nostep_array[(BITS)>>4](STR,LEN,WAV,T)
+#define gp2x_sound_mixer_channel_step(STR,LEN,WAV,BITS) gp2x_sound_mixer_channel_step_array[(BITS)>>4](STR,LEN,WAV)
+#define gp2x_sound_mixer_channel_nostep(STR,LEN,WAV,BITS) gp2x_sound_mixer_channel_nostep_array[(BITS)>>4](STR,LEN,WAV)
 #else
-#define gp2x_sound_mixer_channel_step(STR,LEN,WAV,T,BITS) gp2x_sound_mixer_channel_step_16bits(STR,LEN,WAV,T)
-#define gp2x_sound_mixer_channel_nostep(STR,LEN,WAV,T,BITS) gp2x_sound_mixer_channel_nostep_16bits(STR,LEN,WAV,T)
+#define gp2x_sound_mixer_channel_step(STR,LEN,WAV,BITS) gp2x_sound_mixer_channel_step_16bits(STR,LEN,WAV)
+#define gp2x_sound_mixer_channel_nostep(STR,LEN,WAV,BITS) gp2x_sound_mixer_channel_nostep_16bits(STR,LEN,WAV)
 #endif
 
 INLINE void gp2x_sound_frame ( short *stream, const int len )
 {
-	struct lpWaves *wave = lpWave;
-	unsigned int n = num_voices, t = 0;
-
+	int i,actives=0;
 	/* Buffer Set to Zero */
 #ifndef DREAMCAST
 	fast_memset(stream,0,len<<1);
@@ -191,27 +303,36 @@ INLINE void gp2x_sound_frame ( short *stream, const int len )
 	
 	/* Sound Enable ? */	
 	if (!sound_enable) return;
-	
-	do { if (wave->active) t++; wave++; } while (--n); n=t; /* Active Channels now */
-	if (!t) return; /* No Active Channels */
-	if (t>chn_max) chn_max=t; else t=chn_max; /* Total number of Active channels */
 
-	/* For each of the channels */
-	wave=lpWave;
-	do {
+	for(i=num_voices-1;i>=0;i--)
+	{
+		const struct lpWaves *wave=&lpWave[i];
 		/* Channel active ? */
 		if (wave->active) {
 			if ( ((wave->freq)>(sound_real_sample_rate_min)) && ((wave->freq)<(sound_real_sample_rate_max)) ) 
-				gp2x_sound_mixer_channel_step (stream,len,wave,t,wave->bits);
+				gp2x_sound_mixer_channel_step (stream,len,wave,wave->bits);
 			else
-				gp2x_sound_mixer_channel_nostep (stream,len,wave,t,wave->bits);
+				gp2x_sound_mixer_channel_nostep (stream,len,wave,wave->bits);
 			if (!(wave->loop))
-				wave->active=0;
-			n--;
+				lpWave[i].active=0;
+			actives++;
 		}
-		/* Next channel */
-		wave++;
-	} while (n);
+	}
+	if (actives>chn_actives) {
+		chn_actives=actives;
+#ifdef  SOUND_USEACTIVE_SHIFTS
+		switch(actives) {
+			case 1: chn_actives_shift=ACTIVIES_SHIFT_BASE; break;
+			case 2:
+			case 3: chn_actives_shift=ACTIVIES_SHIFT_BASE+1; break;
+			case 4:
+			case 5:
+			case 6:
+			case 7: chn_actives_shift=ACTIVIES_SHIFT_BASE+2; break;
+			default: chn_actives_shift=ACTIVIES_SHIFT_BASE+3;
+		}
+#endif
+	}
 }
 
 
@@ -225,7 +346,9 @@ int msdos_init_sound(void)
 {
 	int i;
 	sound_enable=0;
+#ifdef PSP
 	num_voices = NUMVOICES;
+#endif
 	
 	sound_slice=(default_sample_rate/(Machine->drv->frames_per_second));
 	mame4all_init_sound_slice();
@@ -240,10 +363,17 @@ int msdos_init_sound(void)
 		lpWave[i].len = 0;
 		lpWave[i].freq = 0;
 		lpWave[i].active = 0;
+#ifdef  SOUND_USEVOLUME_SHIFTS
+		lpWave[i].volume = 32;
+#else
 		lpWave[i].volume = 0;
+#endif
 		lpWave[i].loop = 0;
 	}
-	chn_max=0;
+	chn_actives=1;
+#ifdef  SOUND_USEACTIVE_SHIFTS
+	chn_actives_shift=ACTIVIES_SHIFT_BASE;
+#endif
 
 #ifndef NOSOUND
 	if (!soundcard)     /* Sound Deactivated and not emulated */
@@ -396,10 +526,17 @@ void msdos_shutdown_sound(void)
 		lpWave[i].len = 0;
 		lpWave[i].freq = 0;
 		lpWave[i].active = 0;
+#ifdef  SOUND_USEVOLUME_SHIFTS
+		lpWave[i].volume = 32;
+#else
 		lpWave[i].volume = 0;
+#endif
 		lpWave[i].loop = 0;
 	}
-	chn_max=0;
+	chn_actives=1;
+#ifdef  SOUND_USEACTIVE_SHIFTS
+	chn_actives_shift=ACTIVIES_SHIFT_BASE;
+#endif
 }
 
 
@@ -417,13 +554,10 @@ void osd_update_audio(void)
 #endif
 }
 
-
 void playsample(int channel,signed char *data,int len,int freq,int volume,int loop, int pan, int bits)
 {
 #ifndef NOSOUND
 	if (!soundcard || channel >= num_voices) return;
-
-	lpWave[channel].active=0;
 
 	if (volume < 0) {
 		volume = 0;
@@ -432,7 +566,7 @@ void playsample(int channel,signed char *data,int len,int freq,int volume,int lo
 		volume = (volume<<6) / 100;
 		if (pan != OSD_PAN_CENTER) volume>>=1;
 		if (soundcard=1) volume+=20;
-				if (volume>64) volume=64;
+		if (volume>64) volume=64;
 	
 	}
 	
@@ -464,12 +598,21 @@ void playsample(int channel,signed char *data,int len,int freq,int volume,int lo
 	if (freq < 0)
 		freq = 0;
 	
-	lpWave[channel].bits = bits;	
-	lpWave[channel].volume=volume;
-	lpWave[channel].len=len;
-	lpWave[channel].freq=freq;
-	lpWave[channel].loop=loop;
-	lpWave[channel].active=((freq>0) && (len>0));
+	if ((freq>0) && (len>0))
+	{
+		lpWave[channel].bits = bits;	
+#ifdef  SOUND_USEVOLUME_SHIFTS
+		lpWave[channel].volume=vol_shift[volume];
+#else
+		lpWave[channel].volume=volume;
+#endif
+		lpWave[channel].len=len;
+		lpWave[channel].freq=freq;
+		lpWave[channel].loop=loop;
+		lpWave[channel].active=1;
+	}
+	else
+		lpWave[channel].active=0;
 #endif
 }
 
@@ -489,7 +632,11 @@ void osd_adjust_sample(int channel,int freq,int volume)
 			if (soundcard==1) volume+=20;
 			if (volume>64) volume=64;
 		}
+#ifdef  SOUND_USEVOLUME_SHIFTS
+		lpWave[channel].volume = vol_shift[volume];
+#else
 		lpWave[channel].volume = volume;
+#endif
 	}
 #endif
 }

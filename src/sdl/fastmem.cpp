@@ -1,3 +1,5 @@
+#ifndef NO_FASTMEM
+
 #ifdef DREAMCAST
 #include<kos.h>
 #endif
@@ -267,3 +269,5 @@ void* fast_memset(const void *DST, int C, size_t LENGTH)
 		*d++=dat;
 	return (void *)DST;
 }
+
+#endif

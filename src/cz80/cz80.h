@@ -63,7 +63,7 @@ extern "C" {
 #define CZ80_EXACT              1
 #define CZ80_DEBUG              0
 
-#ifndef MAME4ALL_GOLD
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 #define CZ80_USE_MAME_CHANGE_PC 
 #endif
 

@@ -22,7 +22,9 @@ typedef signed short	INT16;
 typedef signed int	INT32;
 
 typedef short s16;
+#ifndef PSP
 typedef int s32;
+#endif
 
 typedef signed   long long	INT64;
 typedef unsigned long long	UINT64;

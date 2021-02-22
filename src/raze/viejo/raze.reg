@@ -27,7 +27,7 @@ define(`OPTABLE_REG',   `r4')
 define(`REF_REG',       `r5')
 define(`ICOUNT_REG',    `r7')
 define(`FLAGS_REG',     `r8')
-define(`zF',            `r8')
+define(`zF',            `r8')          ! iNHV
 define(`FETCH_REG',     `r9')
 define(`MEM_REG',       `r10')
 define(`FLAGS_C',       `r11')

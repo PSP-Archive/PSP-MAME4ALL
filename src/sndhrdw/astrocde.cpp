@@ -225,9 +225,17 @@ void astrocade_sh_stop(void)
 	}
 }
 
+#ifdef USE_CZ80
+#include "cz80/cz80.h"
+extern cz80_struc *mame4all_cz80_struc;
+#else
+#ifdef USE_RAZE
+unsigned char Z80_GetB(void);
+#endif
+#endif
+
 void astrocade_sound_w(int num, int offset, int data)
 {
-	Z80_Regs regs;
 	int i, bvalue, temp_vib;
 
 	/* update */
@@ -278,15 +286,26 @@ void astrocade_sound_w(int num, int offset, int data)
 		break;
 
 		case 8:  /* Sound Block Transfer */
-
-			Z80_GetRegs(&regs);
+			{
 			#ifndef USE_DRZ80 /* FRANXIS 01-09-2005 */
-				bvalue = regs.BC.B.h & 0x0F;
+			#ifdef USE_CZ80
+				bvalue = (Cz80_Get_BC(mame4all_cz80_struc)>>8)&0x0F;
 			#else
+			#ifdef USE_RAZE
+				bvalue = Z80_GetB() & 0x0F;
+			#else
+				Z80_Regs regs;
+				Z80_GetRegs(&regs);
+				bvalue = regs.BC.B.h & 0x0F;
+			#endif
+			#endif
+			#else
+				Z80_Regs regs;
+				Z80_GetRegs(&regs);
 				bvalue = (regs.Z80BC>>24)& 0x0F;
 			#endif
 			astrocade_sound_w(num, bvalue-1, data);
-
+			}
 		break;
 	}
 }

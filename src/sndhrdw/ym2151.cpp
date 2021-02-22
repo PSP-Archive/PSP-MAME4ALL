@@ -994,7 +994,7 @@ signed int phase,pom;
 		if (phase<0)	PSG->LFA = 0;
 		else		PSG->LFA = phase;
 		phase = PSG->PMD - pom;
-		if (abs(phase)>abs((int)PSG->PMD))	PSG->LFP = 0;
+		if (abs(phase)>abs(PSG->PMD))	PSG->LFP = 0;
 		else				PSG->LFP = phase;
 		break;
 	}

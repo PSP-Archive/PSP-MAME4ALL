@@ -19,8 +19,8 @@ static signed char exidy_waveform1[16] =
 int exidy_shdata_latch = 0xFF;
 int exidy_mhdata_latch = 0xFF;
 
-static int irq_flag = 0;   /* 6532 interrupt flag register */
-static int irq_enable = 0;
+static int exidy_irq_flag = 0;   /* 6532 interrupt flag register */
+static int exidy_irq_enable = 0;
 static int PA7_irq = 0;  /* IRQ-on-write flag (sound CPU) */
 
 
@@ -92,7 +92,7 @@ void exidy_sh_stop(void)
 
 static void riot_interrupt(int parm)
 {
-	irq_flag |= 0x80; /* set timer interrupt flag */
+	exidy_irq_flag |= 0x80; /* set timer interrupt flag */
 	cpu_cause_interrupt (1, M6502_INT_IRQ);
 }
 
@@ -116,11 +116,11 @@ void exidy_shriot_w(int offset,int data)
 			PA7_irq = data;
 			return;
 		case 0x1e:
-			 irq_enable=1;
+			 exidy_irq_enable=1;
 			 timer_set (TIME_IN_USEC((64*BASE_TIME)*data), 0, riot_interrupt);
 			 return;
 		case 0x1f:
-			 irq_enable=1;
+			 exidy_irq_enable=1;
 			 timer_set (TIME_IN_USEC((1024*BASE_TIME)*data), 0, riot_interrupt);
 			 return;
 		default:
@@ -138,8 +138,8 @@ int exidy_shriot_r(int offset)
 	switch (offset)
 	{
 		case 5: /* 0x85 - Read Interrupt Flag Register */
-		   temp = irq_flag;
-		   irq_flag = 0;   /* Clear int flags */
+		   temp = exidy_irq_flag;
+		   exidy_irq_flag = 0;   /* Clear int flags */
 		   return temp;
 		default:
 		   return 0;

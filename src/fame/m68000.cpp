@@ -894,6 +894,29 @@ PUT_READWRITE(write)
 	put_end(&dt_##_R_OR_W_##8[j_##_R_OR_W_],&dt_##_R_OR_W_##16[j_##_R_OR_W_]); \
 }	
 
+static void search_only_fetch(void)
+{
+	unsigned i;
+       	unsigned j_op=0, j_read=0, j_write=0;
+	unsigned start_op=1, start_read=1, start_write=1;
+	unsigned func_read=0xFF000FFF, func_write=0xFFFFFFFF;
+	unsigned back_op=0xFFFFFFFF, back_read=0xFFFFFFFF, back_write=0xFFFFFFFF;
+	for(i=0;i<0x1000000;i+=2)
+	{
+		unsigned *punt;
+		int func;
+		if (!(i&0xFFF))
+			SEARCH_PRG()
+	}
+	FINISH_SEARCH_PRG()
+	put_addr(&dt_read8[0],&dt_read16[0],0,0xFFFFFF);
+	put_default_readhandler(&dt_read8[0],&dt_read16[0]);
+	put_end(&dt_read8[1],&dt_read16[1]);
+	put_addr(&dt_write8[0],&dt_write16[0],0,0xFFFFFF);
+	put_default_writehandler(&dt_write8[0],&dt_write16[0]);
+	put_end(&dt_write8[1],&dt_write16[1]);
+}
+
 static void search_memory_banks(void)
 {
 	unsigned i;
@@ -945,31 +968,54 @@ static void search_memory_banks(void)
 extern "C" {
 void MC68000_SetRegs(MC68000_Regs *src);
 void MC68000_GetRegs(MC68000_Regs *dst);
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 void MC_MUSASHI000_SetRegs(MC68000_Regs *src);
 void MC_MUSASHI000_GetRegs(MC68000_Regs *dst);
 static int using_always_musashi=0;
+#endif
 }
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 void MC_MUSASHI000_Reset(void);
 int  MC_MUSASHI000_GetPC(void);
 void MC_MUSASHI000_Cause_Interrupt(int);
 int MC_MUSASHI000_Execute(int cycles);
 void MC_MUSASHI000_Clear_Pending_Interrupts(void);
 extern struct GameDriver indytemp_driver;
+#else
+static int morefames=0;
+#endif
 #endif
 
 
 void MC68000_Reset(void)
 {
 printf("MC68000_Reset %i\n",cpu_getactivecpu()); fflush(stdout);
-#ifndef MAME4ALL_GOLD
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+#ifndef NO_DRIVER_ATARISY1
 	using_always_musashi = ( Machine->gamedrv == (const struct GameDriver *)&indytemp_driver);
-	if (cpu_getactivecpu() || using_always_musashi)
+#endif
+	if (cpu_getactivecpu()
+#ifndef NO_DRIVER_ATARISY1
+		       	|| using_always_musashi
+#endif
+	   )
 	{
 		MC_MUSASHI000_Reset();
 		return;
 	}
-#endif
 	search_memory_banks();
+#else
+	if (cpu_getactivecpu())
+	{
+		morefames++;
+		search_only_fetch();
+	}
+	else
+	{
+		morefames=0;
+		search_memory_banks();
+	}
+#endif
 	m68k_init();
 	fast_memset(&ctx, 0,sizeof(ctx));
 	ctx.fetch=(struct M68K_PROGRAM*)&prg;
@@ -997,7 +1043,7 @@ printf("MC68000_Reset %i\n",cpu_getactivecpu()); fflush(stdout);
 
 int  MC68000_GetPC(void)
 {
-#ifndef MAME4ALL_GOLD
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 	if (cpu_getactivecpu() || using_always_musashi)
 		return MC_MUSASHI000_GetPC();
 #endif
@@ -1006,27 +1052,52 @@ int  MC68000_GetPC(void)
 
 void MC68000_SetRegs(MC68000_Regs *src)
 {
-#ifndef MAME4ALL_GOLD
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 	if (src)
 		if ( (*((unsigned *)src)) != ((unsigned)&M68KCONTEXT) )
 			MC_MUSASHI000_SetRegs(src);
+#else
+#if 0
+//printf("SetRegs %i %p (%i)\n",cpu_getactivecpu(),src,morefames);fflush(stdout);
+	if (src ) //  && morefames)
+	{
+		unsigned *s=(unsigned *)src;
+		if (s[0] == 0x12345678)
+//{
+//puts("-----------");
+			m68k_set_context(&s[1]);
+//}
+	}
+//puts(".");fflush(stdout);
+#endif
 #endif
 }
 
 void MC68000_GetRegs(MC68000_Regs *dst)
 {
-#ifndef MAME4ALL_GOLD
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 	if (cpu_getactivecpu() || using_always_musashi)
 		MC_MUSASHI000_GetRegs(dst);
 	else
 		(*((unsigned *)dst)) = ((unsigned)&M68KCONTEXT);
+#else
+#if 0
+//printf("GetRegs %i %p (%i)\n",cpu_getactivecpu(),dst,morefames);fflush(stdout);
+	if (dst ) // && morefames)
+	{
+		unsigned *d=(unsigned *)dst;
+		d[0]=0x12345678;
+		m68k_get_context(&d[1]);
+	}
+//puts(".");fflush(stdout);
+#endif
 #endif
 }
 
 
 void MC68000_Cause_Interrupt(int level)
 {
-#ifndef MAME4ALL_GOLD
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 	if (cpu_getactivecpu() || using_always_musashi)
 		MC_MUSASHI000_Cause_Interrupt(level);
 	else
@@ -1037,7 +1108,7 @@ void MC68000_Cause_Interrupt(int level)
 
 void MC68000_Clear_Pending_Interrupts(void)
 {
-#ifndef MAME4ALL_GOLD
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 	if (cpu_getactivecpu() || using_always_musashi)
 		MC_MUSASHI000_Clear_Pending_Interrupts();
 	else
@@ -1048,7 +1119,7 @@ void MC68000_Clear_Pending_Interrupts(void)
 
 int MC68000_Execute(int cycles)
 {
-#ifndef MAME4ALL_GOLD
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 	if (cpu_getactivecpu() || using_always_musashi)
 		return MC_MUSASHI000_Execute(cycles);
 #endif
@@ -1062,9 +1133,15 @@ int MC68000_Execute(int cycles)
 	}while(cycles_to_end>0);
 	return cycles-cycles_to_end;
 #else
+#if 0
 	M68KCONTEXT.cycles_counter=0;
 	m68k_emulate(cycles);
 	return M68KCONTEXT.cycles_counter;
+#else
+	unsigned long cycles_actual=M68KCONTEXT.cycles_counter;
+	m68k_emulate(cycles);
+	return (M68KCONTEXT.cycles_counter-cycles_actual);
+#endif
 #endif
 }
 

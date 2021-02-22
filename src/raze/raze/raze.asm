@@ -46,8 +46,12 @@ SECTION .bss USE32
 
 ; The current context
 align 16
+%ifdef ELF_OBJECT_CODE
+%define _OP_ROM OP_ROM
+%define _OP_RAM OP_RAM
+%endif
 %ifdef USE_MAME_FETCH
-extern OP_ROM, OP_RAM
+extern _OP_ROM, _OP_RAM
 %endif
 context_start:
 _z80_AF  resd 1
@@ -90,10 +94,14 @@ context_end:
 resd 1     ; safety gap, so z80_reset can use 32-bit transfers
 
 ; Variables
+%ifdef ELF_OBJECT_CODE
+%define _Z80_ICount Z80_ICount
+%endif
+
 %ifdef USE_MAME_FETCH
-extern Z80_ICount
+extern _Z80_ICount
 %else
-Z80_ICount          resd 1
+_Z80_ICount          resd 1
 %endif
 _z80_Initial_ICount  resd 1
 _z80_TempICount      resd 1
@@ -128,13 +136,12 @@ SECTION .text USE32
    CALLGCC_END
 %endif
 
+   mov edx, ezPC
+   shr edx, 8
 %ifdef USE_MAME_FETCH
    mov edi, [%1] 
 %else
-   mov edx, ezPC
-   shr edx, 8
    mov edi, [_z80_Fetch+edx*4]
-
 %endif
    mov dl, [edi+ezPC]
    inc zPC
@@ -142,14 +149,17 @@ SECTION .text USE32
 %endmacro
 
 %macro GETBYTE_FIRST 0
-   GETBYTE_BOTH OP_ROM
+   GETBYTE_BOTH _OP_ROM
 %endmacro
 
 %macro GETBYTE 0
-   GETBYTE_BOTH OP_RAM
+   GETBYTE_BOTH _OP_RAM
 %endmacro
 
 %ifdef USE_MAME_CHANGE_PC
+%ifdef ELF_OBJECT_CODE
+%define _mame_change_pc16 mame_change_pc16
+%endif
 extern _mame_change_pc16
 %macro SETPC 0
 ;	CALLGCC_START
@@ -187,7 +197,7 @@ pop eax
    CALLGCC_END
 %endif
 %ifdef USE_MAME_FETCH
-   mov edx, [OP_RAM]
+   mov edx, [_OP_RAM]
 %else
    mov edx, ezPC
    shr edx, 8
@@ -209,11 +219,11 @@ pop eax
    CALLGCC_END
 %endif
    mov [_z80_BC], ezBC
-%ifdef USE_MAME_FETCH
-   mov edi, [OP_RAM]
-%else
    mov edx, ezPC           ; low byte
    shr edx, 8
+%ifdef USE_MAME_FETCH
+   mov edi, [_OP_RAM]
+%else
    mov edi, [_z80_Fetch+edx*4]
 %endif
 
@@ -229,11 +239,11 @@ pop eax
    CALLGCC_END
    pop edx
 %endif
-%ifdef USE_MAME_FETCH
-   mov edi, [OP_RAM]
-%else
    mov ecx, ezPC           ; high byte
    shr ecx, 8
+%ifdef USE_MAME_FETCH
+   mov edi, [_OP_RAM]
+%else
    mov edi, [_z80_Fetch+ecx*4]
 %endif
    mov dh, [edi+ezPC]
@@ -335,13 +345,13 @@ pop eax
 
 ; Subtract the clock cycles for this instruction from the ICount
 %macro DO_CYCLES 0
-   sub dword [Z80_ICount], std_cycles
+   sub dword [_Z80_ICount], std_cycles
    jbe near z80_finish
 %endmacro
 
 ; Subtract the extra clock cycles for this instruction from the ICount
 %macro DO_EXTRA_CYCLES 0
-   sub dword [Z80_ICount], extra_cycles
+   sub dword [_Z80_ICount], extra_cycles
    jbe near z80_finish
 %endmacro
 
@@ -1000,7 +1010,7 @@ pop eax
       ; take the ICount, invert it, divide by 4
       ; this produces an increasing counter, roughly proportional to
       ; the number of instructions done
-      mov zR, [Z80_ICount]
+      mov zR, [_Z80_ICount]
       not zR
       shr zR, 2
    %endif
@@ -1255,7 +1265,8 @@ pop eax
    sub zPC, 2                    ; CG
    mov edi, ezPC                 ; CG
 %ifdef USE_MAME_FETCH
-   add ezPC, [OP_RAM+edi]
+   add ezPC, [_OP_RAM+edi]
+   shr edi, 8                    ; CG
 %else
    shr edi, 8                    ; CG
    add ezPC, [_z80_Fetch+edi*4]  ; CG
@@ -1287,7 +1298,7 @@ pop eax
 %ifdef EMULATE_R_REGISTER
    inc zR
 %endif
-   sub [Z80_ICount], dword extra_cycles
+   sub [_Z80_ICount], dword extra_cycles
    ja near %%ldir_loop
 
 %ifdef EMULATE_WEIRD_STUFF
@@ -1354,7 +1365,7 @@ pop eax
 %ifdef EMULATE_R_REGISTER
    inc zR
 %endif
-   sub [Z80_ICount], dword extra_cycles
+   sub [_Z80_ICount], dword extra_cycles
    ja near %%lddr_loop
 
    and zF, FLAG_S|FLAG_Z|FLAG_C
@@ -1482,7 +1493,7 @@ pop eax
    cmp zA, dl
    je %%cpir_end_equal    ; end due to A=(HL)
 
-   sub [Z80_ICount], dword extra_cycles
+   sub [_Z80_ICount], dword extra_cycles
    ja %%cpir_loop
 
    ; out of cycles, but not finished
@@ -1557,7 +1568,7 @@ pop eax
    cmp zA, dl
    je %%cpdr_end_equal    ; end due to A=(HL)
 
-   sub [Z80_ICount], dword extra_cycles
+   sub [_Z80_ICount], dword extra_cycles
    ja %%cpdr_loop
 
    ; out of cycles, but not finished
@@ -2603,7 +2614,7 @@ pop eax
    dec zB                  ; decrease B
    jz %%inir_zero
 
-   sub [Z80_ICount], dword extra_cycles
+   sub [_Z80_ICount], dword extra_cycles
    ja near %%inir_loop            ; repeat while cycles left and B>0
 
    ; out of cycles, but operation not finished
@@ -2672,7 +2683,7 @@ pop eax
    dec zB                  ; decrease B
    jz %%indr_zero
 
-   sub [Z80_ICount], dword extra_cycles
+   sub [_Z80_ICount], dword extra_cycles
    ja near %%indr_loop            ; repeat while cycles left and B>0
 
    ; out of cycles, but operation not finished
@@ -2822,7 +2833,7 @@ pop eax
 %ifdef EMULATE_R_REGISTER
    inc zR
 %endif
-   sub [Z80_ICount], dword extra_cycles
+   sub [_Z80_ICount], dword extra_cycles
    ja near %%otir_loop
 
 ; out of cycles, but not finished
@@ -2888,7 +2899,7 @@ pop eax
 %ifdef EMULATE_R_REGISTER
    inc zR
 %endif
-   sub [Z80_ICount], dword extra_cycles
+   sub [_Z80_ICount], dword extra_cycles
    ja near %%otdr_loop
 
 ; out of cycles, but not finished
@@ -3020,8 +3031,8 @@ pop eax
 ; Halt the processor
 %macro HALT 0
 mov [_z80_TempICount], dword 0
-   and [Z80_ICount], dword 3
-   sub [Z80_ICount], dword 4
+   and [_Z80_ICount], dword 3
+   sub [_Z80_ICount], dword 4
    mov [_z80_halted], byte 1
    EXIT
 %endmacro
@@ -3036,9 +3047,9 @@ mov [_z80_TempICount], dword 0
    ; then force an IRQ check after it.
    mov [_z80_afterEI], byte 1
    push eax
-   mov eax, [Z80_ICount]        ; set ICount to zero, so it will terminate
+   mov eax, [_Z80_ICount]        ; set ICount to zero, so it will terminate
    mov [_z80_TempICount], eax    ; after the next instruction.
-   mov [Z80_ICount], dword 1    ; we can then pick it up again and carry on.
+   mov [_Z80_ICount], dword 1    ; we can then pick it up again and carry on.
    pop eax
    NEXT
 %endmacro
@@ -3140,11 +3151,11 @@ z80_finish:
    jne near really_finish
    push eax
    mov eax, [_z80_TempICount]
-   mov [Z80_ICount], eax
+   mov [_Z80_ICount], eax
    mov [_z80_afterEI], byte 0
    pop eax
    CHECK_IRQ
-   sub dword [Z80_ICount], 4    ; subtract EI's cycles
+   sub dword [_Z80_ICount], 4    ; subtract EI's cycles
    jbe near z80_finish
    NEXT
 
@@ -3165,7 +3176,7 @@ really_finish:
    pop esi
    pop ebx
    mov eax, [_z80_Initial_ICount]
-   sub eax, [Z80_ICount]
+   sub eax, [_Z80_ICount]
    ret
 
 z80_default_in:
@@ -3243,7 +3254,7 @@ _z80_emulate:
 %ifndef NO_EXTRA_CYCLES
    add eax, [_z80_Extra_Cycles]
 %endif
-   mov [Z80_ICount], eax
+   mov [_Z80_ICount], eax
    mov [_z80_Initial_ICount], eax
    xor edx, edx
    xor edi, edi
@@ -3259,8 +3270,8 @@ _z80_emulate:
    mov [_z80_flag35], zF      ; take out bits 3/5
    cmp [_z80_halted], byte 0
    je not_halted
-   and [Z80_ICount], dword 3 ; If we're halted, just skip it all.
-   sub [Z80_ICount], dword 4
+   and [_Z80_ICount], dword 3 ; If we're halted, just skip it all.
+   sub [_Z80_ICount], dword 4
    EXIT
 not_halted:
    NEXT
@@ -3447,7 +3458,7 @@ _z80_get_cycles_elapsed:
 %endif
 
    mov eax, [_z80_Initial_ICount]
-   sub eax, [Z80_ICount]
+   sub eax, [_Z80_ICount]
    cmp [_z80_afterEI], byte 0
    je z80_gcd_fin
    sub eax, [_z80_TempICount]
@@ -3466,14 +3477,14 @@ global _z80_stop_emulating
 _z80_stop_emulating:
 %endif
 
-   mov eax, [Z80_ICount]
+   mov eax, [_Z80_ICount]
    sub [_z80_Initial_ICount], eax
    cmp [_z80_afterEI], byte 0
    je z80_se_fin
    mov ecx, [_z80_TempICount]
    sub [_z80_Initial_ICount], ecx
 z80_se_fin:
-   mov [Z80_ICount], dword 0
+   mov [_Z80_ICount], dword 0
    mov [_z80_TempICount], dword 0
    ret
 
@@ -3490,7 +3501,7 @@ global _z80_skip_idle
 _z80_skip_idle:
 %endif
 
-   mov [Z80_ICount], dword 0
+   mov [_Z80_ICount], dword 0
    mov [_z80_TempICount], dword 0
    ret
 

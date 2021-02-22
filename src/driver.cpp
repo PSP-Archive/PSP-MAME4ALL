@@ -575,6 +575,8 @@ extern struct GameDriver astrob1_driver;
 extern struct GameDriver s005_driver;
 extern struct GameDriver monsterb_driver;
 extern struct GameDriver spaceod_driver;
+extern struct GameDriver pignewta_driver;
+extern struct GameDriver pignewt_driver;
 
 /* Sega "Zaxxon hardware" games */
 extern struct GameDriver zaxxon_driver;
@@ -3168,6 +3170,12 @@ const struct GameDriver *drivers[] =
 #endif
 #ifndef NO_DRIVER_GENERIC_8BIT
 &monsterb_driver,	/* (c) 1982 */                                                                                                       
+#endif
+#ifndef NO_DRIVER_GENERIC_8BIT
+&pignewta_driver,	/* (c) 1982 */                                                                                                       
+#endif
+#ifndef NO_DRIVER_GENERIC_8BIT
+&pignewt_driver,	/* (c) 1982 */                                                                                                       
 #endif
 #ifndef NO_DRIVER_GENERIC_8BIT
 &moonal2b_driver,	/* Nichibutsu */                                                                                                     

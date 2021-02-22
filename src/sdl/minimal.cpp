@@ -141,7 +141,8 @@ static void set_dc_video_hz(void)
 {
 	unsigned int *p=(unsigned int *)0xcff00ff;
 	unsigned char *mihz=(unsigned char *)DC_VIDEO_HZ_MEM_POSICION;
-	FILE *f=fopen("/cd/menu.bin","rb");
+	FILE *f=fopen(DATA_SD_PREFIX "menu.bin","rb");
+	if (!f) f=fopen(DATA_PREFIX "menu.bin","rb");
 	if (f!=NULL)
 	{
 		void *mem;
@@ -171,9 +172,49 @@ void SetGP2XClock(int mhz)
 #endif
 }
 
+#ifdef DREAMCAST
+#include<dirent.h>
+extern "C" { void fs_sdcard_shutdown(void); void fs_sdcard_init(void); int fs_sdcard_unmount(void); int fs_sdcard_mount(void); void sci_init(void); }
+
+int sdcard_exists=0;
+void reinit_sdcard(void)
+{
+	static uint32 last=(uint32)-5000;
+	uint32 now=(((unsigned long long)timer_us_gettime64())>>10);
+	if (now-last>5000) {
+		char *dir="/sd/mame4all";
+		DIR *d=NULL;
+		fs_sdcard_shutdown();
+		timer_spin_sleep(111);
+		fs_sdcard_init();
+		timer_spin_sleep(111);
+		d=opendir(dir);
+		sdcard_exists=(d!=NULL);
+		if (d) {
+			closedir(d);
+			fs_mkdir("/sd/mame4all/cfg");
+		}
+		last=now;
+	}
+}
+#endif
+
+#ifdef DREAMCAST
+static uint32 mame4all_dc_args[4]={ 0, 0, 0, 0};
+static void mame4all_dreamcast_handler(irq_t source, irq_context_t *context)
+{
+	irq_create_context(context,context->r[15], (uint32)&gp2x_deinit, (uint32 *)&mame4all_dc_args[0],0);
+}
+#endif
+
 void gp2x_init(int tickspersecond, int bpp, int rate, int bits, int stereo, int hz)
 {
 	extern int gp2x_double_buffer;
+#ifdef DREAMCAST
+	reinit_sdcard();
+	if (sdcard_exists) chdir(ROM_SD_PREFIX);
+	else
+#endif
 	chdir(ROM_PREFIX);
 
 	get_dc_video_hz();
@@ -190,6 +231,26 @@ void gp2x_init(int tickspersecond, int bpp, int rate, int bits, int stereo, int 
 #endif
 #endif
 	puts("MAIN!!!!");
+#if defined(DREAMCAST) && !defined(DEBUG_UAE4ALL)
+    irq_set_handler(EXC_USER_BREAK_PRE,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_INSTR_ADDRESS,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_ILLEGAL_INSTR,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_SLOT_ILLEGAL_INSTR,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_GENERAL_FPU,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_SLOT_FPU,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_DATA_ADDRESS_WRITE,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_DTLB_MISS_WRITE,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_OFFSET_000,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_OFFSET_100,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_OFFSET_400,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_OFFSET_600,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_FPU,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_TRAPA,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_RESET_UDI,&mame4all_dreamcast_handler);
+    irq_set_handler(EXC_UNHANDLED_EXC,&mame4all_dreamcast_handler);
+    extern void *arch_abort_handler;
+    arch_abort_handler=(void *)&mame4all_dreamcast_handler;
+#endif
 	SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_JOYSTICK);
 
 #ifndef GP2X_SDLWRAPPER_NODOUBLEBUFFER
@@ -385,7 +446,7 @@ void gp2x_video_flip(void)
 		d[0] = d[8] = 0;
 
 		vid_set_start((uint32)gp2x_sdlwrapper_screen->pixels);
-		gp2x_sdlwrapper_actual_screen=(gp2x_sdlwrapper_actual_screen++)&1;
+		gp2x_sdlwrapper_actual_screen=(gp2x_sdlwrapper_actual_screen+1)&1;
 		gp2x_sdlwrapper_screen->pixels=gp2x_sdlwrapper_screens[gp2x_sdlwrapper_actual_screen];
 #endif
 	}
@@ -752,6 +813,7 @@ unsigned long gp2x_joystick_read_n(int njoy)
 #ifdef AUTOEVENTS
 unsigned long gp2x_joystick_read_n(int njoy)
 {
+	static Uint32 first_time=0;
 	static Uint32 tiempo=0;
 	static Uint32 st[4]={0,0,0,0};
 
@@ -761,11 +823,16 @@ unsigned long gp2x_joystick_read_n(int njoy)
 		return real_gp2x_joystick_read(1);
 	tiempo++;
 //printf("%i\n",tiempo);
-	if (tiempo>AUTOEVENTS)
+	if (tiempo>AUTOEVENTS) {
+		printf("Ticks=%u\n",SDL_GetTicks()-first_time);
+#ifdef DREAMCAST
+		arch_reboot();
+#endif
 		st[1]=GP2X_PUSH;
-	else
+	} else
 		switch (tiempo)
 		{
+			case 1: first_time=SDL_GetTicks(); break;
 			case 1500: keyprocess((Uint32 *)&st,SDLK_F1,SDL_TRUE); break;
 			case 1505: keyprocess((Uint32 *)&st,SDLK_F1,SDL_FALSE); break;
 			case 1650: keyprocess((Uint32 *)&st,SDLK_RETURN,SDL_TRUE); break;

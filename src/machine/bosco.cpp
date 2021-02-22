@@ -223,9 +223,17 @@ void bosco_nmi_generate_1 (int param)
 	cpu_cause_interrupt (0, Z80_NMI_INT );
 }
 
+#ifdef USE_CZ80
+#include "cz80/cz80.h"
+extern cz80_struc *mame4all_cz80_struc;
+#else
+#ifdef USE_RAZE
+unsigned short Z80_GetHL2(void);
+#endif
+#endif
+
 void bosco_customio_w_1 (int offset,int data)
 {
-	Z80_Regs regs;
 
 	customio_command_1 = data;
 
@@ -237,10 +245,22 @@ void bosco_customio_w_1 (int offset,int data)
 			return;
 
 		case 0x48:
-			Z80_GetRegs(&regs);
+			{
 		#ifndef USE_DRZ80 /* FRANXIS 01-09-2005 */
-			switch(regs.HL2.D)
+		#ifdef USE_CZ80
+			switch (Cz80_Get_HL2(mame4all_cz80_struc))
 		#else
+		#ifdef USE_RAZE
+			switch(Z80_GetHL2())
+		#else
+			Z80_Regs regs;
+			Z80_GetRegs(&regs);
+			switch(regs.HL2.D)
+		#endif
+		#endif
+		#else
+			Z80_Regs regs;
+			Z80_GetRegs(&regs);
 			switch(regs.Z80HL2>>16)
 		#endif
 			{
@@ -254,13 +274,26 @@ void bosco_customio_w_1 (int offset,int data)
 					sample_start (2, 2, 0);
 					break;
 			}
+			}
 			break;
 
 		case 0x64:
-			Z80_GetRegs(&regs);
+			{
 		#ifndef USE_DRZ80 /* FRANXIS 01-09-2005 */
-			switch(cpu_readmem16(regs.HL2.D))
+		#ifdef USE_CZ80
+			switch (cpu_readmem16(Cz80_Get_HL2(mame4all_cz80_struc)))
 		#else
+		#ifdef USE_RAZE
+			switch (cpu_readmem16(Z80_GetHL2()))
+		#else
+			Z80_Regs regs;
+			Z80_GetRegs(&regs);
+			switch(cpu_readmem16(regs.HL2.D))
+		#endif
+		#endif
+		#else
+			Z80_Regs regs;
+			Z80_GetRegs(&regs);
 			switch(cpu_readmem16(regs.Z80HL2>>16))
 		#endif
 			{
@@ -326,6 +359,7 @@ void bosco_customio_w_1 (int offset,int data)
 					break;
 				default:
 					break;
+			}
 			}
 			break;
 
@@ -401,7 +435,6 @@ void bosco_nmi_generate_2 (int param)
 
 void bosco_customio_w_2 (int offset,int data)
 {
-	Z80_Regs regs;
 
 	customio_command_2 = data;
 
@@ -413,10 +446,22 @@ void bosco_customio_w_2 (int offset,int data)
 			return;
 
 		case 0x82:
-			Z80_GetRegs(&regs);
+			{
 		#ifndef USE_DRZ80 /* FRANXIS 01-09-2005 */
-			switch (regs.HL2.D)
+		#ifdef USE_CZ80
+			switch (Cz80_Get_HL2(mame4all_cz80_struc))
 		#else
+		#ifdef USE_RAZE
+			switch(Z80_GetHL2())
+		#else
+			Z80_Regs regs;
+			Z80_GetRegs(&regs);
+			switch (regs.HL2.D)
+		#endif
+		#endif
+		#else
+			Z80_Regs regs;
+			Z80_GetRegs(&regs);
 			switch (regs.Z80HL2>>16)
 		#endif
 			{
@@ -435,6 +480,7 @@ void bosco_customio_w_2 (int offset,int data)
 				case 0x1BFA:	
 					bosco_sample_play(0x21B8 * 2, 0x079F * 2);
 					break;
+			}
 			}
 			break;
 	}

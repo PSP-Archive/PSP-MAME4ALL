@@ -8,7 +8,7 @@
 ! This may only be distributed as part of the complete RAZE package.
 ! See RAZE.TXT for license information.
 ! Starting date: Around first quarter of 2005
-! Last update: 12/18/2006
+! Last update: 03/01/2007
 !----------------------------------------------------------------------------!
 
 ! You are not expected to understand this.
@@ -40,24 +40,33 @@
 
 
 !----------------------------------------------------------------------------!
-! Comment these in/out for faster speed (less accurate):
-      ! a couple of undocumented flags
+! Do not use the following lines to enable/disable features
+! They are here as a reference only
+! Define them in the command line as you need instead
+!
+!define(`EMULATE_UNDOC_FLAGS')      ! a couple of undocumented flags
 !define(`EMULATE_BITS_3_5')         ! bits 3/5 of the flags (undocumented)
 !define(`EMULATE_WEIRD_STUFF')      ! misc *very obscure* undocumented behaviour
-       ! precise R register (not usually needed)
-      	   ! Only for debugging
+!define(`EMULATE_R_REGISTER')       ! precise R register (not usually needed)
+!define(`NO_EXTRA_CYCLES')      	   ! Only for debugging
 !define(`USE_FETCH_CALLBACK')       ! call a callback for every fetch (slow!)
 !define(`SINGLE_MEM_BLOCK')         ! treat memory map as a whole block
 !define(`SINGLE_FETCH')             ! fetch opcodes from a single memory block
 !define(`SINGLE_MEM_HANDLER')       ! use single memory handler
-            ! autodown IRQ feature
+!define(`AUTODOWN_IRQS')            ! autodown IRQ feature
 !define(`EMULATE1')                 ! helpful to debug
-!define(`IRQ_CYCLES')		    ! spend cycles for IRQs
-
+!define(`IRQ_CYCLES')		        ! spend cycles for IRQs
+!define(`NO_PC_LIMIT')
 !define(`BASED_PC')
+!define(`SH2_COMPAT_CODE')          ! generate SH2 compatible code
+!define(`BIG_ENDIAN')               ! big endian target machine
+!define(`GLOBAL_MEM_HANDLERS')      ! export read & write handlers
+!define(`NO_READ_HANDLER')
 !define(`USE_MAME_FETCH')        ! use MAME fetching pointers
 !define(`MAME_CLOCK_FLUSHING')   ! flush the clock counter on core exiting
 !define(`MAME_SET_PC')           ! special MAME callback when setting a new PC
+
+
 !----------------------------------------------------------------------------!
 
 ! Notas de desarrollo
@@ -70,11 +79,17 @@
 ! Registers: see raze.reg
 !
 ! GCC wants [r0-r7] to be preserved at all times
-
 .extern _OP_ROM, _Z80_ICount
 .extern _mame_change_pc16
 
+!.section .bss
 .data
+
+! Variables
+_z80_ICount: .long _Z80_ICount
+_z80_Initial_ICount: .long 0
+_z80_TempICount: .long 0
+_z80_afterEI: .long 0
 
 ! The current context
 .align 5
@@ -109,6 +124,7 @@ _z80_Fetch:
 	.long _OP_ROM
 
 
+
 _z80_Read:
 
 	
@@ -116,6 +132,8 @@ _z80_Read:
 		.long 0
 		.endr
 	
+
+
 
 
 _z80_Write:
@@ -133,12 +151,6 @@ _z80_RetI: .long 0
 _z80_Fetch_Callback: .long 0
 context_end:
 fill: .long 0     ! safety gap, so z80_reset_2 can use 32-bit transfers
-
-! Variables
-_z80_ICount: .long _Z80_ICount
-_z80_Initial_ICount: .long 0
-_z80_TempICount: .long 0
-_z80_afterEI: .long 0
 
 
 	
@@ -181,6 +193,7 @@ _z80_afterEI: .long 0
 
 	
 	
+	
 op_40:
 
 	
@@ -194,6 +207,7 @@ op_40:
 
 
 
+	
 	
 	
 op_41:
@@ -216,6 +230,7 @@ op_41:
 
 	
 	
+	
 op_42:
 
 	
@@ -234,6 +249,7 @@ op_42:
 
 
 
+	
 	
 	
 op_43:
@@ -256,6 +272,7 @@ op_43:
 
 	
 	
+	
 op_44:
 
 	
@@ -274,6 +291,7 @@ op_44:
 
 
 
+	
 	
 	
 op_45:
@@ -296,6 +314,7 @@ op_45:
 
 	
 	
+	
 op_47:
 
 	
@@ -314,6 +333,7 @@ op_47:
 
 
 
+	
 	
 	
 op_48:
@@ -336,6 +356,7 @@ op_48:
 
 	
 	
+	
 op_49:
 
 	
@@ -349,6 +370,7 @@ op_49:
 
 
 
+	
 	
 	
 op_4a:
@@ -371,6 +393,7 @@ op_4a:
 
 	
 	
+	
 op_4b:
 
 	
@@ -389,6 +412,7 @@ op_4b:
 
 
 
+	
 	
 	
 op_4c:
@@ -411,6 +435,7 @@ op_4c:
 
 	
 	
+	
 op_4d:
 
 	
@@ -429,6 +454,7 @@ op_4d:
 
 
 
+	
 	
 	
 op_4f:
@@ -451,6 +477,7 @@ op_4f:
 
 	
 	
+	
 op_50:
 
 	
@@ -469,6 +496,7 @@ op_50:
 
 
 
+	
 	
 	
 op_51:
@@ -491,6 +519,7 @@ op_51:
 
 	
 	
+	
 op_52:
 
 	
@@ -504,6 +533,7 @@ op_52:
 
 
 
+	
 	
 	
 op_53:
@@ -526,6 +556,7 @@ op_53:
 
 	
 	
+	
 op_54:
 
 	
@@ -544,6 +575,7 @@ op_54:
 
 
 
+	
 	
 	
 op_55:
@@ -566,6 +598,7 @@ op_55:
 
 	
 	
+	
 op_57:
 
 	
@@ -584,6 +617,7 @@ op_57:
 
 
 
+	
 	
 	
 op_58:
@@ -606,6 +640,7 @@ op_58:
 
 	
 	
+	
 op_59:
 
 	
@@ -624,6 +659,7 @@ op_59:
 
 
 
+	
 	
 	
 op_5a:
@@ -646,6 +682,7 @@ op_5a:
 
 	
 	
+	
 op_5b:
 
 	
@@ -659,6 +696,7 @@ op_5b:
 
 
 
+	
 	
 	
 op_5c:
@@ -681,6 +719,7 @@ op_5c:
 
 	
 	
+	
 op_5d:
 
 	
@@ -699,6 +738,7 @@ op_5d:
 
 
 
+	
 	
 	
 op_5f:
@@ -721,6 +761,7 @@ op_5f:
 
 	
 	
+	
 op_60:
 
 	
@@ -739,6 +780,7 @@ op_60:
 
 
 
+	
 	
 	
 op_61:
@@ -761,6 +803,7 @@ op_61:
 
 	
 	
+	
 op_62:
 
 	
@@ -779,6 +822,7 @@ op_62:
 
 
 
+	
 	
 	
 op_63:
@@ -801,6 +845,7 @@ op_63:
 
 	
 	
+	
 op_64:
 
 	
@@ -814,6 +859,7 @@ op_64:
 
 
 
+	
 	
 	
 op_65:
@@ -836,6 +882,7 @@ op_65:
 
 	
 	
+	
 op_67:
 
 	
@@ -854,6 +901,7 @@ op_67:
 
 
 
+	
 	
 	
 op_68:
@@ -876,6 +924,7 @@ op_68:
 
 	
 	
+	
 op_69:
 
 	
@@ -894,6 +943,7 @@ op_69:
 
 
 
+	
 	
 	
 op_6a:
@@ -916,6 +966,7 @@ op_6a:
 
 	
 	
+	
 op_6b:
 
 	
@@ -934,6 +985,7 @@ op_6b:
 
 
 
+	
 	
 	
 op_6c:
@@ -956,6 +1008,7 @@ op_6c:
 
 	
 	
+	
 op_6d:
 
 	
@@ -969,6 +1022,7 @@ op_6d:
 
 
 
+	
 	
 	
 op_6f:
@@ -991,6 +1045,7 @@ op_6f:
 
 	
 	
+	
 op_78:
 
 	
@@ -1009,6 +1064,7 @@ op_78:
 
 
 
+	
 	
 	
 op_79:
@@ -1031,6 +1087,7 @@ op_79:
 
 	
 	
+	
 op_7a:
 
 	
@@ -1049,6 +1106,7 @@ op_7a:
 
 
 
+	
 	
 	
 op_7b:
@@ -1071,6 +1129,7 @@ op_7b:
 
 	
 	
+	
 op_7c:
 
 	
@@ -1089,6 +1148,7 @@ op_7c:
 
 
 
+	
 	
 	
 op_7d:
@@ -1111,6 +1171,7 @@ op_7d:
 
 	
 	
+	
 op_7f:
 
 	
@@ -1128,6 +1189,7 @@ op_7f:
 ! LD r,r (r=IXl,IXh,IYl,IYh)
 
 
+	
 	
 	
 dd_44:
@@ -1152,6 +1214,7 @@ dd_44:
 
 	
 	
+	
 dd_45:
 
 	
@@ -1172,6 +1235,7 @@ dd_45:
 
 
 
+	
 	
 	
 fd_44:
@@ -1218,6 +1282,7 @@ fd_44:
 
 
 
+	
 	
 	
 fd_45:
@@ -1270,6 +1335,7 @@ fd_45:
 
 	
 	
+	
 dd_4c:
 
 	
@@ -1292,6 +1358,7 @@ dd_4c:
 
 	
 	
+	
 dd_4d:
 
 	
@@ -1312,6 +1379,7 @@ dd_4d:
 
 
 
+	
 	
 	
 fd_4c:
@@ -1358,6 +1426,7 @@ fd_4c:
 
 
 
+	
 	
 	
 fd_4d:
@@ -1410,6 +1479,7 @@ fd_4d:
 
 	
 	
+	
 dd_54:
 
 	
@@ -1432,6 +1502,7 @@ dd_54:
 
 	
 	
+	
 dd_55:
 
 	
@@ -1452,6 +1523,7 @@ dd_55:
 
 
 
+	
 	
 	
 fd_54:
@@ -1498,6 +1570,7 @@ fd_54:
 
 
 
+	
 	
 	
 fd_55:
@@ -1550,6 +1623,7 @@ fd_55:
 
 	
 	
+	
 dd_5c:
 
 	
@@ -1572,6 +1646,7 @@ dd_5c:
 
 	
 	
+	
 dd_5d:
 
 	
@@ -1592,6 +1667,7 @@ dd_5d:
 
 
 
+	
 	
 	
 fd_5c:
@@ -1638,6 +1714,7 @@ fd_5c:
 
 
 
+	
 	
 	
 fd_5d:
@@ -1690,6 +1767,7 @@ fd_5d:
 
 	
 	
+	
 dd_7c:
 
 	
@@ -1712,6 +1790,7 @@ dd_7c:
 
 	
 	
+	
 dd_7d:
 
 	
@@ -1732,6 +1811,7 @@ dd_7d:
 
 
 
+	
 	
 	
 fd_7c:
@@ -1778,6 +1858,7 @@ fd_7c:
 
 
 
+	
 	
 	
 fd_7d:
@@ -1830,6 +1911,7 @@ fd_7d:
 
 	
 	
+	
 dd_60:
 
 	
@@ -1850,6 +1932,7 @@ dd_60:
 
 
 
+	
 	
 	
 dd_61:
@@ -1874,6 +1957,7 @@ dd_61:
 
 	
 	
+	
 dd_62:
 
 	
@@ -1894,6 +1978,7 @@ dd_62:
 
 
 
+	
 	
 	
 dd_63:
@@ -1921,6 +2006,7 @@ dd_63:
 
 	
 	
+	
 dd_65:
 
 	
@@ -1941,6 +2027,7 @@ dd_65:
 
 
 
+	
 	
 	
 dd_67:
@@ -1965,6 +2052,7 @@ dd_67:
 
 	
 	
+	
 dd_68:
 
 	
@@ -1985,6 +2073,7 @@ dd_68:
 
 
 
+	
 	
 	
 dd_69:
@@ -2009,6 +2098,7 @@ dd_69:
 
 	
 	
+	
 dd_6a:
 
 	
@@ -2031,6 +2121,7 @@ dd_6a:
 
 	
 	
+	
 dd_6b:
 
 	
@@ -2051,6 +2142,7 @@ dd_6b:
 
 
 
+	
 	
 	
 dd_6c:
@@ -2079,6 +2171,7 @@ dd_6c:
 
 	
 	
+	
 dd_6f:
 
 	
@@ -2099,6 +2192,7 @@ dd_6f:
 
 
 
+	
 	
 	
 fd_60:
@@ -2146,6 +2240,7 @@ fd_60:
 
 	
 	
+	
 fd_61:
 
 	
@@ -2191,6 +2286,7 @@ fd_61:
 
 	
 	
+	
 fd_62:
 
 	
@@ -2234,6 +2330,7 @@ fd_62:
 
 
 
+	
 	
 	
 fd_63:
@@ -2285,6 +2382,7 @@ fd_63:
 
 	
 	
+	
 fd_65:
 
 	
@@ -2332,6 +2430,7 @@ fd_65:
 
 	
 	
+	
 fd_67:
 
 	
@@ -2375,6 +2474,7 @@ fd_67:
 
 
 
+	
 	
 	
 fd_68:
@@ -2426,6 +2526,7 @@ fd_68:
 
 	
 	
+	
 fd_69:
 
 	
@@ -2473,6 +2574,7 @@ fd_69:
 
 
 
+	
 	
 	
 fd_6a:
@@ -2524,6 +2626,7 @@ fd_6a:
 
 	
 	
+	
 fd_6b:
 
 	
@@ -2571,6 +2674,7 @@ fd_6b:
 
 
 
+	
 	
 	
 fd_6c:
@@ -2622,6 +2726,7 @@ fd_6c:
 !   LD_Yr_Yr(`IYl',`IYl')
 
 
+	
 	
 	
 fd_6f:
@@ -2677,9 +2782,16 @@ fd_6f:
 
 	
 	
+	
 op_06:
 
 	
+	
+	
+	
+
+	
+
 	
 		
 	
@@ -2688,7 +2800,7 @@ op_06:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -2699,14 +2811,23 @@ op_06:
 	jmp @r12
 	add #-7,r7
 
+	.align 2
+	_z80_ICount_23: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_0e:
 
 	
+	
+	
+	
+
+	
+
 	
 		
 	
@@ -2715,7 +2836,7 @@ op_0e:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -2726,14 +2847,23 @@ op_0e:
 	jmp @r12
 	add #-7,r7
 
+	.align 2
+	_z80_ICount_24: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_16:
 
 	
+	
+	
+	
+
+	
+
 	
 		
 	
@@ -2742,7 +2872,7 @@ op_16:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -2753,14 +2883,23 @@ op_16:
 	jmp @r12
 	add #-7,r7
 
+	.align 2
+	_z80_ICount_25: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_1e:
 
 	
+	
+	
+	
+
+	
+
 	
 		
 	
@@ -2769,7 +2908,7 @@ op_1e:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -2780,14 +2919,23 @@ op_1e:
 	jmp @r12
 	add #-7,r7
 
+	.align 2
+	_z80_ICount_26: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_26:
 
 	
+	
+	
+	
+
+	
+
 	
 		
 	
@@ -2796,7 +2944,7 @@ op_26:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -2807,14 +2955,23 @@ op_26:
 	jmp @r12
 	add #-7,r7
 
+	.align 2
+	_z80_ICount_27: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_2e:
 
 	
+	
+	
+	
+
+	
+
 	
 		
 	
@@ -2823,7 +2980,7 @@ op_2e:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -2834,14 +2991,23 @@ op_2e:
 	jmp @r12
 	add #-7,r7
 
+	.align 2
+	_z80_ICount_28: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_3e:
 
 	
+	
+	
+	
+
+	
+
 	
 		
 	
@@ -2850,7 +3016,7 @@ op_3e:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r3
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -2860,6 +3026,8 @@ op_3e:
 	jmp @r12
 	add #-7,r7
 
+	.align 2
+	_z80_ICount_29: .long _z80_ICount 
 
 
 
@@ -2869,9 +3037,16 @@ op_3e:
 
 	
 	
+	
 dd_26:
 
    
+	
+	
+	
+
+	
+
 	
 		
 	
@@ -2880,7 +3055,7 @@ dd_26:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -2891,14 +3066,23 @@ dd_26:
 	jmp @r12
 	add #-11,r7
 
+	.align 2
+	_z80_ICount_30: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_2e:
 
    
+	
+	
+	
+
+	
+
 	
 		
 	
@@ -2907,7 +3091,7 @@ dd_2e:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -2918,9 +3102,12 @@ dd_2e:
 	jmp @r12
 	add #-11,r7
 
+	.align 2
+	_z80_ICount_31: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_26:
@@ -2940,12 +3127,12 @@ fd_26:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	
-	mov.l _z80_IY_23,r1
+	mov.l _z80_IY_32,r1
 	mov.b r0,@r1
 
 
@@ -2957,12 +3144,14 @@ fd_26:
 .align 2
 	
 	
-		_z80_IY_23: .long _z80_IY + 1
+		_z80_IY_32: .long _z80_IY + 1
 	
 
+	_z80_ICount_32: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_2e:
@@ -2982,12 +3171,12 @@ fd_2e:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	
-	mov.l _z80_IY_24,r1
+	mov.l _z80_IY_33,r1
 	mov.b r0,@r1
 
 
@@ -3000,10 +3189,11 @@ fd_2e:
 	
 	
 		
-			_z80_IY_24: .long _z80_IY
+			_z80_IY_33: .long _z80_IY
 		
 	
 
+	_z80_ICount_33: .long _z80_ICount 
 
 
 
@@ -3013,12 +3203,14 @@ fd_2e:
 
 	
 	
+	
 op_46:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3038,12 +3230,14 @@ op_46:
 
 	
 	
+	
 op_4e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3063,12 +3257,14 @@ op_4e:
 
 	
 	
+	
 op_56:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3088,12 +3284,14 @@ op_56:
 
 	
 	
+	
 op_5e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3113,12 +3311,14 @@ op_5e:
 
 	
 	
+	
 op_66:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3138,12 +3338,14 @@ op_66:
 
 	
 	
+	
 op_6e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3163,12 +3365,14 @@ op_6e:
 
 	
 	
+	
 op_7e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3191,6 +3395,7 @@ op_7e:
 
 	
 	
+	
 dd_46:
 
 	
@@ -3199,9 +3404,15 @@ dd_46:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3209,6 +3420,7 @@ dd_46:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3223,9 +3435,12 @@ dd_46:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_34: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_46:
@@ -3236,9 +3451,15 @@ fd_46:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3246,6 +3467,7 @@ fd_46:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3260,9 +3482,12 @@ fd_46:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_35: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_4e:
@@ -3273,9 +3498,15 @@ dd_4e:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3283,6 +3514,7 @@ dd_4e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3297,9 +3529,12 @@ dd_4e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_36: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_4e:
@@ -3310,9 +3545,15 @@ fd_4e:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3320,6 +3561,7 @@ fd_4e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3334,9 +3576,12 @@ fd_4e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_37: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_56:
@@ -3347,9 +3592,15 @@ dd_56:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3357,6 +3608,7 @@ dd_56:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3371,9 +3623,12 @@ dd_56:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_38: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_56:
@@ -3384,9 +3639,15 @@ fd_56:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3394,6 +3655,7 @@ fd_56:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3408,9 +3670,12 @@ fd_56:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_39: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_5e:
@@ -3421,9 +3686,15 @@ dd_5e:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3431,6 +3702,7 @@ dd_5e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3445,9 +3717,12 @@ dd_5e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_40: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_5e:
@@ -3458,9 +3733,15 @@ fd_5e:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3468,6 +3749,7 @@ fd_5e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3482,9 +3764,12 @@ fd_5e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_41: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_66:
@@ -3495,9 +3780,15 @@ dd_66:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3505,6 +3796,7 @@ dd_66:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3519,9 +3811,12 @@ dd_66:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_42: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_66:
@@ -3532,9 +3827,15 @@ fd_66:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3542,6 +3843,7 @@ fd_66:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3556,9 +3858,12 @@ fd_66:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_43: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_6e:
@@ -3569,9 +3874,15 @@ dd_6e:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3579,6 +3890,7 @@ dd_6e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3593,9 +3905,12 @@ dd_6e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_44: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_6e:
@@ -3606,9 +3921,15 @@ fd_6e:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3616,6 +3937,7 @@ fd_6e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3630,9 +3952,12 @@ fd_6e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_45: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_7e:
@@ -3643,9 +3968,15 @@ dd_7e:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3653,6 +3984,7 @@ dd_7e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3666,9 +3998,12 @@ dd_7e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_46: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_7e:
@@ -3679,9 +4014,15 @@ fd_7e:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3689,6 +4030,7 @@ fd_7e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -3702,6 +4044,8 @@ fd_7e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_47: .long _z80_ICount 
 
 
 
@@ -3709,6 +4053,7 @@ fd_7e:
 ! LD (HL),r
 
 
+	
 	
 	
 op_70:
@@ -3720,6 +4065,7 @@ op_70:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3733,6 +4079,7 @@ op_70:
 
 
 
+	
 	
 	
 op_71:
@@ -3744,6 +4091,7 @@ op_71:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3757,6 +4105,7 @@ op_71:
 
 
 
+	
 	
 	
 op_72:
@@ -3768,6 +4117,7 @@ op_72:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3781,6 +4131,7 @@ op_72:
 
 
 
+	
 	
 	
 op_73:
@@ -3792,6 +4143,7 @@ op_73:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3805,6 +4157,7 @@ op_73:
 
 
 
+	
 	
 	
 op_74:
@@ -3816,6 +4169,7 @@ op_74:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3829,6 +4183,7 @@ op_74:
 
 
 
+	
 	
 	
 op_75:
@@ -3840,6 +4195,7 @@ op_75:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -3855,6 +4211,7 @@ op_75:
 
 	
 	
+	
 op_77:
 
 	
@@ -3863,6 +4220,7 @@ op_77:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov r3,r1
 	
@@ -3882,9 +4240,16 @@ op_77:
 
 	
 	
+	
 dd_70:
 
 	
+	
+	
+	
+
+	
+
 	
 		mov.b @(_z80_BC - _z80_BC + 1,r5),r0
 		mov r0,r1
@@ -3895,7 +4260,7 @@ dd_70:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3904,6 +4269,7 @@ dd_70:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -3914,15 +4280,24 @@ dd_70:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_48: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_70:
 
 	
 	
+	
+	
+
+	
+
+	
 		mov.b @(_z80_BC - _z80_BC + 1,r5),r0
 		mov r0,r1
 		
@@ -3932,7 +4307,7 @@ fd_70:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3941,6 +4316,7 @@ fd_70:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -3951,15 +4327,24 @@ fd_70:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_49: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_71:
 
 	
 	
+	
+	
+
+	
+
+	
 		mov.b @(_z80_BC - _z80_BC,r5),r0
 		mov r0,r1
 		
@@ -3969,7 +4354,7 @@ dd_71:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -3978,6 +4363,7 @@ dd_71:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -3988,15 +4374,24 @@ dd_71:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_50: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_71:
 
 	
 	
+	
+	
+
+	
+
+	
 		mov.b @(_z80_BC - _z80_BC,r5),r0
 		mov r0,r1
 		
@@ -4006,7 +4401,7 @@ fd_71:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4015,6 +4410,7 @@ fd_71:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -4025,15 +4421,24 @@ fd_71:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_51: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_72:
 
 	
 	
+	
+	
+
+	
+
+	
 		mov.b @(_z80_DE - _z80_BC + 1,r5),r0
 		mov r0,r1
 		
@@ -4043,7 +4448,7 @@ dd_72:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4052,6 +4457,7 @@ dd_72:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -4062,15 +4468,24 @@ dd_72:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_52: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_72:
 
 	
 	
+	
+	
+
+	
+
+	
 		mov.b @(_z80_DE - _z80_BC + 1,r5),r0
 		mov r0,r1
 		
@@ -4080,7 +4495,7 @@ fd_72:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4089,6 +4504,7 @@ fd_72:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -4099,15 +4515,24 @@ fd_72:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_53: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_73:
 
 	
 	
+	
+	
+
+	
+
+	
 		mov.b @(_z80_DE - _z80_BC,r5),r0
 		mov r0,r1
 		
@@ -4117,7 +4542,7 @@ dd_73:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4126,6 +4551,7 @@ dd_73:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -4136,15 +4562,24 @@ dd_73:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_54: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_73:
 
 	
 	
+	
+	
+
+	
+
+	
 		mov.b @(_z80_DE - _z80_BC,r5),r0
 		mov r0,r1
 		
@@ -4154,7 +4589,7 @@ fd_73:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4163,6 +4598,7 @@ fd_73:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -4173,15 +4609,24 @@ fd_73:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_55: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_74:
 
 	
 	
+	
+	
+
+	
+
+	
 		mov.b @(_z80_HL - _z80_BC + 1,r5),r0
 		mov r0,r1
 		
@@ -4191,7 +4636,7 @@ dd_74:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4200,6 +4645,7 @@ dd_74:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -4210,15 +4656,24 @@ dd_74:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_56: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_74:
 
 	
 	
+	
+	
+
+	
+
+	
 		mov.b @(_z80_HL - _z80_BC + 1,r5),r0
 		mov r0,r1
 		
@@ -4228,7 +4683,7 @@ fd_74:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4237,6 +4692,7 @@ fd_74:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -4247,14 +4703,23 @@ fd_74:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_57: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_75:
 
 	
+	
+	
+	
+
+	
+
 	
 		mov.b @(_z80_HL - _z80_BC,r5),r0
 		mov r0,r1
@@ -4265,7 +4730,7 @@ dd_75:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4274,6 +4739,7 @@ dd_75:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -4284,14 +4750,23 @@ dd_75:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_58: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_75:
 
 	
+	
+	
+	
+
+	
+
 	
 		mov.b @(_z80_HL - _z80_BC,r5),r0
 		mov r0,r1
@@ -4302,7 +4777,7 @@ fd_75:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4311,6 +4786,7 @@ fd_75:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -4321,14 +4797,23 @@ fd_75:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_59: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_77:
 
 	
+	
+	
+	
+
+	
+
 	
 		
 	
@@ -4337,7 +4822,7 @@ dd_77:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4346,6 +4831,7 @@ dd_77:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov r3,r1
 	
@@ -4356,14 +4842,23 @@ dd_77:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_60: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_77:
 
 	
+	
+	
+	
+
+	
+
 	
 		
 	
@@ -4372,7 +4867,7 @@ fd_77:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4381,6 +4876,7 @@ fd_77:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov r3,r1
 	
@@ -4391,6 +4887,8 @@ fd_77:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_61: .long _z80_ICount 
 
 
 
@@ -4398,6 +4896,7 @@ fd_77:
 ! LD (HL),n / LD (XY+d),n
 
 
+	
 	
 	
 op_36:
@@ -4408,15 +4907,23 @@ op_36:
 	
 
 	
-		mov.l @(4,r9),r0    ! r0 = OP_RAM
-		mov.b @(r0,r6),r1
-		add #1,r6		
+
+	
 	
 	
 
 	
+		mov.l @(4,r9),r0    ! r0 = OP_RAM
+		mov.b @(r0,r6),r1
+		add #1,r6              
+	
+	
+
+
+	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -4426,9 +4933,12 @@ op_36:
 	jmp @r12
 	add #-10,r7
 
+	.align 2
+	_z80_ICount_62: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_36:
@@ -4439,9 +4949,15 @@ dd_36:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
      ! DIRT_REG = offset
@@ -4452,7 +4968,7 @@ dd_36:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
       ! TMP_REG = inmediate data
@@ -4461,6 +4977,7 @@ dd_36:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -4470,9 +4987,12 @@ dd_36:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_63: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_36:
@@ -4483,9 +5003,15 @@ fd_36:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
      ! DIRT_REG = offset
@@ -4496,7 +5022,7 @@ fd_36:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
       ! TMP_REG = inmediate data
@@ -4505,6 +5031,7 @@ fd_36:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -4514,6 +5041,8 @@ fd_36:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_64: .long _z80_ICount 
 
 
 
@@ -4523,12 +5052,14 @@ fd_36:
 
 	
 	
+	
 op_0a:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_BC - _z80_BC,r5),r0
 	
@@ -4547,12 +5078,14 @@ op_0a:
 
 	
 	
+	
 op_1a:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_DE - _z80_BC,r5),r0
 	
@@ -4571,9 +5104,16 @@ op_1a:
 
 	
 	
+	
 op_3a:
 
 	
+	
+	
+	
+
+	
+
 	
 	
 	
@@ -4584,7 +5124,7 @@ op_3a:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4597,7 +5137,7 @@ op_3a:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4607,12 +5147,14 @@ op_3a:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
 
 	
 		mov r1,r3
+
 	
 
 	
@@ -4620,12 +5162,16 @@ op_3a:
 	add #-13,r7
 
 
+.align 2
+	_z80_ICount_65: .long _z80_ICount 
+
 
 
 ! **************************************************************************
 ! LD (BC),A / LD (DE),A / LD (nn),A
 
 
+	
 	
 	
 op_02:
@@ -4636,6 +5182,7 @@ op_02:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov r3,r1
 	
@@ -4649,6 +5196,7 @@ op_02:
 
 
 
+	
 	
 	
 op_12:
@@ -4659,6 +5207,7 @@ op_12:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov r3,r1
 	
@@ -4674,9 +5223,16 @@ op_12:
 
 	
 	
+	
 op_32:
 
 	
+	
+	
+	
+
+	
+
 	
 	
 	
@@ -4687,7 +5243,7 @@ op_32:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4700,7 +5256,7 @@ op_32:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4711,16 +5267,19 @@ op_32:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov r3,r1
 	
 
 	
-
 	
 	jmp @r12
 	add #-13,r7
 
+
+.align 2
+	_z80_ICount_66: .long _z80_ICount 
 
 
 
@@ -4728,6 +5287,7 @@ op_32:
 ! LD [ARI],[ARI]
 
 
+	
 	
 	
 ed_57:
@@ -4761,6 +5321,7 @@ ed_57:
 
 	
 	
+	
 ed_5f:
 
 	
@@ -4772,7 +5333,7 @@ ed_5f:
 
 
 
-	mov.l _z80_R2_26,r0
+	mov.l _z80_R2_68,r0
 	mov.b @r0,r0             ! r0 = R2
 	mov #0x7F,r2       ! R mask
 	and #0x80,r0             ! take bits 0-6 from R, bit 7 from R2		
@@ -4793,7 +5354,7 @@ ed_5f:
 	mov r0,r13
 
 
-	mov.l _z80_IFF2_26,r0
+	mov.l _z80_IFF2_68,r0
 	mov #0x08,r8
 	mov.b @r0,r0            ! r0 = zIFF2
 	or r0,r8                ! put P/V flag
@@ -4804,11 +5365,12 @@ ed_5f:
 
 
 .align 2
-	_z80_IFF2_26: .long _z80_IFF2
-	_z80_R2_26: .long _z80_R2
+	_z80_IFF2_68: .long _z80_IFF2
+	_z80_R2_68: .long _z80_R2
 
 
 
+	
 	
 	
 ed_47:
@@ -4828,6 +5390,7 @@ ed_47:
 
 	
 	
+	
 ed_4f:
 
 	
@@ -4842,7 +5405,7 @@ ed_4f:
 			mov r3,r14
 		
 
-		mov.l _z80_R2_27,r2
+		mov.l _z80_R2_69,r2
 		mov.b r3,@r2
 	
 
@@ -4853,7 +5416,7 @@ ed_4f:
 
 	
 	.align 2
-		_z80_R2_27: .long _z80_R2
+		_z80_R2_69: .long _z80_R2
 	
 
 
@@ -4864,9 +5427,16 @@ ed_4f:
 
 	
 	
+	
 op_01:
 
 	
+	
+	
+	
+
+	
+
 	
 	
 	
@@ -4877,7 +5447,7 @@ op_01:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4890,7 +5460,7 @@ op_01:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4898,14 +5468,17 @@ op_01:
 	or r2,r0
 
 	mov.w r0,@(_z80_BC - _z80_BC,r5)
-
 	
 	jmp @r12
 	add #-10,r7
 
 
+.align 2
+	_z80_ICount_70: .long _z80_ICount 
 
 
+
+	
 	
 	
 op_11:
@@ -4914,6 +5487,12 @@ op_11:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -4921,7 +5500,7 @@ op_11:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4934,7 +5513,7 @@ op_11:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4942,14 +5521,17 @@ op_11:
 	or r2,r0
 
 	mov.w r0,@(_z80_DE - _z80_BC,r5)
-
 	
 	jmp @r12
 	add #-10,r7
 
 
+.align 2
+	_z80_ICount_71: .long _z80_ICount 
 
 
+
+	
 	
 	
 op_21:
@@ -4958,6 +5540,12 @@ op_21:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -4965,7 +5553,7 @@ op_21:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4978,7 +5566,7 @@ op_21:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -4986,14 +5574,17 @@ op_21:
 	or r2,r0
 
 	mov.w r0,@(_z80_HL - _z80_BC,r5)
-
 	
 	jmp @r12
 	add #-10,r7
 
 
+.align 2
+	_z80_ICount_72: .long _z80_ICount 
 
 
+
+	
 	
 	
 op_31:
@@ -5002,6 +5593,12 @@ op_31:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -5009,7 +5606,7 @@ op_31:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5022,7 +5619,7 @@ op_31:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5030,14 +5627,17 @@ op_31:
 	or r2,r0
 
 	mov.w r0,@(_z80_SP - _z80_BC,r5)
-
 	
 	jmp @r12
 	add #-10,r7
 
 
+.align 2
+	_z80_ICount_73: .long _z80_ICount 
 
 
+
+	
 	
 	
 dd_21:
@@ -5046,6 +5646,12 @@ dd_21:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -5053,7 +5659,7 @@ dd_21:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5066,7 +5672,7 @@ dd_21:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5074,14 +5680,17 @@ dd_21:
 	or r2,r0
 
 	mov.w r0,@(_z80_IX - _z80_BC,r5)
-
 	
 	jmp @r12
 	add #-14,r7
 
 
+.align 2
+	_z80_ICount_74: .long _z80_ICount 
 
 
+
+	
 	
 	
 fd_21:
@@ -5090,6 +5699,12 @@ fd_21:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -5097,7 +5712,7 @@ fd_21:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5110,7 +5725,7 @@ fd_21:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5118,11 +5733,13 @@ fd_21:
 	or r2,r0
 
 	mov.w r0,@(_z80_IY - _z80_BC,r5)
-
 	
 	jmp @r12
 	add #-14,r7
 
+
+.align 2
+	_z80_ICount_75: .long _z80_ICount 
 
 
 
@@ -5132,9 +5749,16 @@ fd_21:
 
 	
 	
+	
 op_2a:
 
 	
+	
+	
+	
+
+	
+
 	
 	
 	
@@ -5145,7 +5769,7 @@ op_2a:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5158,7 +5782,7 @@ op_2a:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5168,6 +5792,7 @@ op_2a:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -5176,6 +5801,7 @@ op_2a:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -5184,15 +5810,19 @@ op_2a:
 	shll8 r1
 	extu.b r0,r0
 	or r1,r0
+   
 	mov.w r0,@(_z80_HL - _z80_BC,r5)
-
 	
 	jmp @r12
 	add #-16,r7
 
 
+.align 2
+	_z80_ICount_76: .long _z80_ICount 
 
 
+
+	
 	
 	
 ed_4b:
@@ -5201,6 +5831,12 @@ ed_4b:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -5208,7 +5844,7 @@ ed_4b:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5221,7 +5857,7 @@ ed_4b:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5231,6 +5867,7 @@ ed_4b:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -5239,6 +5876,7 @@ ed_4b:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -5247,15 +5885,19 @@ ed_4b:
 	shll8 r1
 	extu.b r0,r0
 	or r1,r0
+   
 	mov.w r0,@(_z80_BC - _z80_BC,r5)
-
 	
 	jmp @r12
-	add #-16,r7
+	add #-20,r7
+
+
+.align 2
+	_z80_ICount_77: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 ed_5b:
@@ -5264,6 +5906,12 @@ ed_5b:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -5271,7 +5919,7 @@ ed_5b:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5284,7 +5932,7 @@ ed_5b:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5294,6 +5942,7 @@ ed_5b:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -5302,6 +5951,7 @@ ed_5b:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -5310,15 +5960,19 @@ ed_5b:
 	shll8 r1
 	extu.b r0,r0
 	or r1,r0
+   
 	mov.w r0,@(_z80_DE - _z80_BC,r5)
-
 	
 	jmp @r12
-	add #-16,r7
+	add #-20,r7
+
+
+.align 2
+	_z80_ICount_78: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 ed_6b:
@@ -5327,6 +5981,12 @@ ed_6b:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -5334,7 +5994,7 @@ ed_6b:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5347,7 +6007,7 @@ ed_6b:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5357,6 +6017,7 @@ ed_6b:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -5365,6 +6026,7 @@ ed_6b:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -5373,15 +6035,19 @@ ed_6b:
 	shll8 r1
 	extu.b r0,r0
 	or r1,r0
+   
 	mov.w r0,@(_z80_HL - _z80_BC,r5)
-
 	
 	jmp @r12
-	add #-16,r7
+	add #-20,r7
+
+
+.align 2
+	_z80_ICount_79: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 ed_7b:
@@ -5390,6 +6056,12 @@ ed_7b:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -5397,7 +6069,7 @@ ed_7b:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5410,7 +6082,7 @@ ed_7b:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5420,6 +6092,7 @@ ed_7b:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -5428,6 +6101,7 @@ ed_7b:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -5436,15 +6110,19 @@ ed_7b:
 	shll8 r1
 	extu.b r0,r0
 	or r1,r0
+   
 	mov.w r0,@(_z80_SP - _z80_BC,r5)
-
 	
 	jmp @r12
-	add #-16,r7
+	add #-20,r7
+
+
+.align 2
+	_z80_ICount_80: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 dd_2a:
@@ -5453,6 +6131,12 @@ dd_2a:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -5460,7 +6144,7 @@ dd_2a:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5473,7 +6157,7 @@ dd_2a:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5483,6 +6167,7 @@ dd_2a:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -5491,6 +6176,7 @@ dd_2a:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -5499,15 +6185,19 @@ dd_2a:
 	shll8 r1
 	extu.b r0,r0
 	or r1,r0
+   
 	mov.w r0,@(_z80_IX - _z80_BC,r5)
-
 	
 	jmp @r12
 	add #-20,r7
 
 
+.align 2
+	_z80_ICount_81: .long _z80_ICount 
 
 
+
+	
 	
 	
 fd_2a:
@@ -5516,6 +6206,12 @@ fd_2a:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -5523,7 +6219,7 @@ fd_2a:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5536,7 +6232,7 @@ fd_2a:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5546,6 +6242,7 @@ fd_2a:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -5554,6 +6251,7 @@ fd_2a:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -5562,12 +6260,15 @@ fd_2a:
 	shll8 r1
 	extu.b r0,r0
 	or r1,r0
+   
 	mov.w r0,@(_z80_IY - _z80_BC,r5)
-
 	
 	jmp @r12
 	add #-20,r7
 
+
+.align 2
+	_z80_ICount_82: .long _z80_ICount 
 
 
 
@@ -5577,9 +6278,16 @@ fd_2a:
 
 	
 	
+	
 op_22:
 
 	
+	
+	
+	
+
+	
+
 	
 	
 	
@@ -5590,7 +6298,7 @@ op_22:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5603,25 +6311,29 @@ op_22:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	shll8 r0
 	or r2,r0
     ! r0 = address
+
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
-		mov.l @(_z80_HL - _z80_BC,r5),r1    ! data
+		mov.l @(_z80_HL - _z80_BC,r5),r1
 	
-
+    ! data
 	mov.l @(_z80_HL - _z80_BC,r5),r1
+	
 	add #1,r0
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -5632,8 +6344,12 @@ op_22:
 	add #-16,r7
 
 
+.align 2
+	_z80_ICount_83: .long _z80_ICount 
 
 
+
+	
 	
 	
 ed_43:
@@ -5642,6 +6358,12 @@ ed_43:
 	
 	
 	
+
+	
+
+	
+	
+	
 	
 	
 	
@@ -5649,7 +6371,7 @@ ed_43:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5662,261 +6384,29 @@ ed_43:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	shll8 r0
 	or r2,r0
     ! r0 = address
+
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
-		mov.l @(_z80_BC - _z80_BC,r5),r1    ! data
+		mov.l @(_z80_BC - _z80_BC,r5),r1
 	
-
+    ! data
 	mov.l @(_z80_BC - _z80_BC,r5),r1
+	
 	add #1,r0
 	
 	
 		mov.l @(4,r10),r2
-		jsr @r2
-		shlr8 r1
-	
-
-
-	
-	jmp @r12
-	add #-16,r7
-
-
-
-
-	
-	
-ed_53:
-
-	
-	
-	
-	
-	
-	
-	
-
-	
-		mov.l @(4,r9),r0    ! r0 = OP_RAM
-		mov.b @(r0,r6),r2
-		add #1,r6		
-	
-	
-
-	extu.b r2,r2
-
-	
-	
-	
-
-	
-		mov.l @(4,r9),r0    ! r0 = OP_RAM
-		mov.b @(r0,r6),r0
-		add #1,r6		
-	
-	
-
-	shll8 r0
-	or r2,r0
-    ! r0 = address
-	
-	
-		mov.l @(4,r10),r2
-		jsr @r2
-		mov.l @(_z80_DE - _z80_BC,r5),r1    ! data
-	
-
-	mov.l @(_z80_DE - _z80_BC,r5),r1
-	add #1,r0
-	
-	
-		mov.l @(4,r10),r2
-		jsr @r2
-		shlr8 r1
-	
-
-
-	
-	jmp @r12
-	add #-16,r7
-
-
-
-
-	
-	
-ed_63:
-
-	
-	
-	
-	
-	
-	
-	
-
-	
-		mov.l @(4,r9),r0    ! r0 = OP_RAM
-		mov.b @(r0,r6),r2
-		add #1,r6		
-	
-	
-
-	extu.b r2,r2
-
-	
-	
-	
-
-	
-		mov.l @(4,r9),r0    ! r0 = OP_RAM
-		mov.b @(r0,r6),r0
-		add #1,r6		
-	
-	
-
-	shll8 r0
-	or r2,r0
-    ! r0 = address
-	
-	
-		mov.l @(4,r10),r2
-		jsr @r2
-		mov.l @(_z80_HL - _z80_BC,r5),r1    ! data
-	
-
-	mov.l @(_z80_HL - _z80_BC,r5),r1
-	add #1,r0
-	
-	
-		mov.l @(4,r10),r2
-		jsr @r2
-		shlr8 r1
-	
-
-
-	
-	jmp @r12
-	add #-16,r7
-
-
-
-
-	
-	
-ed_73:
-
-	
-	
-	
-	
-	
-	
-	
-
-	
-		mov.l @(4,r9),r0    ! r0 = OP_RAM
-		mov.b @(r0,r6),r2
-		add #1,r6		
-	
-	
-
-	extu.b r2,r2
-
-	
-	
-	
-
-	
-		mov.l @(4,r9),r0    ! r0 = OP_RAM
-		mov.b @(r0,r6),r0
-		add #1,r6		
-	
-	
-
-	shll8 r0
-	or r2,r0
-    ! r0 = address
-	
-	
-		mov.l @(4,r10),r2
-		jsr @r2
-		mov.l @(_z80_SP - _z80_BC,r5),r1    ! data
-	
-
-	mov.l @(_z80_SP - _z80_BC,r5),r1
-	add #1,r0
-	
-	
-		mov.l @(4,r10),r2
-		jsr @r2
-		shlr8 r1
-	
-
-
-	
-	jmp @r12
-	add #-16,r7
-
-
-
-
-	
-	
-dd_22:
-
-   
-	
-	
-	
-	
-	
-	
-
-	
-		mov.l @(4,r9),r0    ! r0 = OP_RAM
-		mov.b @(r0,r6),r2
-		add #1,r6		
-	
-	
-
-	extu.b r2,r2
-
-	
-	
-	
-
-	
-		mov.l @(4,r9),r0    ! r0 = OP_RAM
-		mov.b @(r0,r6),r0
-		add #1,r6		
-	
-	
-
-	shll8 r0
-	or r2,r0
-    ! r0 = address
-	
-	
-		mov.l @(4,r10),r2
-		jsr @r2
-		mov.l @(_z80_IX - _z80_BC,r5),r1    ! data
-	
-
-	mov.l @(_z80_IX - _z80_BC,r5),r1
-	add #1,r0
-	
-	
-		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -5927,13 +6417,23 @@ dd_22:
 	add #-20,r7
 
 
+.align 2
+	_z80_ICount_84: .long _z80_ICount 
+
 
 
 	
 	
-fd_22:
+	
+ed_53:
 
-   
+	
+	
+	
+	
+
+	
+
 	
 	
 	
@@ -5944,7 +6444,299 @@ fd_22:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
+	
+	
+
+	extu.b r2,r2
+
+	
+	
+	
+
+	
+		mov.l @(4,r9),r0    ! r0 = OP_RAM
+		mov.b @(r0,r6),r0
+		add #1,r6              
+	
+	
+
+	shll8 r0
+	or r2,r0
+    ! r0 = address
+
+	
+	
+		mov.l @(4,r10),r2
+                
+		jsr @r2
+		mov.l @(_z80_DE - _z80_BC,r5),r1
+	
+    ! data
+	mov.l @(_z80_DE - _z80_BC,r5),r1
+	
+	add #1,r0
+	
+	
+		mov.l @(4,r10),r2
+                
+		jsr @r2
+		shlr8 r1
+	
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+.align 2
+	_z80_ICount_85: .long _z80_ICount 
+
+
+
+	
+	
+	
+ed_63:
+
+	
+	
+	
+	
+
+	
+
+	
+	
+	
+	
+	
+	
+
+	
+		mov.l @(4,r9),r0    ! r0 = OP_RAM
+		mov.b @(r0,r6),r2
+		add #1,r6              
+	
+	
+
+	extu.b r2,r2
+
+	
+	
+	
+
+	
+		mov.l @(4,r9),r0    ! r0 = OP_RAM
+		mov.b @(r0,r6),r0
+		add #1,r6              
+	
+	
+
+	shll8 r0
+	or r2,r0
+    ! r0 = address
+
+	
+	
+		mov.l @(4,r10),r2
+                
+		jsr @r2
+		mov.l @(_z80_HL - _z80_BC,r5),r1
+	
+    ! data
+	mov.l @(_z80_HL - _z80_BC,r5),r1
+	
+	add #1,r0
+	
+	
+		mov.l @(4,r10),r2
+                
+		jsr @r2
+		shlr8 r1
+	
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+.align 2
+	_z80_ICount_86: .long _z80_ICount 
+
+
+
+	
+	
+	
+ed_73:
+
+	
+	
+	
+	
+
+	
+
+	
+	
+	
+	
+	
+	
+
+	
+		mov.l @(4,r9),r0    ! r0 = OP_RAM
+		mov.b @(r0,r6),r2
+		add #1,r6              
+	
+	
+
+	extu.b r2,r2
+
+	
+	
+	
+
+	
+		mov.l @(4,r9),r0    ! r0 = OP_RAM
+		mov.b @(r0,r6),r0
+		add #1,r6              
+	
+	
+
+	shll8 r0
+	or r2,r0
+    ! r0 = address
+
+	
+	
+		mov.l @(4,r10),r2
+                
+		jsr @r2
+		mov.l @(_z80_SP - _z80_BC,r5),r1
+	
+    ! data
+	mov.l @(_z80_SP - _z80_BC,r5),r1
+	
+	add #1,r0
+	
+	
+		mov.l @(4,r10),r2
+                
+		jsr @r2
+		shlr8 r1
+	
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+.align 2
+	_z80_ICount_87: .long _z80_ICount 
+
+
+
+	
+	
+	
+dd_22:
+
+   
+	
+	
+	
+
+	
+
+	
+	
+	
+	
+	
+	
+
+	
+		mov.l @(4,r9),r0    ! r0 = OP_RAM
+		mov.b @(r0,r6),r2
+		add #1,r6              
+	
+	
+
+	extu.b r2,r2
+
+	
+	
+	
+
+	
+		mov.l @(4,r9),r0    ! r0 = OP_RAM
+		mov.b @(r0,r6),r0
+		add #1,r6              
+	
+	
+
+	shll8 r0
+	or r2,r0
+    ! r0 = address
+
+	
+	
+		mov.l @(4,r10),r2
+                
+		jsr @r2
+		mov.l @(_z80_IX - _z80_BC,r5),r1
+	
+    ! data
+	mov.l @(_z80_IX - _z80_BC,r5),r1
+	
+	add #1,r0
+	
+	
+		mov.l @(4,r10),r2
+                
+		jsr @r2
+		shlr8 r1
+	
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+.align 2
+	_z80_ICount_88: .long _z80_ICount 
+
+
+
+	
+	
+	
+fd_22:
+
+   
+	
+	
+	
+
+	
+
+	
+	
+	
+	
+	
+	
+
+	
+		mov.l @(4,r9),r0    ! r0 = OP_RAM
+		mov.b @(r0,r6),r2
+		add #1,r6              
 	
 	
 
@@ -5957,7 +6749,7 @@ fd_22:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -5972,6 +6764,7 @@ fd_22:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -5981,6 +6774,7 @@ fd_22:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -5991,12 +6785,16 @@ fd_22:
 	add #-20,r7
 
 
+.align 2
+	_z80_ICount_89: .long _z80_ICount 
+
 
 
 ! **************************************************************************
 ! LD SP,dd
 
 
+	
 	
 	
 op_f9:
@@ -6014,6 +6812,7 @@ op_f9:
 
 	
 	
+	
 dd_f9:
 
 	
@@ -6029,6 +6828,7 @@ dd_f9:
 
 
 
+	
 	
 	
 fd_f9:
@@ -6052,6 +6852,7 @@ fd_f9:
 
 	
 	
+	
 op_c5:
 
 	
@@ -6065,18 +6866,24 @@ op_c5:
 	
 		mov.w @(_z80_SP - _z80_BC,r5),r0    ! address
 		mov.l @(_z80_BC - _z80_BC,r5),r1
+
+		
 		add #-1,r0
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
     ! First write
 		mov.l @(_z80_BC - _z80_BC,r5),r1
+
+		
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		add #-1,r0
 	
@@ -6092,10 +6899,11 @@ op_c5:
 
 
 .align 2
-	Byte_Flags_28: .long Byte_Flags
+	Byte_Flags_90: .long Byte_Flags
 
 
 
+	
 	
 	
 op_d5:
@@ -6111,18 +6919,24 @@ op_d5:
 	
 		mov.w @(_z80_SP - _z80_BC,r5),r0    ! address
 		mov.l @(_z80_DE - _z80_BC,r5),r1
+
+		
 		add #-1,r0
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
     ! First write
 		mov.l @(_z80_DE - _z80_BC,r5),r1
+
+		
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		add #-1,r0
 	
@@ -6138,10 +6952,11 @@ op_d5:
 
 
 .align 2
-	Byte_Flags_29: .long Byte_Flags
+	Byte_Flags_91: .long Byte_Flags
 
 
 
+	
 	
 	
 op_e5:
@@ -6157,18 +6972,24 @@ op_e5:
 	
 		mov.w @(_z80_SP - _z80_BC,r5),r0    ! address
 		mov.l @(_z80_HL - _z80_BC,r5),r1
+
+		
 		add #-1,r0
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
     ! First write
 		mov.l @(_z80_HL - _z80_BC,r5),r1
+
+		
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		add #-1,r0
 	
@@ -6184,10 +7005,11 @@ op_e5:
 
 
 .align 2
-	Byte_Flags_30: .long Byte_Flags
+	Byte_Flags_92: .long Byte_Flags
 
 
 
+	
 	
 	
 op_f5:
@@ -6203,9 +7025,11 @@ op_f5:
 	
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 		mov r3,r1
+
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		add #-1,r0
 	
@@ -6221,12 +7045,12 @@ op_f5:
 
 
 	exts.b r13,r13
-	mov.l Byte_Flags_32,r0
+	mov.l Byte_Flags_94,r0
 	mov.b @(r0,r13),r1    ! TMP_REG = SZ000P00
 
 	mov r8,r0
 	tst #0x08,r0     ! test P/V indicator
-	bt/s .no_veval32
+	bt/s .no_veval94
 	or r11,r1                      ! TMP_REG = SZ000P0C
 
 	mov #~0x04,r2
@@ -6236,7 +7060,7 @@ op_f5:
 	shll2 r2               ! V flag in place
 	or r2,r1    ! TMP_REG = SZ000V0C
 
-.no_veval32:
+.no_veval94:
 	shlr r8                            ! ignore V
 	shlr r8                            ! T = H
 	movt r2               ! DIRT_REG = H
@@ -6255,6 +7079,7 @@ op_f5:
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		add #-2,r0
 	
@@ -6270,10 +7095,11 @@ op_f5:
 
 
 .align 2
-	Byte_Flags_32: .long Byte_Flags
+	Byte_Flags_94: .long Byte_Flags
 
 
 
+	
 	
 	
 dd_e5:
@@ -6289,18 +7115,24 @@ dd_e5:
 	
 		mov.w @(_z80_SP - _z80_BC,r5),r0    ! address
 		mov.l @(_z80_IX - _z80_BC,r5),r1
+
+		
 		add #-1,r0
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
     ! First write
 		mov.l @(_z80_IX - _z80_BC,r5),r1
+
+		
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		add #-1,r0
 	
@@ -6316,10 +7148,11 @@ dd_e5:
 
 
 .align 2
-	Byte_Flags_33: .long Byte_Flags
+	Byte_Flags_95: .long Byte_Flags
 
 
 
+	
 	
 	
 fd_e5:
@@ -6335,18 +7168,24 @@ fd_e5:
 	
 		mov.w @(_z80_SP - _z80_BC,r5),r0    ! address
 		mov.l @(_z80_IY - _z80_BC,r5),r1
+
+		
 		add #-1,r0
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
     ! First write
 		mov.l @(_z80_IY - _z80_BC,r5),r1
+
+		
 		
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		add #-1,r0
 	
@@ -6362,7 +7201,7 @@ fd_e5:
 
 
 .align 2
-	Byte_Flags_34: .long Byte_Flags
+	Byte_Flags_96: .long Byte_Flags
 
 
 
@@ -6372,12 +7211,14 @@ fd_e5:
 
 	
 	
+	
 op_c1:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_SP - _z80_BC,r5),r0
 	
@@ -6387,6 +7228,7 @@ op_c1:
 		
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -6405,11 +7247,12 @@ op_c1:
 
 	
 	jmp @r12
-	add #-14,r7
+	add #-10,r7
 
 
 
 
+	
 	
 	
 op_d1:
@@ -6418,6 +7261,7 @@ op_d1:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_SP - _z80_BC,r5),r0
 	
@@ -6427,6 +7271,7 @@ op_d1:
 		
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -6445,11 +7290,12 @@ op_d1:
 
 	
 	jmp @r12
-	add #-14,r7
+	add #-10,r7
 
 
 
 
+	
 	
 	
 op_e1:
@@ -6458,6 +7304,7 @@ op_e1:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_SP - _z80_BC,r5),r0
 	
@@ -6467,6 +7314,7 @@ op_e1:
 		
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -6485,11 +7333,12 @@ op_e1:
 
 	
 	jmp @r12
-	add #-14,r7
+	add #-10,r7
 
 
 
 
+	
 	
 	
 op_f1:
@@ -6498,6 +7347,7 @@ op_f1:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_SP - _z80_BC,r5),r0
 	
@@ -6528,10 +7378,13 @@ op_f1:
 	shlr r0               ! T = V
 	addc r8,r8            ! zF = 0000iNHV
 
+
 		mov.l @(_z80_SP - _z80_BC,r5),r0
+		
 		
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -6544,11 +7397,12 @@ op_f1:
 
 	
 	jmp @r12
-	add #-14,r7
+	add #-10,r7
 
 
 
 
+	
 	
 	
 dd_e1:
@@ -6557,6 +7411,7 @@ dd_e1:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_SP - _z80_BC,r5),r0
 	
@@ -6566,6 +7421,7 @@ dd_e1:
 		
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -6591,12 +7447,14 @@ dd_e1:
 
 	
 	
+	
 fd_e1:
 
    
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_SP - _z80_BC,r5),r0
 	
@@ -6605,6 +7463,7 @@ fd_e1:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -6632,13 +7491,17 @@ fd_e1:
 
 	
 	
+	
 op_eb:
 
 	
 	mov.l @(_z80_DE - _z80_BC,r5),r0
 	mov.l @(_z80_HL - _z80_BC,r5),r1
+
 	mov.l r0,@(_z80_HL - _z80_BC,r5)
 	mov.l r1,@(_z80_DE - _z80_BC,r5)
+	
+	
 	
 	jmp @r12
 	add #-4,r7
@@ -6646,6 +7509,7 @@ op_eb:
 
 
 
+	
 	
 	
 op_08:
@@ -6660,12 +7524,12 @@ op_08:
 
 
 	exts.b r13,r13
-	mov.l Byte_Flags_35,r0
+	mov.l Byte_Flags_97,r0
 	mov.b @(r0,r13),r1    ! TMP_REG = SZ000P00
 
 	mov r8,r0
 	tst #0x08,r0     ! test P/V indicator
-	bt/s .no_veval35
+	bt/s .no_veval97
 	or r11,r1                      ! TMP_REG = SZ000P0C
 
 	mov #~0x04,r2
@@ -6675,7 +7539,7 @@ op_08:
 	shll2 r2               ! V flag in place
 	or r2,r1    ! TMP_REG = SZ000V0C
 
-.no_veval35:
+.no_veval97:
 	shlr r8                            ! ignore V
 	shlr r8                            ! T = H
 	movt r2               ! DIRT_REG = H
@@ -6736,10 +7600,11 @@ op_08:
 
 
 .align 2
-	Byte_Flags_35: .long Byte_Flags
+	Byte_Flags_97: .long Byte_Flags
 
 
 
+	
 	
 	
 op_d9:
@@ -6772,20 +7637,24 @@ op_d9:
 
 	
 	
+	
 op_e3:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_SP - _z80_BC,r5),r0
 	
       ! Load memory reg
+
 	mov.l r1,@-r15           ! save low byte read
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r1
 	
@@ -6793,6 +7662,7 @@ op_e3:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -6801,7 +7671,9 @@ op_e3:
 	mov.l @(_z80_HL - _z80_BC,r5),r1
 	
 	
+	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -6822,20 +7694,24 @@ op_e3:
 
 	
 	
+	
 dd_e3:
 
    
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_SP - _z80_BC,r5),r0
 	
       ! Load memory reg
+
 	mov.l r1,@-r15           ! save low byte read
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_IX - _z80_BC,r5),r1
 	
@@ -6843,6 +7719,7 @@ dd_e3:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -6851,7 +7728,9 @@ dd_e3:
 	mov.l @(_z80_IX - _z80_BC,r5),r1
 	
 	
+	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -6872,12 +7751,14 @@ dd_e3:
 
 	
 	
+	
 fd_e3:
 
    
-	
+        
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -6888,6 +7769,7 @@ fd_e3:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -6896,6 +7778,7 @@ fd_e3:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -6908,6 +7791,7 @@ fd_e3:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -6932,14 +7816,17 @@ fd_e3:
 
 	
 	
+	
 ed_a0:
 
 	
 	
 	! Read from (HL)
+
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -6949,13 +7836,15 @@ ed_a0:
 	mov.w r0,@(_z80_HL - _z80_BC,r5)
 
 	! Write to (DE)
+
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.w @(_z80_DE - _z80_BC,r5),r0
 	
-
+        
 	! Post-xcrement DE register
 	add #1,r0
 	mov.w r0,@(_z80_DE - _z80_BC,r5)
@@ -6975,13 +7864,13 @@ ed_a0:
 	mov #0x08,r8	
 	mov.w @(_z80_BC - _z80_BC,r5),r0
 	dt r0
-	bt/s ldid_zero36
+	bt/s ldid_zero98
 	mov.w r0,@(_z80_BC - _z80_BC,r5)
 
 	! Set P/V flag
 	mov #(0x08 | 0x01),r8	
 
-ldid_zero36:
+ldid_zero98:
 
 
 	
@@ -6992,6 +7881,7 @@ ldid_zero36:
 
 
 
+	
 	
 	
 ed_a8:
@@ -6999,9 +7889,11 @@ ed_a8:
 	
 	
 	! Read from (HL)
+
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -7011,13 +7903,15 @@ ed_a8:
 	mov.w r0,@(_z80_HL - _z80_BC,r5)
 
 	! Write to (DE)
+
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.w @(_z80_DE - _z80_BC,r5),r0
 	
-
+        
 	! Post-xcrement DE register
 	add #-1,r0
 	mov.w r0,@(_z80_DE - _z80_BC,r5)
@@ -7037,13 +7931,13 @@ ed_a8:
 	mov #0x08,r8	
 	mov.w @(_z80_BC - _z80_BC,r5),r0
 	dt r0
-	bt/s ldid_zero37
+	bt/s ldid_zero99
 	mov.w r0,@(_z80_BC - _z80_BC,r5)
 
 	! Set P/V flag
 	mov #(0x08 | 0x01),r8	
 
-ldid_zero37:
+ldid_zero99:
 
 
 	
@@ -7054,6 +7948,7 @@ ldid_zero37:
 
 
 
+	
 	
 	
 ed_b0:
@@ -7072,10 +7967,11 @@ ed_b0:
 	
 
 
-ldxr_loop38:
+ldxr_loop100:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -7084,13 +7980,16 @@ ldxr_loop38:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
-		mov.l @(_z80_DE - _z80_BC,r5),r0            ! r0 = DE register
+		mov.l @(_z80_DE - _z80_BC,r5),r0
 	
-
+              ! r0 = DE register
 	
 	mov.l @(_z80_HL - _z80_BC,r5),r2      ! DIRT_REG = HL register
 	mov.l @(_z80_BC - _z80_BC,r5),r1       ! TMP_REG = BC register
+	
+	
 
 	
 		add #1,r0
@@ -7101,14 +8000,17 @@ ldxr_loop38:
 	mov.w r0,@(_z80_DE - _z80_BC,r5)             ! writeback zDE register
 	extu.w r2,r2 ! no sign extension required
 	extu.w r1,r1   ! no sign extension required
+
+	
+	
 	mov.l r1,@(_z80_BC - _z80_BC,r5)        ! writeback zBC register
-	bt/s ldxr_zero38
-	mov.l r2,@(_z80_HL - _z80_BC,r5)       ! writeback zHL register
+	bt/s ldxr_zero100
+        mov.l r2,@(_z80_HL - _z80_BC,r5)       ! writeback zHL register
 	
 	add #-21,r7
 	add #1,r14
 	cmp/pl r7
-	bt ldxr_loop38
+	bt ldxr_loop100
 
 	! TODO: hacer un set posicional y otro no posicional
 !	SET_iVN(`ld')
@@ -7125,16 +8027,16 @@ ldxr_loop38:
 
 
 	! jump to z80_finish
-	mov.l z80_finish_39,r0
+	mov.l z80_finish_101,r0
 	jmp @r0
 	or r2,r8
 
 .align 2
-	z80_finish_39: .long z80_finish
+	z80_finish_101: .long z80_finish
 
 	
 .align 5
-ldxr_zero38:
+ldxr_zero100:
 	mov #0x08,r8
 	
 
@@ -7146,6 +8048,7 @@ ldxr_zero38:
 
 
 
+	
 	
 	
 ed_b8:
@@ -7162,10 +8065,11 @@ ed_b8:
 	
 
 
-ldxr_loop40:
+ldxr_loop102:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -7174,13 +8078,16 @@ ldxr_loop40:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
-		mov.l @(_z80_DE - _z80_BC,r5),r0            ! r0 = DE register
+		mov.l @(_z80_DE - _z80_BC,r5),r0
 	
-
+              ! r0 = DE register
 	
 	mov.l @(_z80_HL - _z80_BC,r5),r2      ! DIRT_REG = HL register
 	mov.l @(_z80_BC - _z80_BC,r5),r1       ! TMP_REG = BC register
+	
+	
 
 	
 		add #-1,r0
@@ -7191,14 +8098,17 @@ ldxr_loop40:
 	mov.w r0,@(_z80_DE - _z80_BC,r5)             ! writeback zDE register
 	extu.w r2,r2 ! no sign extension required
 	extu.w r1,r1   ! no sign extension required
+
+	
+	
 	mov.l r1,@(_z80_BC - _z80_BC,r5)        ! writeback zBC register
-	bt/s ldxr_zero40
-	mov.l r2,@(_z80_HL - _z80_BC,r5)       ! writeback zHL register
+	bt/s ldxr_zero102
+        mov.l r2,@(_z80_HL - _z80_BC,r5)       ! writeback zHL register
 	
 	add #-21,r7
 	add #1,r14
 	cmp/pl r7
-	bt ldxr_loop40
+	bt ldxr_loop102
 
 	! TODO: hacer un set posicional y otro no posicional
 !	SET_iVN(`ld')
@@ -7215,16 +8125,16 @@ ldxr_loop40:
 
 
 	! jump to z80_finish
-	mov.l z80_finish_41,r0
+	mov.l z80_finish_103,r0
 	jmp @r0
 	or r2,r8
 
 .align 2
-	z80_finish_41: .long z80_finish
+	z80_finish_103: .long z80_finish
 
 	
 .align 5
-ldxr_zero40:
+ldxr_zero102:
 	mov #0x08,r8
 	
 
@@ -7242,6 +8152,7 @@ ldxr_zero40:
 
 	
 	
+	
 ed_a1:
 
 	
@@ -7257,6 +8168,7 @@ ed_a1:
 !	and DIRT_REG,zF     ! isolate C flag
 	mov.l @(_z80_HL - _z80_BC,r5),r0            ! Read from (HL)
 	
+	
 	! Set N flag according to operation performed
 !	ifelse(sub,`add',`mov #FLG_iV,zF',`mov #(FLG_iV | FLG_N),zF')
 	mov #3,r8
@@ -7264,6 +8176,7 @@ ed_a1:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		exts.b r3,r3
 	
@@ -7278,13 +8191,13 @@ ed_a1:
 	mov.w @(_z80_BC - _z80_BC,r5),r0
 !	exts.b DIRT_REG,DIRT_REG
 	dt r0
-	bt/s cpi_zero42
+	bt/s cpi_zero104
 	mov.w r0,@(_z80_BC - _z80_BC,r5)    ! writeback BC
 
 	mov #0x01,r0    ! Set P if BC != 0
 	or r0,r8
 
-cpi_zero42:
+cpi_zero104:
 
 	! SZ flag calculation
 	mov r2,r13
@@ -7310,6 +8223,7 @@ cpi_zero42:
 
 
 
+	
 	
 	
 ed_a9:
@@ -7327,6 +8241,7 @@ ed_a9:
 !	and DIRT_REG,zF     ! isolate C flag
 	mov.l @(_z80_HL - _z80_BC,r5),r0            ! Read from (HL)
 	
+	
 	! Set N flag according to operation performed
 !	ifelse(sub,`add',`mov #FLG_iV,zF',`mov #(FLG_iV | FLG_N),zF')
 	mov #3,r8
@@ -7334,6 +8249,7 @@ ed_a9:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		exts.b r3,r3
 	
@@ -7348,13 +8264,13 @@ ed_a9:
 	mov.w @(_z80_BC - _z80_BC,r5),r0
 !	exts.b DIRT_REG,DIRT_REG
 	dt r0
-	bt/s cpi_zero43
+	bt/s cpi_zero105
 	mov.w r0,@(_z80_BC - _z80_BC,r5)    ! writeback BC
 
 	mov #0x01,r0    ! Set P if BC != 0
 	or r0,r8
 
-cpi_zero43:
+cpi_zero105:
 
 	! SZ flag calculation
 	mov r2,r13
@@ -7380,6 +8296,7 @@ cpi_zero43:
 
 
 
+	
 	
 	
 ed_b1:
@@ -7402,34 +8319,37 @@ ed_b1:
 	mov #3,r8
 
 
-cpir_loop44:
+cpir_loop106:
 
 	! Read from (HL)
+
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
 
 
 	mov.l @(_z80_BC - _z80_BC,r5),r2
+	
 
 	! post-xcrement HL register
 	add #1,r0
 	mov.w r0,@(_z80_HL - _z80_BC,r5)               ! writeback HL
 	dt r2                ! decrement BC
 	extu.w r2,r2
-	bt/s cpir_end_bc44       ! end due to BC = 0
+	bt/s cpir_end_bc106       ! end due to BC = 0
 	mov.l r2,@(_z80_BC - _z80_BC,r5)
 
 	add #1,r14
 	cmp/eq r3,r1          ! end due to A = (HL)
-	bt cpir_end_equal44
+	bt cpir_end_equal106
 
 	add #-21,r7
 	cmp/pl r7
-	bt cpir_loop44
+	bt cpir_loop106
 
 	! out of cycles, but not finished
 	mov r3,r2
@@ -7459,20 +8379,20 @@ cpir_loop44:
 
 
 	! jump to z80_finish
-	mov.l z80_finish_45,r0
+	mov.l z80_finish_107,r0
 	jmp @r0
 	add #-2,r6
 
 .align 2
-	z80_finish_45: .long z80_finish
+	z80_finish_107: .long z80_finish
      ! rewind to instruction start and exit
 
 .align 5
-cpir_end_equal44:
+cpir_end_equal106:
 	mov #0x04,r2
 	or r2,r8
 	
-cpir_end_bc44:
+cpir_end_bc106:
 	mov r3,r2
 	sub r1,r2
 
@@ -7500,6 +8420,7 @@ cpir_end_bc44:
 
 	
 	
+	
 ed_b9:
 
 	
@@ -7520,34 +8441,37 @@ ed_b9:
 	mov #3,r8
 
 
-cpir_loop46:
+cpir_loop108:
 
 	! Read from (HL)
+
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
 
 
 	mov.l @(_z80_BC - _z80_BC,r5),r2
+	
 
 	! post-xcrement HL register
 	add #-1,r0
 	mov.w r0,@(_z80_HL - _z80_BC,r5)               ! writeback HL
 	dt r2                ! decrement BC
 	extu.w r2,r2
-	bt/s cpir_end_bc46       ! end due to BC = 0
+	bt/s cpir_end_bc108       ! end due to BC = 0
 	mov.l r2,@(_z80_BC - _z80_BC,r5)
 
 	add #1,r14
 	cmp/eq r3,r1          ! end due to A = (HL)
-	bt cpir_end_equal46
+	bt cpir_end_equal108
 
 	add #-21,r7
 	cmp/pl r7
-	bt cpir_loop46
+	bt cpir_loop108
 
 	! out of cycles, but not finished
 	mov r3,r2
@@ -7577,20 +8501,20 @@ cpir_loop46:
 
 
 	! jump to z80_finish
-	mov.l z80_finish_47,r0
+	mov.l z80_finish_109,r0
 	jmp @r0
 	add #-2,r6
 
 .align 2
-	z80_finish_47: .long z80_finish
+	z80_finish_109: .long z80_finish
      ! rewind to instruction start and exit
 
 .align 5
-cpir_end_equal46:
+cpir_end_equal108:
 	mov #0x04,r2
 	or r2,r8
 	
-cpir_end_bc46:
+cpir_end_bc108:
 	mov r3,r2
 	sub r1,r2
 
@@ -7620,6 +8544,7 @@ cpir_end_bc46:
 ! 8 bit Arithmatic
 
 
+	
 	
 	
 op_80:
@@ -7660,16 +8585,27 @@ op_80:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -7678,9 +8614,16 @@ op_80:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -7699,6 +8642,7 @@ op_80:
 
 
 
+	
 	
 	
 op_81:
@@ -7739,16 +8683,27 @@ op_81:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -7757,9 +8712,16 @@ op_81:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -7778,6 +8740,7 @@ op_81:
 
 
 
+	
 	
 	
 op_82:
@@ -7818,16 +8781,27 @@ op_82:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -7836,9 +8810,16 @@ op_82:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -7857,6 +8838,7 @@ op_82:
 
 
 
+	
 	
 	
 op_83:
@@ -7897,16 +8879,27 @@ op_83:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -7915,9 +8908,16 @@ op_83:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -7936,6 +8936,7 @@ op_83:
 
 
 
+	
 	
 	
 op_84:
@@ -7976,16 +8977,27 @@ op_84:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -7994,9 +9006,16 @@ op_84:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -8015,6 +9034,7 @@ op_84:
 
 
 
+	
 	
 	
 op_85:
@@ -8055,16 +9075,27 @@ op_85:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -8073,9 +9104,16 @@ op_85:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -8094,6 +9132,7 @@ op_85:
 
 
 
+	
 	
 	
 op_87:
@@ -8134,16 +9173,27 @@ op_87:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -8152,9 +9202,16 @@ op_87:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -8173,6 +9230,7 @@ op_87:
 
 
 
+	
 	
 	
 dd_84:
@@ -8213,16 +9271,27 @@ dd_84:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -8231,9 +9300,16 @@ dd_84:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -8252,6 +9328,7 @@ dd_84:
 
 
 
+	
 	
 	
 dd_85:
@@ -8292,16 +9369,27 @@ dd_85:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -8310,9 +9398,16 @@ dd_85:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -8331,6 +9426,7 @@ dd_85:
 
 
 
+	
 	
 	
 fd_84:
@@ -8344,7 +9440,7 @@ fd_84:
 
 	
 	
-	mov.l _z80_IY_57,r2
+	mov.l _z80_IY_119,r2
 	mov.b @r2,r0
 
 	
@@ -8372,16 +9468,27 @@ fd_84:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -8390,9 +9497,16 @@ fd_84:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -8412,12 +9526,13 @@ fd_84:
 .align 2
 	
 	
-		_z80_IY_57: .long _z80_IY + 1
+		_z80_IY_119: .long _z80_IY + 1
 	
 
 
 
 
+	
 	
 	
 fd_85:
@@ -8431,7 +9546,7 @@ fd_85:
 
 	
 	
-	mov.l _z80_IY_58,r2
+	mov.l _z80_IY_120,r2
 	mov.b @r2,r0
 
 	
@@ -8459,16 +9574,27 @@ fd_85:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -8477,9 +9603,16 @@ fd_85:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -8500,13 +9633,14 @@ fd_85:
 	
 	
 		
-			_z80_IY_58: .long _z80_IY
+			_z80_IY_120: .long _z80_IY
 		
 	
 
 
 
 
+	
 	
 	
 op_86:
@@ -8522,6 +9656,7 @@ op_86:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -8552,16 +9687,27 @@ op_86:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -8570,9 +9716,16 @@ op_86:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -8593,6 +9746,7 @@ op_86:
 
 	
 	
+	
 op_c6:
 
 	
@@ -8610,7 +9764,7 @@ op_c6:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -8639,16 +9793,27 @@ op_c6:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -8657,9 +9822,16 @@ op_c6:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -8673,11 +9845,14 @@ op_c6:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-7,r7
+
+	.align 2
+	_z80_ICount_122: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 dd_86:
@@ -8699,13 +9874,14 @@ dd_86:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -8736,16 +9912,27 @@ dd_86:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -8754,9 +9941,16 @@ dd_86:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -8772,9 +9966,12 @@ dd_86:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_123: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_86:
@@ -8796,13 +9993,14 @@ fd_86:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -8833,16 +10031,27 @@ fd_86:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	addv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	addv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	addc r0,r3
@@ -8851,9 +10060,16 @@ fd_86:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -8869,9 +10085,12 @@ fd_86:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_124: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_88:
@@ -8910,10 +10129,26 @@ op_88:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -8931,8 +10166,15 @@ op_88:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -8950,6 +10192,7 @@ op_88:
 
 
 
+	
 	
 	
 op_89:
@@ -8988,10 +10231,26 @@ op_89:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9009,8 +10268,15 @@ op_89:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9028,6 +10294,7 @@ op_89:
 
 
 
+	
 	
 	
 op_8a:
@@ -9066,10 +10333,26 @@ op_8a:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9087,8 +10370,15 @@ op_8a:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9106,6 +10396,7 @@ op_8a:
 
 
 
+	
 	
 	
 op_8b:
@@ -9144,10 +10435,26 @@ op_8b:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9165,8 +10472,15 @@ op_8b:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9184,6 +10498,7 @@ op_8b:
 
 
 
+	
 	
 	
 op_8c:
@@ -9222,10 +10537,26 @@ op_8c:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9243,8 +10574,15 @@ op_8c:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9262,6 +10600,7 @@ op_8c:
 
 
 
+	
 	
 	
 op_8d:
@@ -9300,10 +10639,26 @@ op_8d:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9321,8 +10676,15 @@ op_8d:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9340,6 +10702,7 @@ op_8d:
 
 
 
+	
 	
 	
 op_8f:
@@ -9378,10 +10741,26 @@ op_8f:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9399,8 +10778,15 @@ op_8f:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9418,6 +10804,7 @@ op_8f:
 
 
 
+	
 	
 	
 dd_8c:
@@ -9456,10 +10843,26 @@ dd_8c:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9477,8 +10880,15 @@ dd_8c:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9496,6 +10906,7 @@ dd_8c:
 
 
 
+	
 	
 	
 dd_8d:
@@ -9534,10 +10945,26 @@ dd_8d:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9555,8 +10982,15 @@ dd_8d:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9574,6 +11008,7 @@ dd_8d:
 
 
 
+	
 	
 	
 fd_8c:
@@ -9587,7 +11022,7 @@ fd_8c:
 
 	
 	
-	mov.l _z80_IY_72,r2
+	mov.l _z80_IY_134,r2
 	mov.b @r2,r0
 
 	
@@ -9613,10 +11048,26 @@ fd_8c:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9634,8 +11085,15 @@ fd_8c:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9654,12 +11112,13 @@ fd_8c:
 .align 2
 	
 	
-		_z80_IY_72: .long _z80_IY + 1
+		_z80_IY_134: .long _z80_IY + 1
 	
 
 
 
 
+	
 	
 	
 fd_8d:
@@ -9673,7 +11132,7 @@ fd_8d:
 
 	
 	
-	mov.l _z80_IY_73,r2
+	mov.l _z80_IY_135,r2
 	mov.b @r2,r0
 
 	
@@ -9699,10 +11158,26 @@ fd_8d:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9720,8 +11195,15 @@ fd_8d:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9741,13 +11223,14 @@ fd_8d:
 	
 	
 		
-			_z80_IY_73: .long _z80_IY
+			_z80_IY_135: .long _z80_IY
 		
 	
 
 
 
 
+	
 	
 	
 op_8e:
@@ -9763,6 +11246,7 @@ op_8e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -9791,10 +11275,26 @@ op_8e:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9812,8 +11312,15 @@ op_8e:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9833,6 +11340,7 @@ op_8e:
 
 	
 	
+	
 op_ce:
 
 	
@@ -9850,7 +11358,7 @@ op_ce:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -9877,10 +11385,26 @@ op_ce:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9898,8 +11422,15 @@ op_ce:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -9912,11 +11443,14 @@ op_ce:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-7,r7
+
+	.align 2
+	_z80_ICount_137: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 dd_8e:
@@ -9938,13 +11472,14 @@ dd_8e:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -9973,10 +11508,26 @@ dd_8e:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -9994,8 +11545,15 @@ dd_8e:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -10010,9 +11568,12 @@ dd_8e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_138: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_8e:
@@ -10034,13 +11595,14 @@ fd_8e:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -10069,10 +11631,26 @@ fd_8e:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	addv r0,r3
 	movt r1             ! partial V flag
@@ -10090,8 +11668,15 @@ fd_8e:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -10106,9 +11691,12 @@ fd_8e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_139: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_90:
@@ -10149,16 +11737,27 @@ op_90:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -10167,9 +11766,16 @@ op_90:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -10188,6 +11794,7 @@ op_90:
 
 
 
+	
 	
 	
 op_91:
@@ -10228,16 +11835,27 @@ op_91:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -10246,9 +11864,16 @@ op_91:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -10267,6 +11892,7 @@ op_91:
 
 
 
+	
 	
 	
 op_92:
@@ -10307,16 +11933,27 @@ op_92:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -10325,9 +11962,16 @@ op_92:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -10346,6 +11990,7 @@ op_92:
 
 
 
+	
 	
 	
 op_93:
@@ -10386,16 +12031,27 @@ op_93:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -10404,9 +12060,16 @@ op_93:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -10425,6 +12088,7 @@ op_93:
 
 
 
+	
 	
 	
 op_94:
@@ -10465,16 +12129,27 @@ op_94:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -10483,9 +12158,16 @@ op_94:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -10504,6 +12186,7 @@ op_94:
 
 
 
+	
 	
 	
 op_95:
@@ -10544,16 +12227,27 @@ op_95:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -10562,9 +12256,16 @@ op_95:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -10583,6 +12284,7 @@ op_95:
 
 
 
+	
 	
 	
 op_97:
@@ -10623,16 +12325,27 @@ op_97:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -10641,9 +12354,16 @@ op_97:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -10662,6 +12382,7 @@ op_97:
 
 
 
+	
 	
 	
 dd_94:
@@ -10702,16 +12423,27 @@ dd_94:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -10720,9 +12452,16 @@ dd_94:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -10741,6 +12480,7 @@ dd_94:
 
 
 
+	
 	
 	
 dd_95:
@@ -10781,16 +12521,27 @@ dd_95:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -10799,9 +12550,16 @@ dd_95:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -10820,6 +12578,7 @@ dd_95:
 
 
 
+	
 	
 	
 fd_94:
@@ -10833,7 +12592,7 @@ fd_94:
 
 	
 	
-	mov.l _z80_IY_87,r2
+	mov.l _z80_IY_149,r2
 	mov.b @r2,r0
 
 	
@@ -10861,16 +12620,27 @@ fd_94:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -10879,9 +12649,16 @@ fd_94:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -10901,12 +12678,13 @@ fd_94:
 .align 2
 	
 	
-		_z80_IY_87: .long _z80_IY + 1
+		_z80_IY_149: .long _z80_IY + 1
 	
 
 
 
 
+	
 	
 	
 fd_95:
@@ -10920,7 +12698,7 @@ fd_95:
 
 	
 	
-	mov.l _z80_IY_88,r2
+	mov.l _z80_IY_150,r2
 	mov.b @r2,r0
 
 	
@@ -10948,16 +12726,27 @@ fd_95:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -10966,9 +12755,16 @@ fd_95:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -10989,13 +12785,14 @@ fd_95:
 	
 	
 		
-			_z80_IY_88: .long _z80_IY
+			_z80_IY_150: .long _z80_IY
 		
 	
 
 
 
 
+	
 	
 	
 op_96:
@@ -11011,6 +12808,7 @@ op_96:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -11041,16 +12839,27 @@ op_96:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -11059,9 +12868,16 @@ op_96:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -11082,6 +12898,7 @@ op_96:
 
 	
 	
+	
 op_d6:
 
 	
@@ -11099,7 +12916,7 @@ op_d6:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -11128,16 +12945,27 @@ op_d6:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -11146,9 +12974,16 @@ op_d6:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -11162,11 +12997,14 @@ op_d6:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-7,r7
+
+	.align 2
+	_z80_ICount_152: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 dd_96:
@@ -11188,13 +13026,14 @@ dd_96:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -11225,16 +13064,27 @@ dd_96:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -11243,9 +13093,16 @@ dd_96:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -11261,9 +13118,12 @@ dd_96:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_153: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_96:
@@ -11285,13 +13145,14 @@ fd_96:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -11322,16 +13183,27 @@ fd_96:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
+		
+	
 		shld r2,r3
+	
+
 		mov r3,r1       ! Save A register operand
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 	subc r0,r3
@@ -11340,9 +13212,16 @@ fd_96:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r3
+	
+
 		
 	! Set Z
 	mov r3,r13
@@ -11358,9 +13237,12 @@ fd_96:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_154: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_98:
@@ -11399,10 +13281,26 @@ op_98:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -11420,8 +13318,15 @@ op_98:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -11439,6 +13344,7 @@ op_98:
 
 
 
+	
 	
 	
 op_99:
@@ -11477,10 +13383,26 @@ op_99:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -11498,8 +13420,15 @@ op_99:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -11517,6 +13446,7 @@ op_99:
 
 
 
+	
 	
 	
 op_9a:
@@ -11555,10 +13485,26 @@ op_9a:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -11576,8 +13522,15 @@ op_9a:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -11595,6 +13548,7 @@ op_9a:
 
 
 
+	
 	
 	
 op_9b:
@@ -11633,10 +13587,26 @@ op_9b:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -11654,8 +13624,15 @@ op_9b:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -11673,6 +13650,7 @@ op_9b:
 
 
 
+	
 	
 	
 op_9c:
@@ -11711,10 +13689,26 @@ op_9c:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -11732,8 +13726,15 @@ op_9c:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -11751,6 +13752,7 @@ op_9c:
 
 
 
+	
 	
 	
 op_9d:
@@ -11789,10 +13791,26 @@ op_9d:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -11810,8 +13828,15 @@ op_9d:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -11829,6 +13854,7 @@ op_9d:
 
 
 
+	
 	
 	
 op_9f:
@@ -11867,10 +13893,26 @@ op_9f:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -11888,8 +13930,15 @@ op_9f:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -11907,6 +13956,7 @@ op_9f:
 
 
 
+	
 	
 	
 dd_9c:
@@ -11945,10 +13995,26 @@ dd_9c:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -11966,8 +14032,15 @@ dd_9c:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -11985,6 +14058,7 @@ dd_9c:
 
 
 
+	
 	
 	
 dd_9d:
@@ -12023,10 +14097,26 @@ dd_9d:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -12044,8 +14134,15 @@ dd_9d:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -12063,6 +14160,7 @@ dd_9d:
 
 
 
+	
 	
 	
 fd_9c:
@@ -12076,7 +14174,7 @@ fd_9c:
 
 	
 	
-	mov.l _z80_IY_102,r2
+	mov.l _z80_IY_164,r2
 	mov.b @r2,r0
 
 	
@@ -12102,10 +14200,26 @@ fd_9c:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -12123,8 +14237,15 @@ fd_9c:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -12143,12 +14264,13 @@ fd_9c:
 .align 2
 	
 	
-		_z80_IY_102: .long _z80_IY + 1
+		_z80_IY_164: .long _z80_IY + 1
 	
 
 
 
 
+	
 	
 	
 fd_9d:
@@ -12162,7 +14284,7 @@ fd_9d:
 
 	
 	
-	mov.l _z80_IY_103,r2
+	mov.l _z80_IY_165,r2
 	mov.b @r2,r0
 
 	
@@ -12188,10 +14310,26 @@ fd_9d:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -12209,8 +14347,15 @@ fd_9d:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -12230,13 +14375,14 @@ fd_9d:
 	
 	
 		
-			_z80_IY_103: .long _z80_IY
+			_z80_IY_165: .long _z80_IY
 		
 	
 
 
 
 
+	
 	
 	
 op_9e:
@@ -12252,6 +14398,7 @@ op_9e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -12280,10 +14427,26 @@ op_9e:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -12301,8 +14464,15 @@ op_9e:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -12322,6 +14492,7 @@ op_9e:
 
 	
 	
+	
 op_de:
 
 	
@@ -12339,7 +14510,7 @@ op_de:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -12366,10 +14537,26 @@ op_de:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -12387,8 +14574,15 @@ op_de:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -12403,9 +14597,12 @@ op_de:
 	jmp @r12
 	add #-8,r7
 
+	.align 2
+	_z80_ICount_167: .long _z80_ICount 
 
 
 
+	
 	
 	
 dd_9e:
@@ -12427,13 +14624,14 @@ dd_9e:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -12462,10 +14660,26 @@ dd_9e:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -12483,8 +14697,15 @@ dd_9e:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -12499,9 +14720,12 @@ dd_9e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_168: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_9e:
@@ -12523,13 +14747,14 @@ fd_9e:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -12558,10 +14783,26 @@ fd_9e:
 	addc r8,r8               ! merge partial H flag in
 
 	! V flag calculation
-	mov #24,r1
-	shld r1,r0          ! prepare register operands
-	shld r1,r11
-	shld r1,r3
+
+	
+		mov #24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r0
+	
+    ! prepare register operands
+	
+	
+		shld r1,r11
+	
+
+	
+	
+		shld r1,r3
+	
+
 	mov r3,r13         ! save zA to get C flag
 	subv r0,r3
 	movt r1             ! partial V flag
@@ -12579,8 +14820,15 @@ fd_9e:
 
 
 	! Get result
-	mov #-24,r1
-	shld r1,r3
+	
+		mov #-24,r1             ! to prepare operands
+	
+
+	
+	
+		shld r1,r3
+	
+
 	
 	! Set ZSP flags
 	
@@ -12595,6 +14843,8 @@ fd_9e:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_169: .long _z80_ICount 
 
 
 
@@ -12602,6 +14852,7 @@ fd_9e:
 ! 8 bit logical group
 
 
+	
 	
 	
 op_a0:
@@ -12648,6 +14899,7 @@ op_a0:
 
 	
 	
+	
 op_a1:
 
 	
@@ -12690,6 +14942,7 @@ op_a1:
 
 
 
+	
 	
 	
 op_a2:
@@ -12736,6 +14989,7 @@ op_a2:
 
 	
 	
+	
 op_a3:
 
 	
@@ -12778,6 +15032,7 @@ op_a3:
 
 
 
+	
 	
 	
 op_a4:
@@ -12824,6 +15079,7 @@ op_a4:
 
 	
 	
+	
 op_a5:
 
 	
@@ -12868,6 +15124,7 @@ op_a5:
 
 	
 	
+	
 op_a7:
 
 	
@@ -12906,6 +15163,7 @@ op_a7:
 
 
 
+	
 	
 	
 dd_a4:
@@ -12952,6 +15210,7 @@ dd_a4:
 
 	
 	
+	
 dd_a5:
 
    
@@ -12996,6 +15255,7 @@ dd_a5:
 
 	
 	
+	
 fd_a4:
 
    
@@ -13007,7 +15267,7 @@ fd_a4:
 
 
 	
-	mov.l _z80_IY_117,r2
+	mov.l _z80_IY_179,r2
 	mov.b @r2,r0
 
 	
@@ -13033,10 +15293,11 @@ fd_a4:
 
 
 .align 2
-	_z80_IY_117: .long _z80_IY
+	_z80_IY_179: .long _z80_IY
 
 
 
+	
 	
 	
 fd_a5:
@@ -13050,7 +15311,7 @@ fd_a5:
 
 
 	
-	mov.l _z80_IY_118,r2
+	mov.l _z80_IY_180,r2
 	mov.b @r2,r0
 
 	
@@ -13076,10 +15337,11 @@ fd_a5:
 
 
 .align 2
-	_z80_IY_118: .long _z80_IY
+	_z80_IY_180: .long _z80_IY
 
 
 
+	
 	
 	
 op_e6:
@@ -13099,7 +15361,7 @@ op_e6:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -13122,11 +15384,14 @@ op_e6:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-7,r7
+
+	.align 2
+	_z80_ICount_181: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 op_a6:
@@ -13138,10 +15403,10 @@ op_a6:
 
 	
 
-
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -13173,6 +15438,7 @@ op_a6:
 
 	
 	
+	
 dd_a6:
 
 	
@@ -13190,7 +15456,7 @@ dd_a6:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -13198,6 +15464,7 @@ dd_a6:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -13224,9 +15491,12 @@ dd_a6:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_183: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_a6:
@@ -13246,7 +15516,7 @@ fd_a6:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -13254,6 +15524,7 @@ fd_a6:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -13280,9 +15551,12 @@ fd_a6:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_184: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_a8:
@@ -13330,6 +15604,7 @@ op_a8:
 
 	
 	
+	
 op_a9:
 
 	
@@ -13373,6 +15648,7 @@ op_a9:
 
 
 
+	
 	
 	
 op_aa:
@@ -13420,6 +15696,7 @@ op_aa:
 
 	
 	
+	
 op_ab:
 
 	
@@ -13463,6 +15740,7 @@ op_ab:
 
 
 
+	
 	
 	
 op_ac:
@@ -13510,6 +15788,7 @@ op_ac:
 
 	
 	
+	
 op_ad:
 
 	
@@ -13555,6 +15834,7 @@ op_ad:
 
 	
 	
+	
 op_af:
 
 	
@@ -13594,6 +15874,7 @@ op_af:
 
 
 
+	
 	
 	
 dd_ac:
@@ -13641,6 +15922,7 @@ dd_ac:
 
 	
 	
+	
 dd_ad:
 
    
@@ -13686,6 +15968,7 @@ dd_ad:
 
 	
 	
+	
 fd_ac:
 
    
@@ -13697,7 +15980,7 @@ fd_ac:
 
 
 	
-	mov.l _z80_IY_132,r2
+	mov.l _z80_IY_194,r2
 	mov.b @r2,r0
 
 	
@@ -13724,10 +16007,11 @@ fd_ac:
 
 
 .align 2
-	_z80_IY_132: .long _z80_IY
+	_z80_IY_194: .long _z80_IY
 
 
 
+	
 	
 	
 fd_ad:
@@ -13741,7 +16025,7 @@ fd_ad:
 
 
 	
-	mov.l _z80_IY_133,r2
+	mov.l _z80_IY_195,r2
 	mov.b @r2,r0
 
 	
@@ -13768,10 +16052,11 @@ fd_ad:
 
 
 .align 2
-	_z80_IY_133: .long _z80_IY
+	_z80_IY_195: .long _z80_IY
 
 
 
+	
 	
 	
 op_ee:
@@ -13791,7 +16076,7 @@ op_ee:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -13817,9 +16102,12 @@ op_ee:
 	jmp @r12
 	add #-8,r7
 
+	.align 2
+	_z80_ICount_196: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_ae:
@@ -13831,10 +16119,10 @@ op_ae:
 
 	
 
-
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -13867,6 +16155,7 @@ op_ae:
 
 	
 	
+	
 dd_ae:
 
 	
@@ -13884,7 +16173,7 @@ dd_ae:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -13892,6 +16181,7 @@ dd_ae:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -13919,9 +16209,12 @@ dd_ae:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_198: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_ae:
@@ -13941,7 +16234,7 @@ fd_ae:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -13949,6 +16242,7 @@ fd_ae:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -13976,9 +16270,12 @@ fd_ae:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_199: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_b0:
@@ -14027,6 +16324,7 @@ op_b0:
 
 	
 	
+	
 op_b1:
 
 	
@@ -14071,6 +16369,7 @@ op_b1:
 
 
 
+	
 	
 	
 op_b2:
@@ -14119,6 +16418,7 @@ op_b2:
 
 	
 	
+	
 op_b3:
 
 	
@@ -14163,6 +16463,7 @@ op_b3:
 
 
 
+	
 	
 	
 op_b4:
@@ -14211,6 +16512,7 @@ op_b4:
 
 	
 	
+	
 op_b5:
 
 	
@@ -14257,6 +16559,7 @@ op_b5:
 
 	
 	
+	
 op_b7:
 
 	
@@ -14297,6 +16600,7 @@ op_b7:
 
 
 
+	
 	
 	
 dd_b4:
@@ -14345,6 +16649,7 @@ dd_b4:
 
 	
 	
+	
 dd_b5:
 
    
@@ -14391,6 +16696,7 @@ dd_b5:
 
 	
 	
+	
 fd_b4:
 
    
@@ -14402,7 +16708,7 @@ fd_b4:
 
 
 	
-	mov.l _z80_IY_147,r2
+	mov.l _z80_IY_209,r2
 	mov.b @r2,r0
 
 	
@@ -14430,10 +16736,11 @@ fd_b4:
 
 
 .align 2
-	_z80_IY_147: .long _z80_IY
+	_z80_IY_209: .long _z80_IY
 
 
 
+	
 	
 	
 fd_b5:
@@ -14447,7 +16754,7 @@ fd_b5:
 
 
 	
-	mov.l _z80_IY_148,r2
+	mov.l _z80_IY_210,r2
 	mov.b @r2,r0
 
 	
@@ -14475,10 +16782,11 @@ fd_b5:
 
 
 .align 2
-	_z80_IY_148: .long _z80_IY
+	_z80_IY_210: .long _z80_IY
 
 
 
+	
 	
 	
 op_f6:
@@ -14498,7 +16806,7 @@ op_f6:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -14523,11 +16831,14 @@ op_f6:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-7,r7
+
+	.align 2
+	_z80_ICount_211: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 op_b6:
@@ -14539,10 +16850,10 @@ op_b6:
 
 	
 
-
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -14576,6 +16887,7 @@ op_b6:
 
 	
 	
+	
 dd_b6:
 
 	
@@ -14593,7 +16905,7 @@ dd_b6:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -14601,6 +16913,7 @@ dd_b6:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -14629,9 +16942,12 @@ dd_b6:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_213: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_b6:
@@ -14651,7 +16967,7 @@ fd_b6:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -14659,6 +16975,7 @@ fd_b6:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -14687,6 +17004,8 @@ fd_b6:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_214: .long _z80_ICount 
 
 
 
@@ -14694,6 +17013,7 @@ fd_b6:
 ! CP group
 
 
+	
 	
 	
 op_b8:
@@ -14733,20 +17053,36 @@ op_b8:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -14754,9 +17090,16 @@ op_b8:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -14774,6 +17117,7 @@ op_b8:
 
 
 
+	
 	
 	
 op_b9:
@@ -14813,20 +17157,36 @@ op_b9:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -14834,9 +17194,16 @@ op_b9:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -14854,6 +17221,7 @@ op_b9:
 
 
 
+	
 	
 	
 op_ba:
@@ -14893,20 +17261,36 @@ op_ba:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -14914,9 +17298,16 @@ op_ba:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -14934,6 +17325,7 @@ op_ba:
 
 
 
+	
 	
 	
 op_bb:
@@ -14973,20 +17365,36 @@ op_bb:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -14994,9 +17402,16 @@ op_bb:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15014,6 +17429,7 @@ op_bb:
 
 
 
+	
 	
 	
 op_bc:
@@ -15053,20 +17469,36 @@ op_bc:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -15074,9 +17506,16 @@ op_bc:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15094,6 +17533,7 @@ op_bc:
 
 
 
+	
 	
 	
 op_bd:
@@ -15133,20 +17573,36 @@ op_bd:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -15154,9 +17610,16 @@ op_bd:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15174,6 +17637,7 @@ op_bd:
 
 
 
+	
 	
 	
 op_bf:
@@ -15213,20 +17677,36 @@ op_bf:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -15234,9 +17714,16 @@ op_bf:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15254,6 +17741,7 @@ op_bf:
 
 
 
+	
 	
 	
 dd_bc:
@@ -15293,20 +17781,36 @@ dd_bc:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -15314,9 +17818,16 @@ dd_bc:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15334,6 +17845,7 @@ dd_bc:
 
 
 
+	
 	
 	
 dd_bd:
@@ -15373,20 +17885,36 @@ dd_bd:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -15394,9 +17922,16 @@ dd_bd:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15414,6 +17949,7 @@ dd_bd:
 
 
 
+	
 	
 	
 fd_bc:
@@ -15427,7 +17963,7 @@ fd_bc:
 
 
 	
-	mov.l _z80_IY_162,r2
+	mov.l _z80_IY_224,r2
 	mov.b @r2,r0
 
 	
@@ -15453,20 +17989,36 @@ fd_bc:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -15474,9 +18026,16 @@ fd_bc:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15495,12 +18054,13 @@ fd_bc:
 .align 2
 	
 	
-		_z80_IY_162: .long _z80_IY + 1
+		_z80_IY_224: .long _z80_IY + 1
 	
 
 
 
 
+	
 	
 	
 fd_bd:
@@ -15514,7 +18074,7 @@ fd_bd:
 
 
 	
-	mov.l _z80_IY_163,r2
+	mov.l _z80_IY_225,r2
 	mov.b @r2,r0
 
 	
@@ -15540,20 +18100,36 @@ fd_bd:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -15561,9 +18137,16 @@ fd_bd:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15583,13 +18166,14 @@ fd_bd:
 	
 	
 		
-			_z80_IY_163: .long _z80_IY
+			_z80_IY_225: .long _z80_IY
 		
 	
 
 
 
 
+	
 	
 	
 op_be:
@@ -15601,10 +18185,10 @@ op_be:
 
 	
 
-
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -15633,20 +18217,36 @@ op_be:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -15654,9 +18254,16 @@ op_be:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15676,6 +18283,7 @@ op_be:
 
 	
 	
+	
 op_fe:
 
 	
@@ -15693,7 +18301,7 @@ op_fe:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -15720,20 +18328,36 @@ op_fe:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -15741,9 +18365,16 @@ op_fe:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15756,11 +18387,14 @@ op_fe:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-7,r7
+
+	.align 2
+	_z80_ICount_227: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 dd_be:
@@ -15780,7 +18414,7 @@ dd_be:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -15788,6 +18422,7 @@ dd_be:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -15816,20 +18451,36 @@ dd_be:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -15837,9 +18488,16 @@ dd_be:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15854,9 +18512,12 @@ dd_be:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_228: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_be:
@@ -15876,7 +18537,7 @@ fd_be:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -15884,6 +18545,7 @@ fd_be:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add r1,r0
 	
@@ -15912,20 +18574,36 @@ fd_be:
 	cmp/hs r1,r13
 	addc r8,r8                          ! set H flag
 
-	mov #24,r2             ! to prepare operands
+	
+		mov #24,r2             ! to prepare operands
+	
 
 	! VC flag calculation
 	
 		mov r3,r1       ! Save A register operand
+		
+	
 		shld r2,r1
 	
-	shld r2,r0      ! Prepare register operand to operate
-	subv r0,r1     ! TMP_REG = result
-	addc r8,r8                ! V flag set
+
+	
+
+	
+	
+		shld r2,r0
+	
+  ! Prepare register operand to operate
+	subv r0,r1             ! TMP_REG = result
+	addc r8,r8                   ! V flag set
 
 	
 		mov r3,r1
+		
+	
 		shld r2,r1
+	
+
+!		shld DIRT_REG,TMP_REG
 	
 	subc r0,r1
 	movt r11        ! Carry flag set
@@ -15933,9 +18611,16 @@ fd_be:
 	! Resultado presente en zA o TMP_REG
 	! dependiendo del tipo de operacion (add/sub, cmp)
 
-	mov #-24,r2
+	
+		mov #-24,r2
+	
+
+	
+		
 	
 		shld r2,r1
+	
+
 		
 	! Set Z
 	mov r1,r13
@@ -15950,6 +18635,8 @@ fd_be:
 	jmp @r12
 	add #-19,r7
 
+	.align 2
+	_z80_ICount_229: .long _z80_ICount 
 
 
 
@@ -15957,6 +18644,7 @@ fd_be:
 ! DEC/INC 8 bit group
 
 
+	
 	
 	
 op_04:
@@ -15974,7 +18662,7 @@ op_04:
 
 	
 	
-	mov.l INC_Table_168,r1
+	mov.l INC_Table_230,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16017,10 +18705,11 @@ op_04:
 
 
 .align 2
-	INC_Table_168: .long INC_Table
+	INC_Table_230: .long INC_Table
 
 
 
+	
 	
 	
 op_0c:
@@ -16038,7 +18727,7 @@ op_0c:
 
 	
 	
-	mov.l INC_Table_169,r1
+	mov.l INC_Table_231,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16081,10 +18770,11 @@ op_0c:
 
 
 .align 2
-	INC_Table_169: .long INC_Table
+	INC_Table_231: .long INC_Table
 
 
 
+	
 	
 	
 op_14:
@@ -16102,7 +18792,7 @@ op_14:
 
 	
 	
-	mov.l INC_Table_170,r1
+	mov.l INC_Table_232,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16145,10 +18835,11 @@ op_14:
 
 
 .align 2
-	INC_Table_170: .long INC_Table
+	INC_Table_232: .long INC_Table
 
 
 
+	
 	
 	
 op_1c:
@@ -16166,7 +18857,7 @@ op_1c:
 
 	
 	
-	mov.l INC_Table_171,r1
+	mov.l INC_Table_233,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16209,10 +18900,11 @@ op_1c:
 
 
 .align 2
-	INC_Table_171: .long INC_Table
+	INC_Table_233: .long INC_Table
 
 
 
+	
 	
 	
 op_24:
@@ -16230,7 +18922,7 @@ op_24:
 
 	
 	
-	mov.l INC_Table_172,r1
+	mov.l INC_Table_234,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16273,10 +18965,11 @@ op_24:
 
 
 .align 2
-	INC_Table_172: .long INC_Table
+	INC_Table_234: .long INC_Table
 
 
 
+	
 	
 	
 op_2c:
@@ -16294,7 +18987,7 @@ op_2c:
 
 	
 	
-	mov.l INC_Table_173,r1
+	mov.l INC_Table_235,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16337,10 +19030,11 @@ op_2c:
 
 
 .align 2
-	INC_Table_173: .long INC_Table
+	INC_Table_235: .long INC_Table
 
 
 
+	
 	
 	
 op_3c:
@@ -16358,7 +19052,7 @@ op_3c:
 
 	
 	
-	mov.l INC_Table_174,r1
+	mov.l INC_Table_236,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16401,10 +19095,11 @@ op_3c:
 
 
 .align 2
-	INC_Table_174: .long INC_Table
+	INC_Table_236: .long INC_Table
 
 
 
+	
 	
 	
 dd_24:
@@ -16422,7 +19117,7 @@ dd_24:
 
 	
 	
-	mov.l INC_Table_175,r1
+	mov.l INC_Table_237,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16465,10 +19160,11 @@ dd_24:
 
 
 .align 2
-	INC_Table_175: .long INC_Table
+	INC_Table_237: .long INC_Table
 
 
 
+	
 	
 	
 dd_2c:
@@ -16486,7 +19182,7 @@ dd_2c:
 
 	
 	
-	mov.l INC_Table_176,r1
+	mov.l INC_Table_238,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16529,10 +19225,11 @@ dd_2c:
 
 
 .align 2
-	INC_Table_176: .long INC_Table
+	INC_Table_238: .long INC_Table
 
 
 
+	
 	
 	
 fd_24:
@@ -16546,12 +19243,12 @@ fd_24:
 
 
 	
-	mov.l _z80_IY_177,r2
+	mov.l _z80_IY_239,r2
 	mov.b @r2,r0
 
 	
 	
-	mov.l INC_Table_177,r1
+	mov.l INC_Table_239,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16585,7 +19282,7 @@ fd_24:
 
 
 	
-	mov.l _z80_IY_177,r1
+	mov.l _z80_IY_239,r1
 	mov.b r0,@r1
 
 
@@ -16595,15 +19292,16 @@ fd_24:
 
 
 .align 2
-	INC_Table_177: .long INC_Table
+	INC_Table_239: .long INC_Table
 	
 	
-		_z80_IY_177: .long _z80_IY + 1
+		_z80_IY_239: .long _z80_IY + 1
 	
 
 
 
 
+	
 	
 	
 fd_2c:
@@ -16617,12 +19315,12 @@ fd_2c:
 
 
 	
-	mov.l _z80_IY_178,r2
+	mov.l _z80_IY_240,r2
 	mov.b @r2,r0
 
 	
 	
-	mov.l INC_Table_178,r1
+	mov.l INC_Table_240,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16656,7 +19354,7 @@ fd_2c:
 
 
 	
-	mov.l _z80_IY_178,r1
+	mov.l _z80_IY_240,r1
 	mov.b r0,@r1
 
 
@@ -16666,17 +19364,18 @@ fd_2c:
 
 
 .align 2
-	INC_Table_178: .long INC_Table
+	INC_Table_240: .long INC_Table
 	
 	
 		
-			_z80_IY_178: .long _z80_IY
+			_z80_IY_240: .long _z80_IY
 		
 	
 
 
 
 
+	
 	
 	
 op_34:
@@ -16688,10 +19387,10 @@ op_34:
 
 	
 
-
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -16699,7 +19398,7 @@ op_34:
 	exts.b r1,r0         ! requires to be sign-extended
 	
 	
-	mov.l INC_Table_179,r1
+	mov.l INC_Table_241,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16736,6 +19435,7 @@ op_34:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -16747,10 +19447,11 @@ op_34:
 
 
 .align 2
-	INC_Table_179: .long INC_Table
+	INC_Table_241: .long INC_Table
 
 
 
+	
 	
 	
 dd_34:
@@ -16770,7 +19471,7 @@ dd_34:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -16779,6 +19480,7 @@ dd_34:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -16786,7 +19488,7 @@ dd_34:
 	exts.b r1,r0          ! requires to be sign-extended
 	
 	
-	mov.l INC_Table_180,r1
+	mov.l INC_Table_242,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16823,6 +19525,7 @@ dd_34:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -16834,10 +19537,12 @@ dd_34:
 
 
 .align 2
-	INC_Table_180: .long INC_Table
+	INC_Table_242: .long INC_Table
+	_z80_ICount_242: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_34:
@@ -16857,7 +19562,7 @@ fd_34:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -16866,6 +19571,7 @@ fd_34:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -16873,7 +19579,7 @@ fd_34:
 	exts.b r1,r0          ! requires to be sign-extended
 	
 	
-	mov.l INC_Table_181,r1
+	mov.l INC_Table_243,r1
 	mov.b @(r0,r1),r8
 	add #1,r0
 	mov.l r11,@-r15
@@ -16910,6 +19616,7 @@ fd_34:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -16921,10 +19628,12 @@ fd_34:
 
 
 .align 2
-	INC_Table_181: .long INC_Table
+	INC_Table_243: .long INC_Table
+	_z80_ICount_243: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_05:
@@ -16942,7 +19651,7 @@ op_05:
 
 	
 	
-	mov.l DEC_Table_182,r1
+	mov.l DEC_Table_244,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -16985,10 +19694,11 @@ op_05:
 
 
 .align 2
-	DEC_Table_182: .long DEC_Table
+	DEC_Table_244: .long DEC_Table
 
 
 
+	
 	
 	
 op_0d:
@@ -17006,7 +19716,7 @@ op_0d:
 
 	
 	
-	mov.l DEC_Table_183,r1
+	mov.l DEC_Table_245,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17049,10 +19759,11 @@ op_0d:
 
 
 .align 2
-	DEC_Table_183: .long DEC_Table
+	DEC_Table_245: .long DEC_Table
 
 
 
+	
 	
 	
 op_15:
@@ -17070,7 +19781,7 @@ op_15:
 
 	
 	
-	mov.l DEC_Table_184,r1
+	mov.l DEC_Table_246,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17113,10 +19824,11 @@ op_15:
 
 
 .align 2
-	DEC_Table_184: .long DEC_Table
+	DEC_Table_246: .long DEC_Table
 
 
 
+	
 	
 	
 op_1d:
@@ -17134,7 +19846,7 @@ op_1d:
 
 	
 	
-	mov.l DEC_Table_185,r1
+	mov.l DEC_Table_247,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17177,10 +19889,11 @@ op_1d:
 
 
 .align 2
-	DEC_Table_185: .long DEC_Table
+	DEC_Table_247: .long DEC_Table
 
 
 
+	
 	
 	
 op_25:
@@ -17198,7 +19911,7 @@ op_25:
 
 	
 	
-	mov.l DEC_Table_186,r1
+	mov.l DEC_Table_248,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17241,10 +19954,11 @@ op_25:
 
 
 .align 2
-	DEC_Table_186: .long DEC_Table
+	DEC_Table_248: .long DEC_Table
 
 
 
+	
 	
 	
 op_2d:
@@ -17262,7 +19976,7 @@ op_2d:
 
 	
 	
-	mov.l DEC_Table_187,r1
+	mov.l DEC_Table_249,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17305,10 +20019,11 @@ op_2d:
 
 
 .align 2
-	DEC_Table_187: .long DEC_Table
+	DEC_Table_249: .long DEC_Table
 
 
 
+	
 	
 	
 op_3d:
@@ -17326,7 +20041,7 @@ op_3d:
 
 	
 	
-	mov.l DEC_Table_188,r1
+	mov.l DEC_Table_250,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17369,10 +20084,11 @@ op_3d:
 
 
 .align 2
-	DEC_Table_188: .long DEC_Table
+	DEC_Table_250: .long DEC_Table
 
 
 
+	
 	
 	
 dd_25:
@@ -17390,7 +20106,7 @@ dd_25:
 
 	
 	
-	mov.l DEC_Table_189,r1
+	mov.l DEC_Table_251,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17433,10 +20149,11 @@ dd_25:
 
 
 .align 2
-	DEC_Table_189: .long DEC_Table
+	DEC_Table_251: .long DEC_Table
 
 
 
+	
 	
 	
 dd_2d:
@@ -17454,7 +20171,7 @@ dd_2d:
 
 	
 	
-	mov.l DEC_Table_190,r1
+	mov.l DEC_Table_252,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17497,10 +20214,11 @@ dd_2d:
 
 
 .align 2
-	DEC_Table_190: .long DEC_Table
+	DEC_Table_252: .long DEC_Table
 
 
 
+	
 	
 	
 fd_25:
@@ -17514,12 +20232,12 @@ fd_25:
 
 
 	
-	mov.l _z80_IY_191,r2
+	mov.l _z80_IY_253,r2
 	mov.b @r2,r0
 
 	
 	
-	mov.l DEC_Table_191,r1
+	mov.l DEC_Table_253,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17553,7 +20271,7 @@ fd_25:
 
 
 	
-	mov.l _z80_IY_191,r1
+	mov.l _z80_IY_253,r1
 	mov.b r0,@r1
 
 
@@ -17563,15 +20281,16 @@ fd_25:
 
 
 .align 2
-	DEC_Table_191: .long DEC_Table
+	DEC_Table_253: .long DEC_Table
 	
 	
-		_z80_IY_191: .long _z80_IY + 1
+		_z80_IY_253: .long _z80_IY + 1
 	
 
 
 
 
+	
 	
 	
 fd_2d:
@@ -17585,12 +20304,12 @@ fd_2d:
 
 
 	
-	mov.l _z80_IY_192,r2
+	mov.l _z80_IY_254,r2
 	mov.b @r2,r0
 
 	
 	
-	mov.l DEC_Table_192,r1
+	mov.l DEC_Table_254,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17624,7 +20343,7 @@ fd_2d:
 
 
 	
-	mov.l _z80_IY_192,r1
+	mov.l _z80_IY_254,r1
 	mov.b r0,@r1
 
 
@@ -17634,17 +20353,18 @@ fd_2d:
 
 
 .align 2
-	DEC_Table_192: .long DEC_Table
+	DEC_Table_254: .long DEC_Table
 	
 	
 		
-			_z80_IY_192: .long _z80_IY
+			_z80_IY_254: .long _z80_IY
 		
 	
 
 
 
 
+	
 	
 	
 op_35:
@@ -17656,10 +20376,10 @@ op_35:
 
 	
 
-
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -17667,7 +20387,7 @@ op_35:
 	exts.b r1,r0         ! requires to be sign-extended
 	
 	
-	mov.l DEC_Table_193,r1
+	mov.l DEC_Table_255,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17704,6 +20424,7 @@ op_35:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -17715,10 +20436,11 @@ op_35:
 
 
 .align 2
-	DEC_Table_193: .long DEC_Table
+	DEC_Table_255: .long DEC_Table
 
 
 
+	
 	
 	
 dd_35:
@@ -17738,7 +20460,7 @@ dd_35:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -17747,6 +20469,7 @@ dd_35:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -17754,7 +20477,7 @@ dd_35:
 	exts.b r1,r0          ! requires to be sign-extended
 	
 	
-	mov.l DEC_Table_194,r1
+	mov.l DEC_Table_256,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17791,6 +20514,7 @@ dd_35:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -17802,10 +20526,12 @@ dd_35:
 
 
 .align 2
-	DEC_Table_194: .long DEC_Table
+	DEC_Table_256: .long DEC_Table
+	_z80_ICount_256: .long _z80_ICount 
 
 
 
+	
 	
 	
 fd_35:
@@ -17825,7 +20551,7 @@ fd_35:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -17834,6 +20560,7 @@ fd_35:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -17841,7 +20568,7 @@ fd_35:
 	exts.b r1,r0          ! requires to be sign-extended
 	
 	
-	mov.l DEC_Table_195,r1
+	mov.l DEC_Table_257,r1
 	mov.b @(r0,r1),r8
 	add #-1,r0
 	mov.l r11,@-r15
@@ -17878,6 +20605,7 @@ fd_35:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -17889,7 +20617,8 @@ fd_35:
 
 
 .align 2
-	DEC_Table_195: .long DEC_Table
+	DEC_Table_257: .long DEC_Table
+	_z80_ICount_257: .long _z80_ICount 
 
 
 
@@ -17897,6 +20626,7 @@ fd_35:
 ! ADD HL,ss
 
 
+	
 	
 	
 op_09:
@@ -17910,12 +20640,16 @@ op_09:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_HL - _z80_BC,r5)       ! writeback result
 
@@ -17944,6 +20678,7 @@ op_09:
 
 
 
+	
 	
 	
 op_19:
@@ -17957,12 +20692,16 @@ op_19:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_HL - _z80_BC,r5)       ! writeback result
 
@@ -17991,6 +20730,7 @@ op_19:
 
 
 
+	
 	
 	
 op_29:
@@ -18004,12 +20744,16 @@ op_29:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_HL - _z80_BC,r5)       ! writeback result
 
@@ -18038,6 +20782,7 @@ op_29:
 
 
 
+	
 	
 	
 op_39:
@@ -18051,12 +20796,16 @@ op_39:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_HL - _z80_BC,r5)       ! writeback result
 
@@ -18087,6 +20836,7 @@ op_39:
 
 	
 	
+	
 dd_09:
 
    
@@ -18098,12 +20848,16 @@ dd_09:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_IX - _z80_BC,r5)       ! writeback result
 
@@ -18132,6 +20886,7 @@ dd_09:
 
 
 
+	
 	
 	
 dd_19:
@@ -18145,12 +20900,16 @@ dd_19:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_IX - _z80_BC,r5)       ! writeback result
 
@@ -18179,6 +20938,7 @@ dd_19:
 
 
 
+	
 	
 	
 dd_29:
@@ -18192,12 +20952,16 @@ dd_29:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_IX - _z80_BC,r5)       ! writeback result
 
@@ -18226,6 +20990,7 @@ dd_29:
 
 
 
+	
 	
 	
 dd_39:
@@ -18239,12 +21004,16 @@ dd_39:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_IX - _z80_BC,r5)       ! writeback result
 
@@ -18275,6 +21044,7 @@ dd_39:
 
 	
 	
+	
 fd_09:
 
    
@@ -18286,12 +21056,16 @@ fd_09:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_IY - _z80_BC,r5)       ! writeback result
 
@@ -18320,6 +21094,7 @@ fd_09:
 
 
 
+	
 	
 	
 fd_19:
@@ -18333,12 +21108,16 @@ fd_19:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_IY - _z80_BC,r5)       ! writeback result
 
@@ -18367,6 +21146,7 @@ fd_19:
 
 
 
+	
 	
 	
 fd_29:
@@ -18380,12 +21160,16 @@ fd_29:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_IY - _z80_BC,r5)       ! writeback result
 
@@ -18414,6 +21198,7 @@ fd_29:
 
 
 
+	
 	
 	
 fd_39:
@@ -18427,12 +21212,16 @@ fd_39:
 	
 		mov r0,r2
 	
+
 	shll16 r0          ! prepare 1st operand
 	clrt               ! T = 0 (required by the carry operation)
+
 	shll16 r1     ! prepare 2nd operand
 
 	addc r1,r0    ! do it
 	shlr16 r0          ! get the result to the lower word
+
+	
 	movt r11       ! set carry flag
 	mov.w r0,@(_z80_IY - _z80_BC,r5)       ! writeback result
 
@@ -18461,6 +21250,7 @@ fd_39:
 
 
 
+	
 	
 	
 ed_4a:
@@ -18479,6 +21269,7 @@ ed_4a:
 	shll16 r0             ! prepare first operand
 	shll r8                 !  H = 0
 	mov r0,r13      ! save 1st operand to get C
+
 	shll16 r1        ! prepare second operand
 	shll16 r11        ! prepare C flag
 
@@ -18538,6 +21329,7 @@ ed_4a:
 
 
 
+	
 	
 	
 ed_5a:
@@ -18556,6 +21348,7 @@ ed_5a:
 	shll16 r0             ! prepare first operand
 	shll r8                 !  H = 0
 	mov r0,r13      ! save 1st operand to get C
+
 	shll16 r1        ! prepare second operand
 	shll16 r11        ! prepare C flag
 
@@ -18615,6 +21408,7 @@ ed_5a:
 
 
 
+	
 	
 	
 ed_6a:
@@ -18633,6 +21427,7 @@ ed_6a:
 	shll16 r0             ! prepare first operand
 	shll r8                 !  H = 0
 	mov r0,r13      ! save 1st operand to get C
+
 	shll16 r1        ! prepare second operand
 	shll16 r11        ! prepare C flag
 
@@ -18692,6 +21487,7 @@ ed_6a:
 
 
 
+	
 	
 	
 ed_7a:
@@ -18710,6 +21506,7 @@ ed_7a:
 	shll16 r0             ! prepare first operand
 	shll r8                 !  H = 0
 	mov r0,r13      ! save 1st operand to get C
+
 	shll16 r1        ! prepare second operand
 	shll16 r11        ! prepare C flag
 
@@ -18771,6 +21568,7 @@ ed_7a:
 
 	
 	
+	
 ed_42:
 
 	
@@ -18787,6 +21585,7 @@ ed_42:
 	shll16 r0             ! prepare first operand
 	shll r8                 !  H = 0
 	mov r0,r13      ! save 1st operand to get C
+
 	shll16 r1        ! prepare second operand
 	shll16 r11        ! prepare C flag
 
@@ -18846,6 +21645,7 @@ ed_42:
 
 
 
+	
 	
 	
 ed_52:
@@ -18864,6 +21664,7 @@ ed_52:
 	shll16 r0             ! prepare first operand
 	shll r8                 !  H = 0
 	mov r0,r13      ! save 1st operand to get C
+
 	shll16 r1        ! prepare second operand
 	shll16 r11        ! prepare C flag
 
@@ -18923,6 +21724,7 @@ ed_52:
 
 
 
+	
 	
 	
 ed_62:
@@ -18941,6 +21743,7 @@ ed_62:
 	shll16 r0             ! prepare first operand
 	shll r8                 !  H = 0
 	mov r0,r13      ! save 1st operand to get C
+
 	shll16 r1        ! prepare second operand
 	shll16 r11        ! prepare C flag
 
@@ -19000,6 +21803,7 @@ ed_62:
 
 
 
+	
 	
 	
 ed_72:
@@ -19018,6 +21822,7 @@ ed_72:
 	shll16 r0             ! prepare first operand
 	shll r8                 !  H = 0
 	mov r0,r13      ! save 1st operand to get C
+
 	shll16 r1        ! prepare second operand
 	shll16 r11        ! prepare C flag
 
@@ -19079,6 +21884,7 @@ ed_72:
 
 	
 	
+	
 op_03:
 
 	
@@ -19093,6 +21899,7 @@ op_03:
 
 
 
+	
 	
 	
 op_13:
@@ -19111,6 +21918,7 @@ op_13:
 
 	
 	
+	
 op_23:
 
 	
@@ -19125,6 +21933,7 @@ op_23:
 
 
 
+	
 	
 	
 op_33:
@@ -19143,6 +21952,7 @@ op_33:
 
 	
 	
+	
 dd_23:
 
    
@@ -19157,6 +21967,7 @@ dd_23:
 
 
 
+	
 	
 	
 fd_23:
@@ -19175,6 +21986,7 @@ fd_23:
 
 	
 	
+	
 op_0b:
 
 	
@@ -19189,6 +22001,7 @@ op_0b:
 
 
 
+	
 	
 	
 op_1b:
@@ -19207,6 +22020,7 @@ op_1b:
 
 	
 	
+	
 op_2b:
 
 	
@@ -19221,6 +22035,7 @@ op_2b:
 
 
 
+	
 	
 	
 op_3b:
@@ -19239,6 +22054,7 @@ op_3b:
 
 	
 	
+	
 dd_2b:
 
    
@@ -19253,6 +22069,7 @@ dd_2b:
 
 
 
+	
 	
 	
 fd_2b:
@@ -19273,6 +22090,7 @@ fd_2b:
 ! rotate/shift
 
 
+	
 	
 	
 op_07:
@@ -19327,6 +22145,7 @@ op_07:
 
 
 
+	
 	
 	
 op_0f:
@@ -19386,6 +22205,7 @@ op_0f:
 
 	
 	
+	
 op_17:
 
 	
@@ -19437,6 +22257,7 @@ op_17:
 
 
 
+	
 	
 	
 op_1f:
@@ -19497,6 +22318,7 @@ op_1f:
 
 	
 	
+	
 cb_00:
 
 	
@@ -19547,6 +22369,7 @@ cb_00:
 
 
 
+	
 	
 	
 cb_01:
@@ -19601,6 +22424,7 @@ cb_01:
 
 	
 	
+	
 cb_02:
 
 	
@@ -19651,6 +22475,7 @@ cb_02:
 
 
 
+	
 	
 	
 cb_03:
@@ -19705,6 +22530,7 @@ cb_03:
 
 	
 	
+	
 cb_04:
 
 	
@@ -19755,6 +22581,7 @@ cb_04:
 
 
 
+	
 	
 	
 cb_05:
@@ -19809,6 +22636,7 @@ cb_05:
 
 	
 	
+	
 cb_07:
 
 	
@@ -19861,12 +22689,14 @@ cb_07:
 
 	
 	
+	
 cb_06:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -19909,6 +22739,7 @@ cb_06:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -19923,12 +22754,14 @@ cb_06:
 
 	
 	
+	
 ddcb_00:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -19975,6 +22808,7 @@ ddcb_00:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -19989,12 +22823,14 @@ ddcb_00:
 
 	
 	
+	
 ddcb_01:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -20041,6 +22877,7 @@ ddcb_01:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -20055,12 +22892,14 @@ ddcb_01:
 
 	
 	
+	
 ddcb_02:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -20107,6 +22946,7 @@ ddcb_02:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -20121,12 +22961,14 @@ ddcb_02:
 
 	
 	
+	
 ddcb_03:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -20173,6 +23015,7 @@ ddcb_03:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -20187,12 +23030,14 @@ ddcb_03:
 
 	
 	
+	
 ddcb_04:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -20239,6 +23084,7 @@ ddcb_04:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -20253,12 +23099,14 @@ ddcb_04:
 
 	
 	
+	
 ddcb_05:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -20305,6 +23153,7 @@ ddcb_05:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -20319,12 +23168,14 @@ ddcb_05:
 
 	
 	
+	
 ddcb_06:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -20367,6 +23218,7 @@ ddcb_06:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -20381,12 +23233,14 @@ ddcb_06:
 
 	
 	
+	
 ddcb_07:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -20433,6 +23287,7 @@ ddcb_07:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -20445,6 +23300,7 @@ ddcb_07:
 
 
 
+	
 	
 	
 cb_08:
@@ -20474,9 +23330,13 @@ cb_08:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -20503,6 +23363,7 @@ cb_08:
 
 
 
+	
 	
 	
 cb_09:
@@ -20532,9 +23393,13 @@ cb_09:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -20561,6 +23426,7 @@ cb_09:
 
 
 
+	
 	
 	
 cb_0a:
@@ -20590,9 +23456,13 @@ cb_0a:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -20619,6 +23489,7 @@ cb_0a:
 
 
 
+	
 	
 	
 cb_0b:
@@ -20648,9 +23519,13 @@ cb_0b:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -20677,6 +23552,7 @@ cb_0b:
 
 
 
+	
 	
 	
 cb_0c:
@@ -20706,9 +23582,13 @@ cb_0c:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -20735,6 +23615,7 @@ cb_0c:
 
 
 
+	
 	
 	
 cb_0d:
@@ -20764,9 +23645,13 @@ cb_0d:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -20793,6 +23678,7 @@ cb_0d:
 
 
 
+	
 	
 	
 cb_0f:
@@ -20822,9 +23708,13 @@ cb_0f:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -20853,12 +23743,14 @@ cb_0f:
 
 	
 	
+	
 cb_0e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -20885,9 +23777,13 @@ cb_0e:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -20907,6 +23803,7 @@ cb_0e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -20921,12 +23818,14 @@ cb_0e:
 
 	
 	
+	
 ddcb_08:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -20953,9 +23852,13 @@ ddcb_08:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -20979,6 +23882,7 @@ ddcb_08:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -20993,12 +23897,14 @@ ddcb_08:
 
 	
 	
+	
 ddcb_09:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -21025,9 +23931,13 @@ ddcb_09:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -21051,6 +23961,7 @@ ddcb_09:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -21065,12 +23976,14 @@ ddcb_09:
 
 	
 	
+	
 ddcb_0a:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -21097,9 +24010,13 @@ ddcb_0a:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -21123,6 +24040,7 @@ ddcb_0a:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -21137,12 +24055,14 @@ ddcb_0a:
 
 	
 	
+	
 ddcb_0b:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -21169,9 +24089,13 @@ ddcb_0b:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -21195,6 +24119,7 @@ ddcb_0b:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -21209,12 +24134,14 @@ ddcb_0b:
 
 	
 	
+	
 ddcb_0c:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -21241,9 +24168,13 @@ ddcb_0c:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -21267,6 +24198,7 @@ ddcb_0c:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -21281,12 +24213,14 @@ ddcb_0c:
 
 	
 	
+	
 ddcb_0d:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -21313,9 +24247,13 @@ ddcb_0d:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -21339,6 +24277,7 @@ ddcb_0d:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -21353,12 +24292,14 @@ ddcb_0d:
 
 	
 	
+	
 ddcb_0e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -21385,9 +24326,13 @@ ddcb_0e:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -21407,6 +24352,7 @@ ddcb_0e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -21421,12 +24367,14 @@ ddcb_0e:
 
 	
 	
+	
 ddcb_0f:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -21453,9 +24401,13 @@ ddcb_0f:
 		shlr r0
 		movt r1       ! TMP_REG = C
 		exts.b r0,r0
-		mov #7,r2
-		mov r1,r11   ! set carry
-		shld r2,r1
+
+		
+			mov #7,r2
+			mov r1,r11   ! set carry
+			shld r2,r1
+		
+
 		and #0x7F,r0
 		mov #0,r8    ! N,H,V = 0
 		or r1,r0
@@ -21479,6 +24431,7 @@ ddcb_0f:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -21491,6 +24444,7 @@ ddcb_0f:
 
 
 
+	
 	
 	
 cb_10:
@@ -21546,6 +24500,7 @@ cb_10:
 
 	
 	
+	
 cb_11:
 
 	
@@ -21597,6 +24552,7 @@ cb_11:
 
 
 
+	
 	
 	
 cb_12:
@@ -21652,6 +24608,7 @@ cb_12:
 
 	
 	
+	
 cb_13:
 
 	
@@ -21703,6 +24660,7 @@ cb_13:
 
 
 
+	
 	
 	
 cb_14:
@@ -21758,6 +24716,7 @@ cb_14:
 
 	
 	
+	
 cb_15:
 
 	
@@ -21809,6 +24768,7 @@ cb_15:
 
 
 
+	
 	
 	
 cb_17:
@@ -21864,12 +24824,14 @@ cb_17:
 
 	
 	
+	
 cb_16:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -21913,6 +24875,7 @@ cb_16:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -21927,12 +24890,14 @@ cb_16:
 
 	
 	
+	
 ddcb_10:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -21980,6 +24945,7 @@ ddcb_10:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -21994,12 +24960,14 @@ ddcb_10:
 
 	
 	
+	
 ddcb_11:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -22047,6 +25015,7 @@ ddcb_11:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -22061,12 +25030,14 @@ ddcb_11:
 
 	
 	
+	
 ddcb_12:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -22114,6 +25085,7 @@ ddcb_12:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -22128,12 +25100,14 @@ ddcb_12:
 
 	
 	
+	
 ddcb_13:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -22181,6 +25155,7 @@ ddcb_13:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -22195,12 +25170,14 @@ ddcb_13:
 
 	
 	
+	
 ddcb_14:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -22248,6 +25225,7 @@ ddcb_14:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -22262,12 +25240,14 @@ ddcb_14:
 
 	
 	
+	
 ddcb_15:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -22315,6 +25295,7 @@ ddcb_15:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -22329,12 +25310,14 @@ ddcb_15:
 
 	
 	
+	
 ddcb_16:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -22378,6 +25361,7 @@ ddcb_16:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -22392,12 +25376,14 @@ ddcb_16:
 
 	
 	
+	
 ddcb_17:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -22445,6 +25431,7 @@ ddcb_17:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -22457,6 +25444,7 @@ ddcb_17:
 
 
 
+	
 	
 	
 cb_18:
@@ -22516,6 +25504,7 @@ cb_18:
 
 	
 	
+	
 cb_19:
 
 	
@@ -22571,6 +25560,7 @@ cb_19:
 
 
 
+	
 	
 	
 cb_1a:
@@ -22630,6 +25620,7 @@ cb_1a:
 
 	
 	
+	
 cb_1b:
 
 	
@@ -22685,6 +25676,7 @@ cb_1b:
 
 
 
+	
 	
 	
 cb_1c:
@@ -22744,6 +25736,7 @@ cb_1c:
 
 	
 	
+	
 cb_1d:
 
 	
@@ -22799,6 +25792,7 @@ cb_1d:
 
 
 
+	
 	
 	
 cb_1f:
@@ -22858,12 +25852,14 @@ cb_1f:
 
 	
 	
+	
 cb_1e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -22911,6 +25907,7 @@ cb_1e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -22925,12 +25922,14 @@ cb_1e:
 
 	
 	
+	
 ddcb_18:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -22982,6 +25981,7 @@ ddcb_18:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -22996,12 +25996,14 @@ ddcb_18:
 
 	
 	
+	
 ddcb_19:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -23053,6 +26055,7 @@ ddcb_19:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -23067,12 +26070,14 @@ ddcb_19:
 
 	
 	
+	
 ddcb_1a:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -23124,6 +26129,7 @@ ddcb_1a:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -23138,12 +26144,14 @@ ddcb_1a:
 
 	
 	
+	
 ddcb_1b:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -23195,6 +26203,7 @@ ddcb_1b:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -23209,12 +26218,14 @@ ddcb_1b:
 
 	
 	
+	
 ddcb_1c:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -23266,6 +26277,7 @@ ddcb_1c:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -23280,12 +26292,14 @@ ddcb_1c:
 
 	
 	
+	
 ddcb_1d:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -23337,6 +26351,7 @@ ddcb_1d:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -23351,12 +26366,14 @@ ddcb_1d:
 
 	
 	
+	
 ddcb_1e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -23404,6 +26421,7 @@ ddcb_1e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -23418,12 +26436,14 @@ ddcb_1e:
 
 	
 	
+	
 ddcb_1f:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -23475,6 +26495,7 @@ ddcb_1f:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -23487,6 +26508,7 @@ ddcb_1f:
 
 
 
+	
 	
 	
 cb_20:
@@ -23537,6 +26559,7 @@ cb_20:
 
 	
 	
+	
 cb_21:
 
 	
@@ -23583,6 +26606,7 @@ cb_21:
 
 
 
+	
 	
 	
 cb_22:
@@ -23633,6 +26657,7 @@ cb_22:
 
 	
 	
+	
 cb_23:
 
 	
@@ -23679,6 +26704,7 @@ cb_23:
 
 
 
+	
 	
 	
 cb_24:
@@ -23729,6 +26755,7 @@ cb_24:
 
 	
 	
+	
 cb_25:
 
 	
@@ -23775,6 +26802,7 @@ cb_25:
 
 
 
+	
 	
 	
 cb_27:
@@ -23825,6 +26853,7 @@ cb_27:
 
 	
 	
+	
 cb_26:
 
 	
@@ -23834,10 +26863,10 @@ cb_26:
 
 	
 
-
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -23869,6 +26898,7 @@ cb_26:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -23881,6 +26911,7 @@ cb_26:
 
 
 
+	
 	
 	
 ddcb_20:
@@ -23896,6 +26927,7 @@ ddcb_20:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -23930,6 +26962,7 @@ ddcb_20:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -23942,6 +26975,7 @@ ddcb_20:
 
 
 
+	
 	
 	
 ddcb_21:
@@ -23957,6 +26991,7 @@ ddcb_21:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -23991,6 +27026,7 @@ ddcb_21:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -24003,6 +27039,7 @@ ddcb_21:
 
 
 
+	
 	
 	
 ddcb_22:
@@ -24018,6 +27055,7 @@ ddcb_22:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -24052,6 +27090,7 @@ ddcb_22:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -24064,6 +27103,7 @@ ddcb_22:
 
 
 
+	
 	
 	
 ddcb_23:
@@ -24079,6 +27119,7 @@ ddcb_23:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -24113,6 +27154,7 @@ ddcb_23:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -24125,6 +27167,7 @@ ddcb_23:
 
 
 
+	
 	
 	
 ddcb_24:
@@ -24140,6 +27183,7 @@ ddcb_24:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -24174,6 +27218,7 @@ ddcb_24:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -24186,6 +27231,7 @@ ddcb_24:
 
 
 
+	
 	
 	
 ddcb_25:
@@ -24201,6 +27247,7 @@ ddcb_25:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -24235,6 +27282,7 @@ ddcb_25:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -24247,6 +27295,7 @@ ddcb_25:
 
 
 
+	
 	
 	
 ddcb_26:
@@ -24262,6 +27311,7 @@ ddcb_26:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -24293,6 +27343,7 @@ ddcb_26:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -24305,6 +27356,7 @@ ddcb_26:
 
 
 
+	
 	
 	
 ddcb_27:
@@ -24320,6 +27372,7 @@ ddcb_27:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -24354,6 +27407,7 @@ ddcb_27:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -24366,6 +27420,7 @@ ddcb_27:
 
 
 
+	
 	
 	
 cb_28:
@@ -24414,6 +27469,7 @@ cb_28:
 
 	
 	
+	
 cb_29:
 
 	
@@ -24458,6 +27514,7 @@ cb_29:
 
 
 
+	
 	
 	
 cb_2a:
@@ -24506,6 +27563,7 @@ cb_2a:
 
 	
 	
+	
 cb_2b:
 
 	
@@ -24550,6 +27608,7 @@ cb_2b:
 
 
 
+	
 	
 	
 cb_2c:
@@ -24598,6 +27657,7 @@ cb_2c:
 
 	
 	
+	
 cb_2d:
 
 	
@@ -24642,6 +27702,7 @@ cb_2d:
 
 
 
+	
 	
 	
 cb_2f:
@@ -24690,6 +27751,7 @@ cb_2f:
 
 	
 	
+	
 cb_2e:
 
 	
@@ -24699,10 +27761,10 @@ cb_2e:
 
 	
 
-
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -24732,6 +27794,7 @@ cb_2e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -24744,6 +27807,7 @@ cb_2e:
 
 
 
+	
 	
 	
 ddcb_28:
@@ -24759,6 +27823,7 @@ ddcb_28:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -24791,6 +27856,7 @@ ddcb_28:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -24803,6 +27869,7 @@ ddcb_28:
 
 
 
+	
 	
 	
 ddcb_29:
@@ -24818,6 +27885,7 @@ ddcb_29:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -24850,6 +27918,7 @@ ddcb_29:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -24862,6 +27931,7 @@ ddcb_29:
 
 
 
+	
 	
 	
 ddcb_2a:
@@ -24877,6 +27947,7 @@ ddcb_2a:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -24909,6 +27980,7 @@ ddcb_2a:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -24921,6 +27993,7 @@ ddcb_2a:
 
 
 
+	
 	
 	
 ddcb_2b:
@@ -24936,6 +28009,7 @@ ddcb_2b:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -24968,6 +28042,7 @@ ddcb_2b:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -24980,6 +28055,7 @@ ddcb_2b:
 
 
 
+	
 	
 	
 ddcb_2c:
@@ -24995,6 +28071,7 @@ ddcb_2c:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -25027,6 +28104,7 @@ ddcb_2c:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -25039,6 +28117,7 @@ ddcb_2c:
 
 
 
+	
 	
 	
 ddcb_2d:
@@ -25054,6 +28133,7 @@ ddcb_2d:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -25086,6 +28166,7 @@ ddcb_2d:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -25098,6 +28179,7 @@ ddcb_2d:
 
 
 
+	
 	
 	
 ddcb_2e:
@@ -25113,6 +28195,7 @@ ddcb_2e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -25142,6 +28225,7 @@ ddcb_2e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -25154,6 +28238,7 @@ ddcb_2e:
 
 
 
+	
 	
 	
 ddcb_2f:
@@ -25169,6 +28254,7 @@ ddcb_2f:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -25201,6 +28287,7 @@ ddcb_2f:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -25213,6 +28300,7 @@ ddcb_2f:
 
 
 
+	
 	
 	
 cb_30:
@@ -25263,6 +28351,7 @@ cb_30:
 
 	
 	
+	
 cb_31:
 
 	
@@ -25309,6 +28398,7 @@ cb_31:
 
 
 
+	
 	
 	
 cb_32:
@@ -25359,6 +28449,7 @@ cb_32:
 
 	
 	
+	
 cb_33:
 
 	
@@ -25405,6 +28496,7 @@ cb_33:
 
 
 
+	
 	
 	
 cb_34:
@@ -25455,6 +28547,7 @@ cb_34:
 
 	
 	
+	
 cb_35:
 
 	
@@ -25501,6 +28594,7 @@ cb_35:
 
 
 
+	
 	
 	
 cb_37:
@@ -25551,6 +28645,7 @@ cb_37:
 
 	
 	
+	
 cb_36:
 
 	
@@ -25560,10 +28655,10 @@ cb_36:
 
 	
 
-
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -25595,6 +28690,7 @@ cb_36:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -25607,6 +28703,7 @@ cb_36:
 
 
 
+	
 	
 	
 ddcb_30:
@@ -25622,6 +28719,7 @@ ddcb_30:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -25656,6 +28754,7 @@ ddcb_30:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -25668,6 +28767,7 @@ ddcb_30:
 
 
 
+	
 	
 	
 ddcb_31:
@@ -25683,6 +28783,7 @@ ddcb_31:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -25717,6 +28818,7 @@ ddcb_31:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -25729,6 +28831,7 @@ ddcb_31:
 
 
 
+	
 	
 	
 ddcb_32:
@@ -25744,6 +28847,7 @@ ddcb_32:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -25778,6 +28882,7 @@ ddcb_32:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -25790,6 +28895,7 @@ ddcb_32:
 
 
 
+	
 	
 	
 ddcb_33:
@@ -25805,6 +28911,7 @@ ddcb_33:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -25839,6 +28946,7 @@ ddcb_33:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -25851,6 +28959,7 @@ ddcb_33:
 
 
 
+	
 	
 	
 ddcb_34:
@@ -25866,6 +28975,7 @@ ddcb_34:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -25900,6 +29010,7 @@ ddcb_34:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -25912,6 +29023,7 @@ ddcb_34:
 
 
 
+	
 	
 	
 ddcb_35:
@@ -25927,6 +29039,7 @@ ddcb_35:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -25961,6 +29074,7 @@ ddcb_35:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -25973,6 +29087,7 @@ ddcb_35:
 
 
 
+	
 	
 	
 ddcb_36:
@@ -25988,6 +29103,7 @@ ddcb_36:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -26019,6 +29135,7 @@ ddcb_36:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -26031,6 +29148,7 @@ ddcb_36:
 
 
 
+	
 	
 	
 ddcb_37:
@@ -26046,6 +29164,7 @@ ddcb_37:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -26080,6 +29199,7 @@ ddcb_37:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -26092,6 +29212,7 @@ ddcb_37:
 
 
 
+	
 	
 	
 cb_38:
@@ -26141,6 +29262,7 @@ cb_38:
 
 	
 	
+	
 cb_39:
 
 	
@@ -26186,6 +29308,7 @@ cb_39:
 
 
 
+	
 	
 	
 cb_3a:
@@ -26235,6 +29358,7 @@ cb_3a:
 
 	
 	
+	
 cb_3b:
 
 	
@@ -26280,6 +29404,7 @@ cb_3b:
 
 
 
+	
 	
 	
 cb_3c:
@@ -26329,6 +29454,7 @@ cb_3c:
 
 	
 	
+	
 cb_3d:
 
 	
@@ -26374,6 +29500,7 @@ cb_3d:
 
 
 
+	
 	
 	
 cb_3f:
@@ -26423,6 +29550,7 @@ cb_3f:
 
 	
 	
+	
 cb_3e:
 
 	
@@ -26432,10 +29560,10 @@ cb_3e:
 
 	
 
-
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -26466,6 +29594,7 @@ cb_3e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -26478,6 +29607,7 @@ cb_3e:
 
 
 
+	
 	
 	
 ddcb_38:
@@ -26493,6 +29623,7 @@ ddcb_38:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -26526,6 +29657,7 @@ ddcb_38:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -26538,6 +29670,7 @@ ddcb_38:
 
 
 
+	
 	
 	
 ddcb_39:
@@ -26553,6 +29686,7 @@ ddcb_39:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -26586,6 +29720,7 @@ ddcb_39:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -26598,6 +29733,7 @@ ddcb_39:
 
 
 
+	
 	
 	
 ddcb_3a:
@@ -26613,6 +29749,7 @@ ddcb_3a:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -26646,6 +29783,7 @@ ddcb_3a:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -26658,6 +29796,7 @@ ddcb_3a:
 
 
 
+	
 	
 	
 ddcb_3b:
@@ -26673,6 +29812,7 @@ ddcb_3b:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -26706,6 +29846,7 @@ ddcb_3b:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -26718,6 +29859,7 @@ ddcb_3b:
 
 
 
+	
 	
 	
 ddcb_3c:
@@ -26733,6 +29875,7 @@ ddcb_3c:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -26766,6 +29909,7 @@ ddcb_3c:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -26778,6 +29922,7 @@ ddcb_3c:
 
 
 
+	
 	
 	
 ddcb_3d:
@@ -26793,6 +29938,7 @@ ddcb_3d:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -26826,6 +29972,7 @@ ddcb_3d:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -26838,6 +29985,7 @@ ddcb_3d:
 
 
 
+	
 	
 	
 ddcb_3e:
@@ -26853,6 +30001,7 @@ ddcb_3e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -26883,6 +30032,7 @@ ddcb_3e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -26895,6 +30045,7 @@ ddcb_3e:
 
 
 
+	
 	
 	
 ddcb_3f:
@@ -26910,6 +30061,7 @@ ddcb_3f:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l r0,@-r15
 	
@@ -26943,6 +30095,7 @@ ddcb_3f:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @r15+,r0
 	
@@ -26957,6 +30110,7 @@ ddcb_3f:
 
 	
 	
+	
 ed_67:
 
 	
@@ -26966,10 +30120,11 @@ ed_67:
 
 	
 
-	
+
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -27000,6 +30155,7 @@ ed_67:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -27014,6 +30170,7 @@ ed_67:
 
 	
 	
+	
 ed_6f:
 
 	
@@ -27025,8 +30182,8 @@ ed_6f:
 
 	
 	
-	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -27056,6 +30213,7 @@ ed_6f:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -27074,6 +30232,7 @@ ed_6f:
 
 	
 	
+	
 cb_40:
 
 	
@@ -27090,3343 +30249,6 @@ cb_40:
 
 
 	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_262
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_262
-		mov #1,r13
-	
-
-bit_is_clear_262:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_262:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_41:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_263
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_263
-		mov #1,r13
-	
-
-bit_is_clear_263:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_263:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_42:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_264
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_264
-		mov #1,r13
-	
-
-bit_is_clear_264:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_264:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_43:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_265
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_265
-		mov #1,r13
-	
-
-bit_is_clear_265:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_265:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_44:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_266
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_266
-		mov #1,r13
-	
-
-bit_is_clear_266:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_266:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_45:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_267
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_267
-		mov #1,r13
-	
-
-bit_is_clear_267:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_267:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_47:
-
-	
-	
-	! Load operand to r0
-	mov r3,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_268
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_268
-		mov #1,r13
-	
-
-bit_is_clear_268:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_268:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_46:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		mov.l @(_z80_HL - _z80_BC,r5),r0
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_269
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_269
-		mov #1,r13
-	
-
-bit_is_clear_269:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_269:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-12,r7
-
-
-
-
-	
-	
-ddcb_40:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_270
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_270
-		mov #1,r13
-	
-
-bit_is_clear_270:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_270:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_41:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_271
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_271
-		mov #1,r13
-	
-
-bit_is_clear_271:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_271:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_42:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_272
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_272
-		mov #1,r13
-	
-
-bit_is_clear_272:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_272:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_43:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_273
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_273
-		mov #1,r13
-	
-
-bit_is_clear_273:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_273:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_44:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_274
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_274
-		mov #1,r13
-	
-
-bit_is_clear_274:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_274:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_45:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_275
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_275
-		mov #1,r13
-	
-
-bit_is_clear_275:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_275:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_46:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_276
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_276
-		mov #1,r13
-	
-
-bit_is_clear_276:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_276:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_47:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 0),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_277
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_277
-		mov #1,r13
-	
-
-bit_is_clear_277:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_277:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-cb_48:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_278
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_278
-		mov #1,r13
-	
-
-bit_is_clear_278:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_278:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_49:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_279
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_279
-		mov #1,r13
-	
-
-bit_is_clear_279:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_279:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_4a:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_280
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_280
-		mov #1,r13
-	
-
-bit_is_clear_280:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_280:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_4b:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_281
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_281
-		mov #1,r13
-	
-
-bit_is_clear_281:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_281:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_4c:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_282
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_282
-		mov #1,r13
-	
-
-bit_is_clear_282:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_282:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_4d:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_283
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_283
-		mov #1,r13
-	
-
-bit_is_clear_283:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_283:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_4f:
-
-	
-	
-	! Load operand to r0
-	mov r3,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_284
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_284
-		mov #1,r13
-	
-
-bit_is_clear_284:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_284:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_4e:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		mov.l @(_z80_HL - _z80_BC,r5),r0
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_285
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_285
-		mov #1,r13
-	
-
-bit_is_clear_285:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_285:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-12,r7
-
-
-
-
-	
-	
-ddcb_48:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_286
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_286
-		mov #1,r13
-	
-
-bit_is_clear_286:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_286:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_49:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_287
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_287
-		mov #1,r13
-	
-
-bit_is_clear_287:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_287:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_4a:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_288
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_288
-		mov #1,r13
-	
-
-bit_is_clear_288:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_288:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_4b:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_289
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_289
-		mov #1,r13
-	
-
-bit_is_clear_289:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_289:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_4c:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_290
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_290
-		mov #1,r13
-	
-
-bit_is_clear_290:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_290:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_4d:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_291
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_291
-		mov #1,r13
-	
-
-bit_is_clear_291:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_291:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_4e:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_292
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_292
-		mov #1,r13
-	
-
-bit_is_clear_292:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_292:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_4f:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 1),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_293
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_293
-		mov #1,r13
-	
-
-bit_is_clear_293:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_293:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-cb_50:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_294
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_294
-		mov #1,r13
-	
-
-bit_is_clear_294:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_294:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_51:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_295
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_295
-		mov #1,r13
-	
-
-bit_is_clear_295:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_295:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_52:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_296
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_296
-		mov #1,r13
-	
-
-bit_is_clear_296:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_296:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_53:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_297
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_297
-		mov #1,r13
-	
-
-bit_is_clear_297:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_297:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_54:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_298
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_298
-		mov #1,r13
-	
-
-bit_is_clear_298:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_298:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_55:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_299
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_299
-		mov #1,r13
-	
-
-bit_is_clear_299:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_299:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_57:
-
-	
-	
-	! Load operand to r0
-	mov r3,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_300
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_300
-		mov #1,r13
-	
-
-bit_is_clear_300:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_300:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_56:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		mov.l @(_z80_HL - _z80_BC,r5),r0
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_301
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_301
-		mov #1,r13
-	
-
-bit_is_clear_301:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_301:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-12,r7
-
-
-
-
-	
-	
-ddcb_50:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_302
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_302
-		mov #1,r13
-	
-
-bit_is_clear_302:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_302:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_51:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_303
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_303
-		mov #1,r13
-	
-
-bit_is_clear_303:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_303:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_52:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_304
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_304
-		mov #1,r13
-	
-
-bit_is_clear_304:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_304:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_53:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_305
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_305
-		mov #1,r13
-	
-
-bit_is_clear_305:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_305:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_54:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_306
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_306
-		mov #1,r13
-	
-
-bit_is_clear_306:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_306:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_55:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_307
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_307
-		mov #1,r13
-	
-
-bit_is_clear_307:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_307:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_56:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_308
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_308
-		mov #1,r13
-	
-
-bit_is_clear_308:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_308:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_57:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 2),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_309
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_309
-		mov #1,r13
-	
-
-bit_is_clear_309:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_309:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-cb_58:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_310
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_310
-		mov #1,r13
-	
-
-bit_is_clear_310:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_310:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_59:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_311
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_311
-		mov #1,r13
-	
-
-bit_is_clear_311:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_311:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_5a:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_312
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_312
-		mov #1,r13
-	
-
-bit_is_clear_312:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_312:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_5b:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_313
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_313
-		mov #1,r13
-	
-
-bit_is_clear_313:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_313:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_5c:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_314
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_314
-		mov #1,r13
-	
-
-bit_is_clear_314:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_314:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_5d:
-
-	
-	
-	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC,r5),r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_315
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_315
-		mov #1,r13
-	
-
-bit_is_clear_315:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_315:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_5f:
-
-	
-	
-	! Load operand to r0
-	mov r3,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_316
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_316
-		mov #1,r13
-	
-
-bit_is_clear_316:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_316:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-8,r7
-
-
-
-
-	
-	
-cb_5e:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		mov.l @(_z80_HL - _z80_BC,r5),r0
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_317
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_317
-		mov #1,r13
-	
-
-bit_is_clear_317:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_317:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-12,r7
-
-
-
-
-	
-	
-ddcb_58:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_318
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_318
-		mov #1,r13
-	
-
-bit_is_clear_318:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_318:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_59:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_319
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_319
-		mov #1,r13
-	
-
-bit_is_clear_319:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_319:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_5a:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_320
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_320
-		mov #1,r13
-	
-
-bit_is_clear_320:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_320:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_5b:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_321
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_321
-		mov #1,r13
-	
-
-bit_is_clear_321:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_321:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_5c:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_322
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_322
-		mov #1,r13
-	
-
-bit_is_clear_322:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_322:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_5d:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
-	
-	! bit 3 and 5 are always cleared
-	! (actually they are bizarrely set, but
-	! theres no point emulating that, its just
-	! plain silly...)
-
-	bt/s bit_is_clear_323
-	mov #(0x08 | 0x02),r8
-
-	
-		bra finish_323
-		mov #1,r13
-	
-
-bit_is_clear_323:
-	mov #(0x02 | 0x08 | 0x01),r1
-	mov #0,r13                  ! set Z flag
-	or r1,r8
-
-finish_323:
-
-	
-	
-
-
-
-	
-	jmp @r12
-	add #-20,r7
-
-
-
-
-	
-	
-ddcb_5e:
-
-	
-	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
-
-	
-	
-	
-	
-
-	
-
-
-	tst #(1 << 3),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -30455,24 +30277,20 @@ finish_324:
 
 	
 	jmp @r12
-	add #-20,r7
+	add #-8,r7
 
 
 
 
 	
 	
-ddcb_5f:
+	
+cb_41:
 
 	
 	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC,r5),r0
 
 	
 	
@@ -30482,7 +30300,7 @@ ddcb_5f:
 	
 
 
-	tst #(1 << 3),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -30511,19 +30329,20 @@ finish_325:
 
 	
 	jmp @r12
-	add #-20,r7
+	add #-8,r7
 
 
 
 
 	
 	
-cb_60:
+	
+cb_42:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
+	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
 
 	
 	
@@ -30533,7 +30352,7 @@ cb_60:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -30569,12 +30388,13 @@ finish_326:
 
 	
 	
-cb_61:
+	
+cb_43:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC,r5),r0
+	mov.b @(_z80_DE - _z80_BC,r5),r0
 
 	
 	
@@ -30584,7 +30404,7 @@ cb_61:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -30620,12 +30440,13 @@ finish_327:
 
 	
 	
-cb_62:
+	
+cb_44:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
+	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
 
 	
 	
@@ -30635,7 +30456,7 @@ cb_62:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -30671,12 +30492,13 @@ finish_328:
 
 	
 	
-cb_63:
+	
+cb_45:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC,r5),r0
+	mov.b @(_z80_HL - _z80_BC,r5),r0
 
 	
 	
@@ -30686,7 +30508,7 @@ cb_63:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -30722,12 +30544,13 @@ finish_329:
 
 	
 	
-cb_64:
+	
+cb_47:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
+	mov r3,r0
 
 	
 	
@@ -30737,7 +30560,7 @@ cb_64:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -30773,22 +30596,29 @@ finish_330:
 
 	
 	
-cb_65:
-
 	
-	
-	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC,r5),r0
+cb_46:
 
 	
 	
 	
+		mov.l @r10,r2
+                
+		jsr @r2
+		mov.l @(_z80_HL - _z80_BC,r5),r0
+	
+
+	mov r1,r0
+
+	
+	
+	
 	
 
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -30817,29 +30647,36 @@ finish_331:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-12,r7
 
 
 
 
 	
 	
-cb_67:
-
 	
-	
-	! Load operand to r0
-	mov r3,r0
+ddcb_40:
 
 	
 	
 	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
 	
 
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -30868,21 +30705,23 @@ finish_332:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-20,r7
 
 
 
 
 	
 	
-cb_66:
+	
+ddcb_41:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
-		mov.l @(_z80_HL - _z80_BC,r5),r0
+		nop
 	
 
 	mov r1,r0
@@ -30895,7 +30734,7 @@ cb_66:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -30924,19 +30763,21 @@ finish_333:
 
 	
 	jmp @r12
-	add #-12,r7
+	add #-20,r7
 
 
 
 
 	
 	
-ddcb_60:
+	
+ddcb_42:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -30951,7 +30792,7 @@ ddcb_60:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -30987,12 +30828,14 @@ finish_334:
 
 	
 	
-ddcb_61:
+	
+ddcb_43:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -31007,7 +30850,7 @@ ddcb_61:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31043,12 +30886,14 @@ finish_335:
 
 	
 	
-ddcb_62:
+	
+ddcb_44:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -31063,7 +30908,7 @@ ddcb_62:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31099,12 +30944,14 @@ finish_336:
 
 	
 	
-ddcb_63:
+	
+ddcb_45:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -31119,7 +30966,7 @@ ddcb_63:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31155,12 +31002,14 @@ finish_337:
 
 	
 	
-ddcb_64:
+	
+ddcb_46:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -31175,7 +31024,7 @@ ddcb_64:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31211,12 +31060,14 @@ finish_338:
 
 	
 	
-ddcb_65:
+	
+ddcb_47:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -31231,7 +31082,7 @@ ddcb_65:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 0),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31267,17 +31118,13 @@ finish_339:
 
 	
 	
-ddcb_66:
+	
+cb_48:
 
 	
 	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
 
 	
 	
@@ -31287,7 +31134,7 @@ ddcb_66:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31316,24 +31163,20 @@ finish_340:
 
 	
 	jmp @r12
-	add #-20,r7
+	add #-8,r7
 
 
 
 
 	
 	
-ddcb_67:
+	
+cb_49:
 
 	
 	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC,r5),r0
 
 	
 	
@@ -31343,7 +31186,7 @@ ddcb_67:
 	
 
 
-	tst #(1 << 4),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31372,19 +31215,20 @@ finish_341:
 
 	
 	jmp @r12
-	add #-20,r7
+	add #-8,r7
 
 
 
 
 	
 	
-cb_68:
+	
+cb_4a:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
+	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
 
 	
 	
@@ -31394,7 +31238,7 @@ cb_68:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31430,12 +31274,13 @@ finish_342:
 
 	
 	
-cb_69:
+	
+cb_4b:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC,r5),r0
+	mov.b @(_z80_DE - _z80_BC,r5),r0
 
 	
 	
@@ -31445,7 +31290,7 @@ cb_69:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31481,12 +31326,13 @@ finish_343:
 
 	
 	
-cb_6a:
+	
+cb_4c:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
+	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
 
 	
 	
@@ -31496,7 +31342,7 @@ cb_6a:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31532,12 +31378,13 @@ finish_344:
 
 	
 	
-cb_6b:
+	
+cb_4d:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC,r5),r0
+	mov.b @(_z80_HL - _z80_BC,r5),r0
 
 	
 	
@@ -31547,7 +31394,7 @@ cb_6b:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31583,12 +31430,13 @@ finish_345:
 
 	
 	
-cb_6c:
+	
+cb_4f:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
+	mov r3,r0
 
 	
 	
@@ -31598,7 +31446,7 @@ cb_6c:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31634,22 +31482,29 @@ finish_346:
 
 	
 	
-cb_6d:
-
 	
-	
-	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC,r5),r0
+cb_4e:
 
 	
 	
 	
+		mov.l @r10,r2
+                
+		jsr @r2
+		mov.l @(_z80_HL - _z80_BC,r5),r0
+	
+
+	mov r1,r0
+
+	
+	
+	
 	
 
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31678,29 +31533,36 @@ finish_347:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-12,r7
 
 
 
 
 	
 	
-cb_6f:
-
 	
-	
-	! Load operand to r0
-	mov r3,r0
+ddcb_48:
 
 	
 	
 	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
 	
 
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31729,21 +31591,23 @@ finish_348:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-20,r7
 
 
 
 
 	
 	
-cb_6e:
+	
+ddcb_49:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
-		mov.l @(_z80_HL - _z80_BC,r5),r0
+		nop
 	
 
 	mov r1,r0
@@ -31756,7 +31620,7 @@ cb_6e:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31785,19 +31649,21 @@ finish_349:
 
 	
 	jmp @r12
-	add #-12,r7
+	add #-20,r7
 
 
 
 
 	
 	
-ddcb_68:
+	
+ddcb_4a:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -31812,7 +31678,7 @@ ddcb_68:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31848,12 +31714,14 @@ finish_350:
 
 	
 	
-ddcb_69:
+	
+ddcb_4b:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -31868,7 +31736,7 @@ ddcb_69:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31904,12 +31772,14 @@ finish_351:
 
 	
 	
-ddcb_6a:
+	
+ddcb_4c:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -31924,7 +31794,7 @@ ddcb_6a:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -31960,12 +31830,14 @@ finish_352:
 
 	
 	
-ddcb_6b:
+	
+ddcb_4d:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -31980,7 +31852,7 @@ ddcb_6b:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32016,12 +31888,14 @@ finish_353:
 
 	
 	
-ddcb_6c:
+	
+ddcb_4e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -32036,7 +31910,7 @@ ddcb_6c:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32072,12 +31946,14 @@ finish_354:
 
 	
 	
-ddcb_6d:
+	
+ddcb_4f:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -32092,7 +31968,7 @@ ddcb_6d:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 1),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32128,17 +32004,13 @@ finish_355:
 
 	
 	
-ddcb_6e:
+	
+cb_50:
 
 	
 	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
 
 	
 	
@@ -32148,7 +32020,7 @@ ddcb_6e:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32177,24 +32049,20 @@ finish_356:
 
 	
 	jmp @r12
-	add #-20,r7
+	add #-8,r7
 
 
 
 
 	
 	
-ddcb_6f:
+	
+cb_51:
 
 	
 	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC,r5),r0
 
 	
 	
@@ -32204,7 +32072,7 @@ ddcb_6f:
 	
 
 
-	tst #(1 << 5),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32233,19 +32101,20 @@ finish_357:
 
 	
 	jmp @r12
-	add #-20,r7
+	add #-8,r7
 
 
 
 
 	
 	
-cb_70:
+	
+cb_52:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
+	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
 
 	
 	
@@ -32255,7 +32124,7 @@ cb_70:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32291,12 +32160,13 @@ finish_358:
 
 	
 	
-cb_71:
+	
+cb_53:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_BC - _z80_BC,r5),r0
+	mov.b @(_z80_DE - _z80_BC,r5),r0
 
 	
 	
@@ -32306,7 +32176,7 @@ cb_71:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32342,12 +32212,13 @@ finish_359:
 
 	
 	
-cb_72:
+	
+cb_54:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
+	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
 
 	
 	
@@ -32357,7 +32228,7 @@ cb_72:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32393,12 +32264,13 @@ finish_360:
 
 	
 	
-cb_73:
+	
+cb_55:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_DE - _z80_BC,r5),r0
+	mov.b @(_z80_HL - _z80_BC,r5),r0
 
 	
 	
@@ -32408,7 +32280,7 @@ cb_73:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32444,12 +32316,13 @@ finish_361:
 
 	
 	
-cb_74:
+	
+cb_57:
 
 	
 	
 	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
+	mov r3,r0
 
 	
 	
@@ -32459,7 +32332,7 @@ cb_74:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32495,22 +32368,29 @@ finish_362:
 
 	
 	
-cb_75:
-
 	
-	
-	! Load operand to r0
-	mov.b @(_z80_HL - _z80_BC,r5),r0
+cb_56:
 
 	
 	
 	
+		mov.l @r10,r2
+                
+		jsr @r2
+		mov.l @(_z80_HL - _z80_BC,r5),r0
+	
+
+	mov r1,r0
+
+	
+	
+	
 	
 
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32539,29 +32419,36 @@ finish_363:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-12,r7
 
 
 
 
 	
 	
-cb_77:
-
 	
-	
-	! Load operand to r0
-	mov r3,r0
+ddcb_50:
 
 	
 	
 	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
 	
 
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32590,21 +32477,23 @@ finish_364:
 
 	
 	jmp @r12
-	add #-8,r7
+	add #-20,r7
 
 
 
 
 	
 	
-cb_76:
+	
+ddcb_51:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
-		mov.l @(_z80_HL - _z80_BC,r5),r0
+		nop
 	
 
 	mov r1,r0
@@ -32617,7 +32506,7 @@ cb_76:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32646,19 +32535,21 @@ finish_365:
 
 	
 	jmp @r12
-	add #-12,r7
+	add #-20,r7
 
 
 
 
 	
 	
-ddcb_70:
+	
+ddcb_52:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -32673,7 +32564,7 @@ ddcb_70:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32709,12 +32600,14 @@ finish_366:
 
 	
 	
-ddcb_71:
+	
+ddcb_53:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -32729,7 +32622,7 @@ ddcb_71:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32765,12 +32658,14 @@ finish_367:
 
 	
 	
-ddcb_72:
+	
+ddcb_54:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -32785,7 +32680,7 @@ ddcb_72:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32821,12 +32716,14 @@ finish_368:
 
 	
 	
-ddcb_73:
+	
+ddcb_55:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -32841,7 +32738,7 @@ ddcb_73:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32877,12 +32774,14 @@ finish_369:
 
 	
 	
-ddcb_74:
+	
+ddcb_56:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -32897,7 +32796,7 @@ ddcb_74:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32933,12 +32832,14 @@ finish_370:
 
 	
 	
-ddcb_75:
+	
+ddcb_57:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -32953,7 +32854,7 @@ ddcb_75:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 2),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -32989,17 +32890,13 @@ finish_371:
 
 	
 	
-ddcb_76:
+	
+cb_58:
 
 	
 	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
 
 	
 	
@@ -33009,7 +32906,7 @@ ddcb_76:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 3),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -33038,24 +32935,20 @@ finish_372:
 
 	
 	jmp @r12
-	add #-20,r7
+	add #-8,r7
 
 
 
 
 	
 	
-ddcb_77:
+	
+cb_59:
 
 	
 	
-	
-		mov.l @r10,r2
-		jsr @r2
-		nop
-	
-
-	mov r1,r0
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC,r5),r0
 
 	
 	
@@ -33065,7 +32958,7 @@ ddcb_77:
 	
 
 
-	tst #(1 << 6),r0
+	tst #(1 << 3),r0
 	
 	! bit 3 and 5 are always cleared
 	! (actually they are bizarrely set, but
@@ -33094,11 +32987,3452 @@ finish_373:
 
 	
 	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_5a:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_374
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_374
+		mov #1,r13
+	
+
+bit_is_clear_374:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_374:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_5b:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_DE - _z80_BC,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_375
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_375
+		mov #1,r13
+	
+
+bit_is_clear_375:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_375:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_5c:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_376
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_376
+		mov #1,r13
+	
+
+bit_is_clear_376:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_376:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_5d:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_HL - _z80_BC,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_377
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_377
+		mov #1,r13
+	
+
+bit_is_clear_377:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_377:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_5f:
+
+	
+	
+	! Load operand to r0
+	mov r3,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_378
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_378
+		mov #1,r13
+	
+
+bit_is_clear_378:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_378:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_5e:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		mov.l @(_z80_HL - _z80_BC,r5),r0
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_379
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_379
+		mov #1,r13
+	
+
+bit_is_clear_379:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_379:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-12,r7
+
+
+
+
+	
+	
+	
+ddcb_58:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_380
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_380
+		mov #1,r13
+	
+
+bit_is_clear_380:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_380:
+
+	
+	
+
+
+
+	
+	jmp @r12
 	add #-20,r7
 
 
 
 
+	
+	
+	
+ddcb_59:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_381
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_381
+		mov #1,r13
+	
+
+bit_is_clear_381:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_381:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_5a:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_382
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_382
+		mov #1,r13
+	
+
+bit_is_clear_382:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_382:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_5b:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_383
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_383
+		mov #1,r13
+	
+
+bit_is_clear_383:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_383:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_5c:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_384
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_384
+		mov #1,r13
+	
+
+bit_is_clear_384:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_384:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_5d:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_385
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_385
+		mov #1,r13
+	
+
+bit_is_clear_385:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_385:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_5e:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_386
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_386
+		mov #1,r13
+	
+
+bit_is_clear_386:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_386:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_5f:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 3),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_387
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_387
+		mov #1,r13
+	
+
+bit_is_clear_387:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_387:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+cb_60:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_388
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_388
+		mov #1,r13
+	
+
+bit_is_clear_388:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_388:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_61:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_389
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_389
+		mov #1,r13
+	
+
+bit_is_clear_389:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_389:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_62:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_390
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_390
+		mov #1,r13
+	
+
+bit_is_clear_390:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_390:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_63:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_DE - _z80_BC,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_391
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_391
+		mov #1,r13
+	
+
+bit_is_clear_391:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_391:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_64:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_392
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_392
+		mov #1,r13
+	
+
+bit_is_clear_392:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_392:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_65:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_HL - _z80_BC,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_393
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_393
+		mov #1,r13
+	
+
+bit_is_clear_393:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_393:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_67:
+
+	
+	
+	! Load operand to r0
+	mov r3,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_394
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_394
+		mov #1,r13
+	
+
+bit_is_clear_394:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_394:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_66:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		mov.l @(_z80_HL - _z80_BC,r5),r0
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_395
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_395
+		mov #1,r13
+	
+
+bit_is_clear_395:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_395:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-12,r7
+
+
+
+
+	
+	
+	
+ddcb_60:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_396
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_396
+		mov #1,r13
+	
+
+bit_is_clear_396:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_396:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_61:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_397
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_397
+		mov #1,r13
+	
+
+bit_is_clear_397:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_397:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_62:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_398
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_398
+		mov #1,r13
+	
+
+bit_is_clear_398:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_398:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_63:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_399
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_399
+		mov #1,r13
+	
+
+bit_is_clear_399:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_399:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_64:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_400
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_400
+		mov #1,r13
+	
+
+bit_is_clear_400:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_400:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_65:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_401
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_401
+		mov #1,r13
+	
+
+bit_is_clear_401:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_401:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_66:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_402
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_402
+		mov #1,r13
+	
+
+bit_is_clear_402:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_402:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_67:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 4),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_403
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_403
+		mov #1,r13
+	
+
+bit_is_clear_403:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_403:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+cb_68:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_404
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_404
+		mov #1,r13
+	
+
+bit_is_clear_404:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_404:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_69:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_405
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_405
+		mov #1,r13
+	
+
+bit_is_clear_405:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_405:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_6a:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_406
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_406
+		mov #1,r13
+	
+
+bit_is_clear_406:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_406:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_6b:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_DE - _z80_BC,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_407
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_407
+		mov #1,r13
+	
+
+bit_is_clear_407:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_407:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_6c:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_408
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_408
+		mov #1,r13
+	
+
+bit_is_clear_408:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_408:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_6d:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_HL - _z80_BC,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_409
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_409
+		mov #1,r13
+	
+
+bit_is_clear_409:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_409:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_6f:
+
+	
+	
+	! Load operand to r0
+	mov r3,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_410
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_410
+		mov #1,r13
+	
+
+bit_is_clear_410:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_410:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_6e:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		mov.l @(_z80_HL - _z80_BC,r5),r0
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_411
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_411
+		mov #1,r13
+	
+
+bit_is_clear_411:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_411:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-12,r7
+
+
+
+
+	
+	
+	
+ddcb_68:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_412
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_412
+		mov #1,r13
+	
+
+bit_is_clear_412:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_412:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_69:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_413
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_413
+		mov #1,r13
+	
+
+bit_is_clear_413:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_413:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_6a:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_414
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_414
+		mov #1,r13
+	
+
+bit_is_clear_414:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_414:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_6b:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_415
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_415
+		mov #1,r13
+	
+
+bit_is_clear_415:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_415:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_6c:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_416
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_416
+		mov #1,r13
+	
+
+bit_is_clear_416:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_416:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_6d:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_417
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_417
+		mov #1,r13
+	
+
+bit_is_clear_417:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_417:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_6e:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_418
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_418
+		mov #1,r13
+	
+
+bit_is_clear_418:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_418:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_6f:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 5),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_419
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_419
+		mov #1,r13
+	
+
+bit_is_clear_419:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_419:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+cb_70:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_420
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_420
+		mov #1,r13
+	
+
+bit_is_clear_420:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_420:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_71:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_BC - _z80_BC,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_421
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_421
+		mov #1,r13
+	
+
+bit_is_clear_421:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_421:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_72:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_DE - _z80_BC + 1,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_422
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_422
+		mov #1,r13
+	
+
+bit_is_clear_422:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_422:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_73:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_DE - _z80_BC,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_423
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_423
+		mov #1,r13
+	
+
+bit_is_clear_423:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_423:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_74:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_HL - _z80_BC + 1,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_424
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_424
+		mov #1,r13
+	
+
+bit_is_clear_424:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_424:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_75:
+
+	
+	
+	! Load operand to r0
+	mov.b @(_z80_HL - _z80_BC,r5),r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_425
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_425
+		mov #1,r13
+	
+
+bit_is_clear_425:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_425:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_77:
+
+	
+	
+	! Load operand to r0
+	mov r3,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_426
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_426
+		mov #1,r13
+	
+
+bit_is_clear_426:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_426:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-8,r7
+
+
+
+
+	
+	
+	
+cb_76:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		mov.l @(_z80_HL - _z80_BC,r5),r0
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_427
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_427
+		mov #1,r13
+	
+
+bit_is_clear_427:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_427:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-12,r7
+
+
+
+
+	
+	
+	
+ddcb_70:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_428
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_428
+		mov #1,r13
+	
+
+bit_is_clear_428:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_428:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_71:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_429
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_429
+		mov #1,r13
+	
+
+bit_is_clear_429:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_429:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_72:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_430
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_430
+		mov #1,r13
+	
+
+bit_is_clear_430:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_430:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_73:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_431
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_431
+		mov #1,r13
+	
+
+bit_is_clear_431:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_431:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_74:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_432
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_432
+		mov #1,r13
+	
+
+bit_is_clear_432:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_432:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_75:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_433
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_433
+		mov #1,r13
+	
+
+bit_is_clear_433:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_433:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_76:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_434
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_434
+		mov #1,r13
+	
+
+bit_is_clear_434:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_434:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
+	
+	
+ddcb_77:
+
+	
+	
+	
+		mov.l @r10,r2
+                
+		jsr @r2
+		nop
+	
+
+	mov r1,r0
+
+	
+	
+	
+	
+
+	
+
+
+	tst #(1 << 6),r0
+	
+	! bit 3 and 5 are always cleared
+	! (actually they are bizarrely set, but
+	! theres no point emulating that, its just
+	! plain silly...)
+
+	bt/s bit_is_clear_435
+	mov #(0x08 | 0x02),r8
+
+	
+		bra finish_435
+		mov #1,r13
+	
+
+bit_is_clear_435:
+	mov #(0x02 | 0x08 | 0x01),r1
+	mov #0,r13                  ! set Z flag
+	or r1,r8
+
+finish_435:
+
+	
+	
+
+
+
+	
+	jmp @r12
+	add #-20,r7
+
+
+
+
+	
 	
 	
 cb_78:
@@ -33123,20 +36457,20 @@ cb_78:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_374
+	bt/s bit_is_clear_436
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_374
+		bra finish_436
 		mov #-1,r13
 	
 
-bit_is_clear_374:
+bit_is_clear_436:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_374:
+finish_436:
 
 	
 	
@@ -33150,6 +36484,7 @@ finish_374:
 
 
 
+	
 	
 	
 cb_79:
@@ -33174,20 +36509,20 @@ cb_79:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_375
+	bt/s bit_is_clear_437
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_375
+		bra finish_437
 		mov #-1,r13
 	
 
-bit_is_clear_375:
+bit_is_clear_437:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_375:
+finish_437:
 
 	
 	
@@ -33201,6 +36536,7 @@ finish_375:
 
 
 
+	
 	
 	
 cb_7a:
@@ -33225,20 +36561,20 @@ cb_7a:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_376
+	bt/s bit_is_clear_438
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_376
+		bra finish_438
 		mov #-1,r13
 	
 
-bit_is_clear_376:
+bit_is_clear_438:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_376:
+finish_438:
 
 	
 	
@@ -33252,6 +36588,7 @@ finish_376:
 
 
 
+	
 	
 	
 cb_7b:
@@ -33276,20 +36613,20 @@ cb_7b:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_377
+	bt/s bit_is_clear_439
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_377
+		bra finish_439
 		mov #-1,r13
 	
 
-bit_is_clear_377:
+bit_is_clear_439:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_377:
+finish_439:
 
 	
 	
@@ -33303,6 +36640,7 @@ finish_377:
 
 
 
+	
 	
 	
 cb_7c:
@@ -33327,20 +36665,20 @@ cb_7c:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_378
+	bt/s bit_is_clear_440
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_378
+		bra finish_440
 		mov #-1,r13
 	
 
-bit_is_clear_378:
+bit_is_clear_440:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_378:
+finish_440:
 
 	
 	
@@ -33354,6 +36692,7 @@ finish_378:
 
 
 
+	
 	
 	
 cb_7d:
@@ -33378,20 +36717,20 @@ cb_7d:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_379
+	bt/s bit_is_clear_441
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_379
+		bra finish_441
 		mov #-1,r13
 	
 
-bit_is_clear_379:
+bit_is_clear_441:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_379:
+finish_441:
 
 	
 	
@@ -33405,6 +36744,7 @@ finish_379:
 
 
 
+	
 	
 	
 cb_7f:
@@ -33429,20 +36769,20 @@ cb_7f:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_380
+	bt/s bit_is_clear_442
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_380
+		bra finish_442
 		mov #-1,r13
 	
 
-bit_is_clear_380:
+bit_is_clear_442:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_380:
+finish_442:
 
 	
 	
@@ -33458,12 +36798,14 @@ finish_380:
 
 	
 	
+	
 cb_7e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -33485,20 +36827,20 @@ cb_7e:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_381
+	bt/s bit_is_clear_443
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_381
+		bra finish_443
 		mov #-1,r13
 	
 
-bit_is_clear_381:
+bit_is_clear_443:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_381:
+finish_443:
 
 	
 	
@@ -33514,12 +36856,14 @@ finish_381:
 
 	
 	
+	
 ddcb_78:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -33541,20 +36885,20 @@ ddcb_78:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_382
+	bt/s bit_is_clear_444
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_382
+		bra finish_444
 		mov #-1,r13
 	
 
-bit_is_clear_382:
+bit_is_clear_444:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_382:
+finish_444:
 
 	
 	
@@ -33568,6 +36912,7 @@ finish_382:
 
 
 
+	
 	
 	
 ddcb_79:
@@ -33576,6 +36921,7 @@ ddcb_79:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -33597,20 +36943,20 @@ ddcb_79:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_383
+	bt/s bit_is_clear_445
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_383
+		bra finish_445
 		mov #-1,r13
 	
 
-bit_is_clear_383:
+bit_is_clear_445:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_383:
+finish_445:
 
 	
 	
@@ -33624,6 +36970,7 @@ finish_383:
 
 
 
+	
 	
 	
 ddcb_7a:
@@ -33632,6 +36979,7 @@ ddcb_7a:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -33653,20 +37001,20 @@ ddcb_7a:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_384
+	bt/s bit_is_clear_446
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_384
+		bra finish_446
 		mov #-1,r13
 	
 
-bit_is_clear_384:
+bit_is_clear_446:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_384:
+finish_446:
 
 	
 	
@@ -33680,6 +37028,7 @@ finish_384:
 
 
 
+	
 	
 	
 ddcb_7b:
@@ -33688,6 +37037,7 @@ ddcb_7b:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -33709,20 +37059,20 @@ ddcb_7b:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_385
+	bt/s bit_is_clear_447
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_385
+		bra finish_447
 		mov #-1,r13
 	
 
-bit_is_clear_385:
+bit_is_clear_447:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_385:
+finish_447:
 
 	
 	
@@ -33736,6 +37086,7 @@ finish_385:
 
 
 
+	
 	
 	
 ddcb_7c:
@@ -33744,6 +37095,7 @@ ddcb_7c:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -33765,20 +37117,20 @@ ddcb_7c:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_386
+	bt/s bit_is_clear_448
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_386
+		bra finish_448
 		mov #-1,r13
 	
 
-bit_is_clear_386:
+bit_is_clear_448:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_386:
+finish_448:
 
 	
 	
@@ -33792,6 +37144,7 @@ finish_386:
 
 
 
+	
 	
 	
 ddcb_7d:
@@ -33800,6 +37153,7 @@ ddcb_7d:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -33821,20 +37175,20 @@ ddcb_7d:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_387
+	bt/s bit_is_clear_449
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_387
+		bra finish_449
 		mov #-1,r13
 	
 
-bit_is_clear_387:
+bit_is_clear_449:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_387:
+finish_449:
 
 	
 	
@@ -33848,6 +37202,7 @@ finish_387:
 
 
 
+	
 	
 	
 ddcb_7e:
@@ -33856,6 +37211,7 @@ ddcb_7e:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -33877,20 +37233,20 @@ ddcb_7e:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_388
+	bt/s bit_is_clear_450
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_388
+		bra finish_450
 		mov #-1,r13
 	
 
-bit_is_clear_388:
+bit_is_clear_450:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_388:
+finish_450:
 
 	
 	
@@ -33904,6 +37260,7 @@ finish_388:
 
 
 
+	
 	
 	
 ddcb_7f:
@@ -33912,6 +37269,7 @@ ddcb_7f:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -33933,20 +37291,20 @@ ddcb_7f:
 	! theres no point emulating that, its just
 	! plain silly...)
 
-	bt/s bit_is_clear_389
+	bt/s bit_is_clear_451
 	mov #(0x08 | 0x02),r8
 
 	
-		bra finish_389
+		bra finish_451
 		mov #-1,r13
 	
 
-bit_is_clear_389:
+bit_is_clear_451:
 	mov #(0x02 | 0x08 | 0x01),r1
 	mov #0,r13                  ! set Z flag
 	or r1,r8
 
-finish_389:
+finish_451:
 
 	
 	
@@ -33960,6 +37318,7 @@ finish_389:
 
 
 
+	
 	
 	
 cb_80:
@@ -33986,6 +37345,7 @@ cb_80:
 
 	
 	
+	
 cb_81:
 
 	
@@ -34008,6 +37368,7 @@ cb_81:
 
 
 
+	
 	
 	
 cb_82:
@@ -34034,6 +37395,7 @@ cb_82:
 
 	
 	
+	
 cb_83:
 
 	
@@ -34056,6 +37418,7 @@ cb_83:
 
 
 
+	
 	
 	
 cb_84:
@@ -34082,6 +37445,7 @@ cb_84:
 
 	
 	
+	
 cb_85:
 
 	
@@ -34104,6 +37468,7 @@ cb_85:
 
 
 
+	
 	
 	
 cb_87:
@@ -34129,12 +37494,14 @@ cb_87:
 
 	
 	
+	
 cb_86:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -34150,6 +37517,7 @@ cb_86:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34164,12 +37532,14 @@ cb_86:
 
 	
 	
+	
 ddcb_80:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34185,6 +37555,7 @@ ddcb_80:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34205,12 +37576,14 @@ ddcb_80:
 
 	
 	
+	
 ddcb_81:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34226,6 +37599,7 @@ ddcb_81:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34246,12 +37620,14 @@ ddcb_81:
 
 	
 	
+	
 ddcb_82:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34267,6 +37643,7 @@ ddcb_82:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34287,12 +37664,14 @@ ddcb_82:
 
 	
 	
+	
 ddcb_83:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34308,6 +37687,7 @@ ddcb_83:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34328,12 +37708,14 @@ ddcb_83:
 
 	
 	
+	
 ddcb_84:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34349,6 +37731,7 @@ ddcb_84:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34369,12 +37752,14 @@ ddcb_84:
 
 	
 	
+	
 ddcb_85:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34390,6 +37775,7 @@ ddcb_85:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34410,12 +37796,14 @@ ddcb_85:
 
 	
 	
+	
 ddcb_86:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34431,6 +37819,7 @@ ddcb_86:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34445,12 +37834,14 @@ ddcb_86:
 
 	
 	
+	
 ddcb_87:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34466,6 +37857,7 @@ ddcb_87:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34483,6 +37875,7 @@ ddcb_87:
 
 
 
+	
 	
 	
 cb_88:
@@ -34509,6 +37902,7 @@ cb_88:
 
 	
 	
+	
 cb_89:
 
 	
@@ -34531,6 +37925,7 @@ cb_89:
 
 
 
+	
 	
 	
 cb_8a:
@@ -34557,6 +37952,7 @@ cb_8a:
 
 	
 	
+	
 cb_8b:
 
 	
@@ -34579,6 +37975,7 @@ cb_8b:
 
 
 
+	
 	
 	
 cb_8c:
@@ -34605,6 +38002,7 @@ cb_8c:
 
 	
 	
+	
 cb_8d:
 
 	
@@ -34627,6 +38025,7 @@ cb_8d:
 
 
 
+	
 	
 	
 cb_8f:
@@ -34652,12 +38051,14 @@ cb_8f:
 
 	
 	
+	
 cb_8e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -34673,6 +38074,7 @@ cb_8e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34687,12 +38089,14 @@ cb_8e:
 
 	
 	
+	
 ddcb_88:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34708,6 +38112,7 @@ ddcb_88:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34728,12 +38133,14 @@ ddcb_88:
 
 	
 	
+	
 ddcb_89:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34749,6 +38156,7 @@ ddcb_89:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34769,12 +38177,14 @@ ddcb_89:
 
 	
 	
+	
 ddcb_8a:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34790,6 +38200,7 @@ ddcb_8a:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34810,12 +38221,14 @@ ddcb_8a:
 
 	
 	
+	
 ddcb_8b:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34831,6 +38244,7 @@ ddcb_8b:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34851,12 +38265,14 @@ ddcb_8b:
 
 	
 	
+	
 ddcb_8c:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34872,6 +38288,7 @@ ddcb_8c:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34892,12 +38309,14 @@ ddcb_8c:
 
 	
 	
+	
 ddcb_8d:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34913,6 +38332,7 @@ ddcb_8d:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34933,12 +38353,14 @@ ddcb_8d:
 
 	
 	
+	
 ddcb_8e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34954,6 +38376,7 @@ ddcb_8e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -34968,12 +38391,14 @@ ddcb_8e:
 
 	
 	
+	
 ddcb_8f:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -34989,6 +38414,7 @@ ddcb_8f:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35006,6 +38432,7 @@ ddcb_8f:
 
 
 
+	
 	
 	
 cb_90:
@@ -35032,6 +38459,7 @@ cb_90:
 
 	
 	
+	
 cb_91:
 
 	
@@ -35054,6 +38482,7 @@ cb_91:
 
 
 
+	
 	
 	
 cb_92:
@@ -35080,6 +38509,7 @@ cb_92:
 
 	
 	
+	
 cb_93:
 
 	
@@ -35102,6 +38532,7 @@ cb_93:
 
 
 
+	
 	
 	
 cb_94:
@@ -35128,6 +38559,7 @@ cb_94:
 
 	
 	
+	
 cb_95:
 
 	
@@ -35150,6 +38582,7 @@ cb_95:
 
 
 
+	
 	
 	
 cb_97:
@@ -35175,12 +38608,14 @@ cb_97:
 
 	
 	
+	
 cb_96:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -35196,6 +38631,7 @@ cb_96:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35210,12 +38646,14 @@ cb_96:
 
 	
 	
+	
 ddcb_90:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35231,6 +38669,7 @@ ddcb_90:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35251,12 +38690,14 @@ ddcb_90:
 
 	
 	
+	
 ddcb_91:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35272,6 +38713,7 @@ ddcb_91:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35292,12 +38734,14 @@ ddcb_91:
 
 	
 	
+	
 ddcb_92:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35313,6 +38757,7 @@ ddcb_92:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35333,12 +38778,14 @@ ddcb_92:
 
 	
 	
+	
 ddcb_93:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35354,6 +38801,7 @@ ddcb_93:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35374,12 +38822,14 @@ ddcb_93:
 
 	
 	
+	
 ddcb_94:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35395,6 +38845,7 @@ ddcb_94:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35415,12 +38866,14 @@ ddcb_94:
 
 	
 	
+	
 ddcb_95:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35436,6 +38889,7 @@ ddcb_95:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35456,12 +38910,14 @@ ddcb_95:
 
 	
 	
+	
 ddcb_96:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35477,6 +38933,7 @@ ddcb_96:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35491,12 +38948,14 @@ ddcb_96:
 
 	
 	
+	
 ddcb_97:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35512,6 +38971,7 @@ ddcb_97:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35529,6 +38989,7 @@ ddcb_97:
 
 
 
+	
 	
 	
 cb_98:
@@ -35555,6 +39016,7 @@ cb_98:
 
 	
 	
+	
 cb_99:
 
 	
@@ -35577,6 +39039,7 @@ cb_99:
 
 
 
+	
 	
 	
 cb_9a:
@@ -35603,6 +39066,7 @@ cb_9a:
 
 	
 	
+	
 cb_9b:
 
 	
@@ -35625,6 +39089,7 @@ cb_9b:
 
 
 
+	
 	
 	
 cb_9c:
@@ -35651,6 +39116,7 @@ cb_9c:
 
 	
 	
+	
 cb_9d:
 
 	
@@ -35673,6 +39139,7 @@ cb_9d:
 
 
 
+	
 	
 	
 cb_9f:
@@ -35698,12 +39165,14 @@ cb_9f:
 
 	
 	
+	
 cb_9e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -35719,6 +39188,7 @@ cb_9e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35733,12 +39203,14 @@ cb_9e:
 
 	
 	
+	
 ddcb_98:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35754,6 +39226,7 @@ ddcb_98:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35774,12 +39247,14 @@ ddcb_98:
 
 	
 	
+	
 ddcb_99:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35795,6 +39270,7 @@ ddcb_99:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35815,12 +39291,14 @@ ddcb_99:
 
 	
 	
+	
 ddcb_9a:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35836,6 +39314,7 @@ ddcb_9a:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35856,12 +39335,14 @@ ddcb_9a:
 
 	
 	
+	
 ddcb_9b:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35877,6 +39358,7 @@ ddcb_9b:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35897,12 +39379,14 @@ ddcb_9b:
 
 	
 	
+	
 ddcb_9c:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35918,6 +39402,7 @@ ddcb_9c:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35938,12 +39423,14 @@ ddcb_9c:
 
 	
 	
+	
 ddcb_9d:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -35959,6 +39446,7 @@ ddcb_9d:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -35979,12 +39467,14 @@ ddcb_9d:
 
 	
 	
+	
 ddcb_9e:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36000,6 +39490,7 @@ ddcb_9e:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36014,12 +39505,14 @@ ddcb_9e:
 
 	
 	
+	
 ddcb_9f:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36035,6 +39528,7 @@ ddcb_9f:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36052,6 +39546,7 @@ ddcb_9f:
 
 
 
+	
 	
 	
 cb_a0:
@@ -36078,6 +39573,7 @@ cb_a0:
 
 	
 	
+	
 cb_a1:
 
 	
@@ -36100,6 +39596,7 @@ cb_a1:
 
 
 
+	
 	
 	
 cb_a2:
@@ -36126,6 +39623,7 @@ cb_a2:
 
 	
 	
+	
 cb_a3:
 
 	
@@ -36148,6 +39646,7 @@ cb_a3:
 
 
 
+	
 	
 	
 cb_a4:
@@ -36174,6 +39673,7 @@ cb_a4:
 
 	
 	
+	
 cb_a5:
 
 	
@@ -36196,6 +39696,7 @@ cb_a5:
 
 
 
+	
 	
 	
 cb_a7:
@@ -36221,12 +39722,14 @@ cb_a7:
 
 	
 	
+	
 cb_a6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -36242,6 +39745,7 @@ cb_a6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36256,12 +39760,14 @@ cb_a6:
 
 	
 	
+	
 ddcb_a0:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36277,6 +39783,7 @@ ddcb_a0:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36297,12 +39804,14 @@ ddcb_a0:
 
 	
 	
+	
 ddcb_a1:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36318,6 +39827,7 @@ ddcb_a1:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36338,12 +39848,14 @@ ddcb_a1:
 
 	
 	
+	
 ddcb_a2:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36359,6 +39871,7 @@ ddcb_a2:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36379,12 +39892,14 @@ ddcb_a2:
 
 	
 	
+	
 ddcb_a3:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36400,6 +39915,7 @@ ddcb_a3:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36420,12 +39936,14 @@ ddcb_a3:
 
 	
 	
+	
 ddcb_a4:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36441,6 +39959,7 @@ ddcb_a4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36461,12 +39980,14 @@ ddcb_a4:
 
 	
 	
+	
 ddcb_a5:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36482,6 +40003,7 @@ ddcb_a5:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36502,12 +40024,14 @@ ddcb_a5:
 
 	
 	
+	
 ddcb_a6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36523,6 +40047,7 @@ ddcb_a6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36537,12 +40062,14 @@ ddcb_a6:
 
 	
 	
+	
 ddcb_a7:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36558,6 +40085,7 @@ ddcb_a7:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36575,6 +40103,7 @@ ddcb_a7:
 
 
 
+	
 	
 	
 cb_a8:
@@ -36601,6 +40130,7 @@ cb_a8:
 
 	
 	
+	
 cb_a9:
 
 	
@@ -36623,6 +40153,7 @@ cb_a9:
 
 
 
+	
 	
 	
 cb_aa:
@@ -36649,6 +40180,7 @@ cb_aa:
 
 	
 	
+	
 cb_ab:
 
 	
@@ -36671,6 +40203,7 @@ cb_ab:
 
 
 
+	
 	
 	
 cb_ac:
@@ -36697,6 +40230,7 @@ cb_ac:
 
 	
 	
+	
 cb_ad:
 
 	
@@ -36719,6 +40253,7 @@ cb_ad:
 
 
 
+	
 	
 	
 cb_af:
@@ -36744,12 +40279,14 @@ cb_af:
 
 	
 	
+	
 cb_ae:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -36765,6 +40302,7 @@ cb_ae:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36779,12 +40317,14 @@ cb_ae:
 
 	
 	
+	
 ddcb_a8:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36800,6 +40340,7 @@ ddcb_a8:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36820,12 +40361,14 @@ ddcb_a8:
 
 	
 	
+	
 ddcb_a9:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36841,6 +40384,7 @@ ddcb_a9:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36861,12 +40405,14 @@ ddcb_a9:
 
 	
 	
+	
 ddcb_aa:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36882,6 +40428,7 @@ ddcb_aa:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36902,12 +40449,14 @@ ddcb_aa:
 
 	
 	
+	
 ddcb_ab:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36923,6 +40472,7 @@ ddcb_ab:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36943,12 +40493,14 @@ ddcb_ab:
 
 	
 	
+	
 ddcb_ac:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -36964,6 +40516,7 @@ ddcb_ac:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -36984,12 +40537,14 @@ ddcb_ac:
 
 	
 	
+	
 ddcb_ad:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37005,6 +40560,7 @@ ddcb_ad:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37025,12 +40581,14 @@ ddcb_ad:
 
 	
 	
+	
 ddcb_ae:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37046,6 +40604,7 @@ ddcb_ae:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37060,12 +40619,14 @@ ddcb_ae:
 
 	
 	
+	
 ddcb_af:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37081,6 +40642,7 @@ ddcb_af:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37098,6 +40660,7 @@ ddcb_af:
 
 
 
+	
 	
 	
 cb_b0:
@@ -37124,6 +40687,7 @@ cb_b0:
 
 	
 	
+	
 cb_b1:
 
 	
@@ -37146,6 +40710,7 @@ cb_b1:
 
 
 
+	
 	
 	
 cb_b2:
@@ -37172,6 +40737,7 @@ cb_b2:
 
 	
 	
+	
 cb_b3:
 
 	
@@ -37194,6 +40760,7 @@ cb_b3:
 
 
 
+	
 	
 	
 cb_b4:
@@ -37220,6 +40787,7 @@ cb_b4:
 
 	
 	
+	
 cb_b5:
 
 	
@@ -37242,6 +40810,7 @@ cb_b5:
 
 
 
+	
 	
 	
 cb_b7:
@@ -37267,12 +40836,14 @@ cb_b7:
 
 	
 	
+	
 cb_b6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -37288,6 +40859,7 @@ cb_b6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37302,12 +40874,14 @@ cb_b6:
 
 	
 	
+	
 ddcb_b0:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37323,6 +40897,7 @@ ddcb_b0:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37343,12 +40918,14 @@ ddcb_b0:
 
 	
 	
+	
 ddcb_b1:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37364,6 +40941,7 @@ ddcb_b1:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37384,12 +40962,14 @@ ddcb_b1:
 
 	
 	
+	
 ddcb_b2:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37405,6 +40985,7 @@ ddcb_b2:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37425,12 +41006,14 @@ ddcb_b2:
 
 	
 	
+	
 ddcb_b3:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37446,6 +41029,7 @@ ddcb_b3:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37466,12 +41050,14 @@ ddcb_b3:
 
 	
 	
+	
 ddcb_b4:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37487,6 +41073,7 @@ ddcb_b4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37507,12 +41094,14 @@ ddcb_b4:
 
 	
 	
+	
 ddcb_b5:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37528,6 +41117,7 @@ ddcb_b5:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37548,12 +41138,14 @@ ddcb_b5:
 
 	
 	
+	
 ddcb_b6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37569,6 +41161,7 @@ ddcb_b6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37583,12 +41176,14 @@ ddcb_b6:
 
 	
 	
+	
 ddcb_b7:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37604,6 +41199,7 @@ ddcb_b7:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37621,6 +41217,7 @@ ddcb_b7:
 
 
 
+	
 	
 	
 cb_b8:
@@ -37647,6 +41244,7 @@ cb_b8:
 
 	
 	
+	
 cb_b9:
 
 	
@@ -37669,6 +41267,7 @@ cb_b9:
 
 
 
+	
 	
 	
 cb_ba:
@@ -37695,6 +41294,7 @@ cb_ba:
 
 	
 	
+	
 cb_bb:
 
 	
@@ -37717,6 +41317,7 @@ cb_bb:
 
 
 
+	
 	
 	
 cb_bc:
@@ -37743,6 +41344,7 @@ cb_bc:
 
 	
 	
+	
 cb_bd:
 
 	
@@ -37765,6 +41367,7 @@ cb_bd:
 
 
 
+	
 	
 	
 cb_bf:
@@ -37790,12 +41393,14 @@ cb_bf:
 
 	
 	
+	
 cb_be:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -37811,6 +41416,7 @@ cb_be:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37825,12 +41431,14 @@ cb_be:
 
 	
 	
+	
 ddcb_b8:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37846,6 +41454,7 @@ ddcb_b8:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37866,12 +41475,14 @@ ddcb_b8:
 
 	
 	
+	
 ddcb_b9:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37887,6 +41498,7 @@ ddcb_b9:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37907,12 +41519,14 @@ ddcb_b9:
 
 	
 	
+	
 ddcb_ba:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37928,6 +41542,7 @@ ddcb_ba:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37948,12 +41563,14 @@ ddcb_ba:
 
 	
 	
+	
 ddcb_bb:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -37969,6 +41586,7 @@ ddcb_bb:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -37989,12 +41607,14 @@ ddcb_bb:
 
 	
 	
+	
 ddcb_bc:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38010,6 +41630,7 @@ ddcb_bc:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38030,12 +41651,14 @@ ddcb_bc:
 
 	
 	
+	
 ddcb_bd:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38051,6 +41674,7 @@ ddcb_bd:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38071,12 +41695,14 @@ ddcb_bd:
 
 	
 	
+	
 ddcb_be:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38092,6 +41718,7 @@ ddcb_be:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38106,12 +41733,14 @@ ddcb_be:
 
 	
 	
+	
 ddcb_bf:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38127,6 +41756,7 @@ ddcb_bf:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38144,6 +41774,7 @@ ddcb_bf:
 
 
 
+	
 	
 	
 cb_c0:
@@ -38170,6 +41801,7 @@ cb_c0:
 
 	
 	
+	
 cb_c1:
 
 	
@@ -38192,6 +41824,7 @@ cb_c1:
 
 
 
+	
 	
 	
 cb_c2:
@@ -38218,6 +41851,7 @@ cb_c2:
 
 	
 	
+	
 cb_c3:
 
 	
@@ -38240,6 +41874,7 @@ cb_c3:
 
 
 
+	
 	
 	
 cb_c4:
@@ -38266,6 +41901,7 @@ cb_c4:
 
 	
 	
+	
 cb_c5:
 
 	
@@ -38288,6 +41924,7 @@ cb_c5:
 
 
 
+	
 	
 	
 cb_c7:
@@ -38313,12 +41950,14 @@ cb_c7:
 
 	
 	
+	
 cb_c6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -38334,6 +41973,7 @@ cb_c6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38348,12 +41988,14 @@ cb_c6:
 
 	
 	
+	
 ddcb_c0:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38369,6 +42011,7 @@ ddcb_c0:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38389,12 +42032,14 @@ ddcb_c0:
 
 	
 	
+	
 ddcb_c1:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38410,6 +42055,7 @@ ddcb_c1:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38430,12 +42076,14 @@ ddcb_c1:
 
 	
 	
+	
 ddcb_c2:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38451,6 +42099,7 @@ ddcb_c2:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38471,12 +42120,14 @@ ddcb_c2:
 
 	
 	
+	
 ddcb_c3:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38492,6 +42143,7 @@ ddcb_c3:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38512,12 +42164,14 @@ ddcb_c3:
 
 	
 	
+	
 ddcb_c4:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38533,6 +42187,7 @@ ddcb_c4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38553,12 +42208,14 @@ ddcb_c4:
 
 	
 	
+	
 ddcb_c5:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38574,6 +42231,7 @@ ddcb_c5:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38594,12 +42252,14 @@ ddcb_c5:
 
 	
 	
+	
 ddcb_c6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38615,6 +42275,7 @@ ddcb_c6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38629,12 +42290,14 @@ ddcb_c6:
 
 	
 	
+	
 ddcb_c7:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38650,6 +42313,7 @@ ddcb_c7:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38667,6 +42331,7 @@ ddcb_c7:
 
 
 
+	
 	
 	
 cb_c8:
@@ -38693,6 +42358,7 @@ cb_c8:
 
 	
 	
+	
 cb_c9:
 
 	
@@ -38715,6 +42381,7 @@ cb_c9:
 
 
 
+	
 	
 	
 cb_ca:
@@ -38741,6 +42408,7 @@ cb_ca:
 
 	
 	
+	
 cb_cb:
 
 	
@@ -38763,6 +42431,7 @@ cb_cb:
 
 
 
+	
 	
 	
 cb_cc:
@@ -38789,6 +42458,7 @@ cb_cc:
 
 	
 	
+	
 cb_cd:
 
 	
@@ -38811,6 +42481,7 @@ cb_cd:
 
 
 
+	
 	
 	
 cb_cf:
@@ -38836,12 +42507,14 @@ cb_cf:
 
 	
 	
+	
 cb_ce:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -38857,6 +42530,7 @@ cb_ce:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38871,12 +42545,14 @@ cb_ce:
 
 	
 	
+	
 ddcb_c8:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38892,6 +42568,7 @@ ddcb_c8:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38912,12 +42589,14 @@ ddcb_c8:
 
 	
 	
+	
 ddcb_c9:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38933,6 +42612,7 @@ ddcb_c9:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38953,12 +42633,14 @@ ddcb_c9:
 
 	
 	
+	
 ddcb_ca:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -38974,6 +42656,7 @@ ddcb_ca:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -38994,12 +42677,14 @@ ddcb_ca:
 
 	
 	
+	
 ddcb_cb:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39015,6 +42700,7 @@ ddcb_cb:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39035,12 +42721,14 @@ ddcb_cb:
 
 	
 	
+	
 ddcb_cc:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39056,6 +42744,7 @@ ddcb_cc:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39076,12 +42765,14 @@ ddcb_cc:
 
 	
 	
+	
 ddcb_cd:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39097,6 +42788,7 @@ ddcb_cd:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39117,12 +42809,14 @@ ddcb_cd:
 
 	
 	
+	
 ddcb_ce:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39138,6 +42832,7 @@ ddcb_ce:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39152,12 +42847,14 @@ ddcb_ce:
 
 	
 	
+	
 ddcb_cf:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39173,6 +42870,7 @@ ddcb_cf:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39190,6 +42888,7 @@ ddcb_cf:
 
 
 
+	
 	
 	
 cb_d0:
@@ -39216,6 +42915,7 @@ cb_d0:
 
 	
 	
+	
 cb_d1:
 
 	
@@ -39238,6 +42938,7 @@ cb_d1:
 
 
 
+	
 	
 	
 cb_d2:
@@ -39264,6 +42965,7 @@ cb_d2:
 
 	
 	
+	
 cb_d3:
 
 	
@@ -39286,6 +42988,7 @@ cb_d3:
 
 
 
+	
 	
 	
 cb_d4:
@@ -39312,6 +43015,7 @@ cb_d4:
 
 	
 	
+	
 cb_d5:
 
 	
@@ -39334,6 +43038,7 @@ cb_d5:
 
 
 
+	
 	
 	
 cb_d7:
@@ -39359,12 +43064,14 @@ cb_d7:
 
 	
 	
+	
 cb_d6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -39380,6 +43087,7 @@ cb_d6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39394,12 +43102,14 @@ cb_d6:
 
 	
 	
+	
 ddcb_d0:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39415,6 +43125,7 @@ ddcb_d0:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39435,12 +43146,14 @@ ddcb_d0:
 
 	
 	
+	
 ddcb_d1:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39456,6 +43169,7 @@ ddcb_d1:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39476,12 +43190,14 @@ ddcb_d1:
 
 	
 	
+	
 ddcb_d2:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39497,6 +43213,7 @@ ddcb_d2:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39517,12 +43234,14 @@ ddcb_d2:
 
 	
 	
+	
 ddcb_d3:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39538,6 +43257,7 @@ ddcb_d3:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39558,12 +43278,14 @@ ddcb_d3:
 
 	
 	
+	
 ddcb_d4:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39579,6 +43301,7 @@ ddcb_d4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39599,12 +43322,14 @@ ddcb_d4:
 
 	
 	
+	
 ddcb_d5:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39620,6 +43345,7 @@ ddcb_d5:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39640,12 +43366,14 @@ ddcb_d5:
 
 	
 	
+	
 ddcb_d6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39661,6 +43389,7 @@ ddcb_d6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39675,12 +43404,14 @@ ddcb_d6:
 
 	
 	
+	
 ddcb_d7:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39696,6 +43427,7 @@ ddcb_d7:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39713,6 +43445,7 @@ ddcb_d7:
 
 
 
+	
 	
 	
 cb_d8:
@@ -39739,6 +43472,7 @@ cb_d8:
 
 	
 	
+	
 cb_d9:
 
 	
@@ -39761,6 +43495,7 @@ cb_d9:
 
 
 
+	
 	
 	
 cb_da:
@@ -39787,6 +43522,7 @@ cb_da:
 
 	
 	
+	
 cb_db:
 
 	
@@ -39809,6 +43545,7 @@ cb_db:
 
 
 
+	
 	
 	
 cb_dc:
@@ -39835,6 +43572,7 @@ cb_dc:
 
 	
 	
+	
 cb_dd:
 
 	
@@ -39857,6 +43595,7 @@ cb_dd:
 
 
 
+	
 	
 	
 cb_df:
@@ -39882,12 +43621,14 @@ cb_df:
 
 	
 	
+	
 cb_de:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -39903,6 +43644,7 @@ cb_de:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39917,12 +43659,14 @@ cb_de:
 
 	
 	
+	
 ddcb_d8:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39938,6 +43682,7 @@ ddcb_d8:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39958,12 +43703,14 @@ ddcb_d8:
 
 	
 	
+	
 ddcb_d9:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -39979,6 +43726,7 @@ ddcb_d9:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -39999,12 +43747,14 @@ ddcb_d9:
 
 	
 	
+	
 ddcb_da:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40020,6 +43770,7 @@ ddcb_da:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40040,12 +43791,14 @@ ddcb_da:
 
 	
 	
+	
 ddcb_db:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40061,6 +43814,7 @@ ddcb_db:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40081,12 +43835,14 @@ ddcb_db:
 
 	
 	
+	
 ddcb_dc:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40102,6 +43858,7 @@ ddcb_dc:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40122,12 +43879,14 @@ ddcb_dc:
 
 	
 	
+	
 ddcb_dd:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40143,6 +43902,7 @@ ddcb_dd:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40163,12 +43923,14 @@ ddcb_dd:
 
 	
 	
+	
 ddcb_de:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40184,6 +43946,7 @@ ddcb_de:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40198,12 +43961,14 @@ ddcb_de:
 
 	
 	
+	
 ddcb_df:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40219,6 +43984,7 @@ ddcb_df:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40236,6 +44002,7 @@ ddcb_df:
 
 
 
+	
 	
 	
 cb_e0:
@@ -40262,6 +44029,7 @@ cb_e0:
 
 	
 	
+	
 cb_e1:
 
 	
@@ -40284,6 +44052,7 @@ cb_e1:
 
 
 
+	
 	
 	
 cb_e2:
@@ -40310,6 +44079,7 @@ cb_e2:
 
 	
 	
+	
 cb_e3:
 
 	
@@ -40332,6 +44102,7 @@ cb_e3:
 
 
 
+	
 	
 	
 cb_e4:
@@ -40358,6 +44129,7 @@ cb_e4:
 
 	
 	
+	
 cb_e5:
 
 	
@@ -40380,6 +44152,7 @@ cb_e5:
 
 
 
+	
 	
 	
 cb_e7:
@@ -40405,12 +44178,14 @@ cb_e7:
 
 	
 	
+	
 cb_e6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -40426,6 +44201,7 @@ cb_e6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40440,12 +44216,14 @@ cb_e6:
 
 	
 	
+	
 ddcb_e0:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40461,6 +44239,7 @@ ddcb_e0:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40481,12 +44260,14 @@ ddcb_e0:
 
 	
 	
+	
 ddcb_e1:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40502,6 +44283,7 @@ ddcb_e1:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40522,12 +44304,14 @@ ddcb_e1:
 
 	
 	
+	
 ddcb_e2:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40543,6 +44327,7 @@ ddcb_e2:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40563,12 +44348,14 @@ ddcb_e2:
 
 	
 	
+	
 ddcb_e3:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40584,6 +44371,7 @@ ddcb_e3:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40604,12 +44392,14 @@ ddcb_e3:
 
 	
 	
+	
 ddcb_e4:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40625,6 +44415,7 @@ ddcb_e4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40645,12 +44436,14 @@ ddcb_e4:
 
 	
 	
+	
 ddcb_e5:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40666,6 +44459,7 @@ ddcb_e5:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40686,12 +44480,14 @@ ddcb_e5:
 
 	
 	
+	
 ddcb_e6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40707,6 +44503,7 @@ ddcb_e6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40721,12 +44518,14 @@ ddcb_e6:
 
 	
 	
+	
 ddcb_e7:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40742,6 +44541,7 @@ ddcb_e7:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40759,6 +44559,7 @@ ddcb_e7:
 
 
 
+	
 	
 	
 cb_e8:
@@ -40785,6 +44586,7 @@ cb_e8:
 
 	
 	
+	
 cb_e9:
 
 	
@@ -40807,6 +44609,7 @@ cb_e9:
 
 
 
+	
 	
 	
 cb_ea:
@@ -40833,6 +44636,7 @@ cb_ea:
 
 	
 	
+	
 cb_eb:
 
 	
@@ -40855,6 +44659,7 @@ cb_eb:
 
 
 
+	
 	
 	
 cb_ec:
@@ -40881,6 +44686,7 @@ cb_ec:
 
 	
 	
+	
 cb_ed:
 
 	
@@ -40903,6 +44709,7 @@ cb_ed:
 
 
 
+	
 	
 	
 cb_ef:
@@ -40928,12 +44735,14 @@ cb_ef:
 
 	
 	
+	
 cb_ee:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -40949,6 +44758,7 @@ cb_ee:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -40963,12 +44773,14 @@ cb_ee:
 
 	
 	
+	
 ddcb_e8:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -40984,6 +44796,7 @@ ddcb_e8:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41004,12 +44817,14 @@ ddcb_e8:
 
 	
 	
+	
 ddcb_e9:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41025,6 +44840,7 @@ ddcb_e9:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41045,12 +44861,14 @@ ddcb_e9:
 
 	
 	
+	
 ddcb_ea:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41066,6 +44884,7 @@ ddcb_ea:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41086,12 +44905,14 @@ ddcb_ea:
 
 	
 	
+	
 ddcb_eb:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41107,6 +44928,7 @@ ddcb_eb:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41127,12 +44949,14 @@ ddcb_eb:
 
 	
 	
+	
 ddcb_ec:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41148,6 +44972,7 @@ ddcb_ec:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41168,12 +44993,14 @@ ddcb_ec:
 
 	
 	
+	
 ddcb_ed:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41189,6 +45016,7 @@ ddcb_ed:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41209,12 +45037,14 @@ ddcb_ed:
 
 	
 	
+	
 ddcb_ee:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41230,6 +45060,7 @@ ddcb_ee:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41244,12 +45075,14 @@ ddcb_ee:
 
 	
 	
+	
 ddcb_ef:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41265,6 +45098,7 @@ ddcb_ef:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41282,6 +45116,7 @@ ddcb_ef:
 
 
 
+	
 	
 	
 cb_f0:
@@ -41308,6 +45143,7 @@ cb_f0:
 
 	
 	
+	
 cb_f1:
 
 	
@@ -41330,6 +45166,7 @@ cb_f1:
 
 
 
+	
 	
 	
 cb_f2:
@@ -41356,6 +45193,7 @@ cb_f2:
 
 	
 	
+	
 cb_f3:
 
 	
@@ -41378,6 +45216,7 @@ cb_f3:
 
 
 
+	
 	
 	
 cb_f4:
@@ -41404,6 +45243,7 @@ cb_f4:
 
 	
 	
+	
 cb_f5:
 
 	
@@ -41426,6 +45266,7 @@ cb_f5:
 
 
 
+	
 	
 	
 cb_f7:
@@ -41451,12 +45292,14 @@ cb_f7:
 
 	
 	
+	
 cb_f6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -41472,6 +45315,7 @@ cb_f6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41486,12 +45330,14 @@ cb_f6:
 
 	
 	
+	
 ddcb_f0:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41507,6 +45353,7 @@ ddcb_f0:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41527,12 +45374,14 @@ ddcb_f0:
 
 	
 	
+	
 ddcb_f1:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41548,6 +45397,7 @@ ddcb_f1:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41568,12 +45418,14 @@ ddcb_f1:
 
 	
 	
+	
 ddcb_f2:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41589,6 +45441,7 @@ ddcb_f2:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41609,12 +45462,14 @@ ddcb_f2:
 
 	
 	
+	
 ddcb_f3:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41630,6 +45485,7 @@ ddcb_f3:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41650,12 +45506,14 @@ ddcb_f3:
 
 	
 	
+	
 ddcb_f4:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41671,6 +45529,7 @@ ddcb_f4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41691,12 +45550,14 @@ ddcb_f4:
 
 	
 	
+	
 ddcb_f5:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41712,6 +45573,7 @@ ddcb_f5:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41732,12 +45594,14 @@ ddcb_f5:
 
 	
 	
+	
 ddcb_f6:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41753,6 +45617,7 @@ ddcb_f6:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41767,12 +45632,14 @@ ddcb_f6:
 
 	
 	
+	
 ddcb_f7:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -41788,6 +45655,7 @@ ddcb_f7:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -41805,6 +45673,7 @@ ddcb_f7:
 
 
 
+	
 	
 	
 cb_f8:
@@ -41831,6 +45700,7 @@ cb_f8:
 
 	
 	
+	
 cb_f9:
 
 	
@@ -41853,6 +45723,7 @@ cb_f9:
 
 
 
+	
 	
 	
 cb_fa:
@@ -41879,6 +45750,7 @@ cb_fa:
 
 	
 	
+	
 cb_fb:
 
 	
@@ -41901,6 +45773,7 @@ cb_fb:
 
 
 
+	
 	
 	
 cb_fc:
@@ -41927,6 +45800,7 @@ cb_fc:
 
 	
 	
+	
 cb_fd:
 
 	
@@ -41949,6 +45823,7 @@ cb_fd:
 
 
 
+	
 	
 	
 cb_ff:
@@ -41974,12 +45849,14 @@ cb_ff:
 
 	
 	
+	
 cb_fe:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -41995,6 +45872,7 @@ cb_fe:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -42009,12 +45887,14 @@ cb_fe:
 
 	
 	
+	
 ddcb_f8:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -42030,6 +45910,7 @@ ddcb_f8:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -42050,12 +45931,14 @@ ddcb_f8:
 
 	
 	
+	
 ddcb_f9:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -42071,6 +45954,7 @@ ddcb_f9:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -42091,12 +45975,14 @@ ddcb_f9:
 
 	
 	
+	
 ddcb_fa:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -42112,6 +45998,7 @@ ddcb_fa:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -42132,12 +46019,14 @@ ddcb_fa:
 
 	
 	
+	
 ddcb_fb:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -42153,6 +46042,7 @@ ddcb_fb:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -42173,12 +46063,14 @@ ddcb_fb:
 
 	
 	
+	
 ddcb_fc:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -42194,6 +46086,7 @@ ddcb_fc:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -42214,12 +46107,14 @@ ddcb_fc:
 
 	
 	
+	
 ddcb_fd:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -42235,6 +46130,7 @@ ddcb_fd:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -42255,12 +46151,14 @@ ddcb_fd:
 
 	
 	
+	
 ddcb_fe:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -42276,6 +46174,7 @@ ddcb_fe:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -42290,12 +46189,14 @@ ddcb_fe:
 
 	
 	
+	
 ddcb_ff:
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		nop
 	
@@ -42311,6 +46212,7 @@ ddcb_ff:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -42334,6 +46236,7 @@ ddcb_ff:
 
 	
 	
+	
 op_c3:
 
 	
@@ -42342,7 +46245,6 @@ op_c3:
 	
 
 	
-
 
 	
 	
@@ -42354,7 +46256,7 @@ op_c3:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42367,7 +46269,7 @@ op_c3:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42381,39 +46283,66 @@ op_c3:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_452, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_390,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_390,r2
+		mov.l _mame_change_pc16_452,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_390,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_452, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
 
 	
 
+	
 
+	
 	
 	jmp @r12
 	add #-10,r7
 
 
-
 	.align 2
-	_mame_change_pc16_390: .long _mame_change_pc16
-	z80_callgcc_start_390: .long z80_callgcc_start
-	z80_callgcc_end_390: .long z80_callgcc_end
+	_mame_change_pc16_452: .long _mame_change_pc16
+	_z80_ICount_452: .long _z80_ICount 
 
 
 
 
+	
 	
 	
 op_da:
@@ -42437,7 +46366,7 @@ op_da:
 		
 	
 
-	bt dont_take_jump391
+	bt dont_take_jump453
 
 	
 	
@@ -42449,7 +46378,7 @@ op_da:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42462,7 +46391,7 @@ op_da:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42475,21 +46404,49 @@ op_da:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_453, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_391,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_391,r2
+		mov.l _mame_change_pc16_453,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_391,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_453, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -42499,15 +46456,8 @@ op_da:
 	add #-10,r7
 
 
-
-	.align 2
-	_mame_change_pc16_391: .long _mame_change_pc16
-	z80_callgcc_start_391: .long z80_callgcc_start
-	z80_callgcc_end_391: .long z80_callgcc_end
-
-
 	.align 5
-dont_take_jump391:
+dont_take_jump453:
 	add #2,r6    ! skip address
 	
 
@@ -42516,8 +46466,16 @@ dont_take_jump391:
 	add #-10,r7
 
 
+	.align 2
+
+	_mame_change_pc16_453: .long _mame_change_pc16
+
+	_z80_ICount_453: .long _z80_ICount 
 
 
+
+
+	
 	
 	
 op_d2:
@@ -42541,7 +46499,7 @@ op_d2:
 		
 	
 
-	bf dont_take_jump392
+	bf dont_take_jump454
 
 	
 	
@@ -42553,7 +46511,7 @@ op_d2:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42566,7 +46524,7 @@ op_d2:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42579,21 +46537,49 @@ op_d2:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_454, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_392,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_392,r2
+		mov.l _mame_change_pc16_454,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_392,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_454, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -42603,15 +46589,8 @@ op_d2:
 	add #-10,r7
 
 
-
-	.align 2
-	_mame_change_pc16_392: .long _mame_change_pc16
-	z80_callgcc_start_392: .long z80_callgcc_start
-	z80_callgcc_end_392: .long z80_callgcc_end
-
-
 	.align 5
-dont_take_jump392:
+dont_take_jump454:
 	add #2,r6    ! skip address
 	
 
@@ -42620,8 +46599,16 @@ dont_take_jump392:
 	add #-10,r7
 
 
+	.align 2
+
+	_mame_change_pc16_454: .long _mame_change_pc16
+
+	_z80_ICount_454: .long _z80_ICount 
 
 
+
+
+	
 	
 	
 op_ca:
@@ -42640,7 +46627,7 @@ op_ca:
 		tst #0xFF,r0
 	
 
-	bf dont_take_jump393
+	bf dont_take_jump455
 
 	
 	
@@ -42652,7 +46639,7 @@ op_ca:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42665,7 +46652,7 @@ op_ca:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42678,21 +46665,49 @@ op_ca:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_455, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_393,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_393,r2
+		mov.l _mame_change_pc16_455,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_393,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_455, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -42702,15 +46717,8 @@ op_ca:
 	add #-10,r7
 
 
-
-	.align 2
-	_mame_change_pc16_393: .long _mame_change_pc16
-	z80_callgcc_start_393: .long z80_callgcc_start
-	z80_callgcc_end_393: .long z80_callgcc_end
-
-
 	.align 5
-dont_take_jump393:
+dont_take_jump455:
 	add #2,r6    ! skip address
 	
 
@@ -42719,8 +46727,16 @@ dont_take_jump393:
 	add #-10,r7
 
 
+	.align 2
+
+	_mame_change_pc16_455: .long _mame_change_pc16
+
+	_z80_ICount_455: .long _z80_ICount 
 
 
+
+
+	
 	
 	
 op_c2:
@@ -42739,7 +46755,7 @@ op_c2:
 		tst #0xFF,r0
 	
 
-	bt dont_take_jump394
+	bt dont_take_jump456
 
 	
 	
@@ -42751,7 +46767,7 @@ op_c2:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42764,7 +46780,7 @@ op_c2:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42777,21 +46793,49 @@ op_c2:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_456, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_394,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_394,r2
+		mov.l _mame_change_pc16_456,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_394,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_456, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -42801,15 +46845,8 @@ op_c2:
 	add #-10,r7
 
 
-
-	.align 2
-	_mame_change_pc16_394: .long _mame_change_pc16
-	z80_callgcc_start_394: .long z80_callgcc_start
-	z80_callgcc_end_394: .long z80_callgcc_end
-
-
 	.align 5
-dont_take_jump394:
+dont_take_jump456:
 	add #2,r6    ! skip address
 	
 
@@ -42818,8 +46855,16 @@ dont_take_jump394:
 	add #-10,r7
 
 
+	.align 2
+
+	_mame_change_pc16_456: .long _mame_change_pc16
+
+	_z80_ICount_456: .long _z80_ICount 
 
 
+
+
+	
 	
 	
 op_ea:
@@ -42843,7 +46888,7 @@ op_ea:
 		
 	
 
-	bt dont_take_jump395
+	bt dont_take_jump457
 
 	
 	
@@ -42855,7 +46900,7 @@ op_ea:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42868,7 +46913,7 @@ op_ea:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42881,21 +46926,49 @@ op_ea:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_457, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_395,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_395,r2
+		mov.l _mame_change_pc16_457,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_395,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_457, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -42905,15 +46978,8 @@ op_ea:
 	add #-10,r7
 
 
-
-	.align 2
-	_mame_change_pc16_395: .long _mame_change_pc16
-	z80_callgcc_start_395: .long z80_callgcc_start
-	z80_callgcc_end_395: .long z80_callgcc_end
-
-
 	.align 5
-dont_take_jump395:
+dont_take_jump457:
 	add #2,r6    ! skip address
 	
 
@@ -42922,8 +46988,16 @@ dont_take_jump395:
 	add #-10,r7
 
 
+	.align 2
+
+	_mame_change_pc16_457: .long _mame_change_pc16
+
+	_z80_ICount_457: .long _z80_ICount 
 
 
+
+
+	
 	
 	
 op_e2:
@@ -42947,7 +47021,7 @@ op_e2:
 		
 	
 
-	bf dont_take_jump396
+	bf dont_take_jump458
 
 	
 	
@@ -42959,7 +47033,7 @@ op_e2:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42972,7 +47046,7 @@ op_e2:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -42985,21 +47059,49 @@ op_e2:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_458, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_396,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_396,r2
+		mov.l _mame_change_pc16_458,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_396,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_458, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -43009,15 +47111,8 @@ op_e2:
 	add #-10,r7
 
 
-
-	.align 2
-	_mame_change_pc16_396: .long _mame_change_pc16
-	z80_callgcc_start_396: .long z80_callgcc_start
-	z80_callgcc_end_396: .long z80_callgcc_end
-
-
 	.align 5
-dont_take_jump396:
+dont_take_jump458:
 	add #2,r6    ! skip address
 	
 
@@ -43026,8 +47121,16 @@ dont_take_jump396:
 	add #-10,r7
 
 
+	.align 2
+
+	_mame_change_pc16_458: .long _mame_change_pc16
+
+	_z80_ICount_458: .long _z80_ICount 
 
 
+
+
+	
 	
 	
 op_fa:
@@ -43048,7 +47151,7 @@ op_fa:
 		
 	
 
-	bt dont_take_jump397
+	bt dont_take_jump459
 
 	
 	
@@ -43060,7 +47163,7 @@ op_fa:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -43073,7 +47176,7 @@ op_fa:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -43086,21 +47189,49 @@ op_fa:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_459, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_397,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_397,r2
+		mov.l _mame_change_pc16_459,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_397,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_459, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -43110,15 +47241,8 @@ op_fa:
 	add #-10,r7
 
 
-
-	.align 2
-	_mame_change_pc16_397: .long _mame_change_pc16
-	z80_callgcc_start_397: .long z80_callgcc_start
-	z80_callgcc_end_397: .long z80_callgcc_end
-
-
 	.align 5
-dont_take_jump397:
+dont_take_jump459:
 	add #2,r6    ! skip address
 	
 
@@ -43127,8 +47251,16 @@ dont_take_jump397:
 	add #-10,r7
 
 
+	.align 2
+
+	_mame_change_pc16_459: .long _mame_change_pc16
+
+	_z80_ICount_459: .long _z80_ICount 
 
 
+
+
+	
 	
 	
 op_f2:
@@ -43149,7 +47281,7 @@ op_f2:
 		
 	
 
-	bf dont_take_jump398
+	bf dont_take_jump460
 
 	
 	
@@ -43161,7 +47293,7 @@ op_f2:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -43174,7 +47306,7 @@ op_f2:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -43187,21 +47319,49 @@ op_f2:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_460, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_398,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_398,r2
+		mov.l _mame_change_pc16_460,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_398,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_460, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -43211,15 +47371,8 @@ op_f2:
 	add #-10,r7
 
 
-
-	.align 2
-	_mame_change_pc16_398: .long _mame_change_pc16
-	z80_callgcc_start_398: .long z80_callgcc_start
-	z80_callgcc_end_398: .long z80_callgcc_end
-
-
 	.align 5
-dont_take_jump398:
+dont_take_jump460:
 	add #2,r6    ! skip address
 	
 
@@ -43228,8 +47381,16 @@ dont_take_jump398:
 	add #-10,r7
 
 
+	.align 2
+
+	_mame_change_pc16_460: .long _mame_change_pc16
+
+	_z80_ICount_460: .long _z80_ICount 
 
 
+
+
+	
 	
 	
 op_18:
@@ -43237,11 +47398,10 @@ op_18:
 	
 	
 	
-	
 
 	
 
-
+	
 	
 	
 	
@@ -43249,31 +47409,61 @@ op_18:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
-	add r0,r6
+
+        add r0,r6
+	
 	
 
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_461, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_399,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_399,r2
+		mov.l _mame_change_pc16_461,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_399,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_461, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -43283,21 +47473,26 @@ op_18:
 	add #-12,r7
 
 
-
 	.align 2
-	_mame_change_pc16_399: .long _mame_change_pc16
-	z80_callgcc_start_399: .long z80_callgcc_start
-	z80_callgcc_end_399: .long z80_callgcc_end
+
+	_mame_change_pc16_461: .long _mame_change_pc16
+
+	_z80_ICount_461: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 op_38:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -43310,16 +47505,10 @@ op_38:
 		
 	
 
-	bt dont_take_jump399
+	bt dont_take_jump462
 
 	
 	
-	
-	
-
-	
-
-
 	
 	
 	
@@ -43327,51 +47516,81 @@ op_38:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
-	add r0,r6
+
+        add r0,r6
+	
 	
 
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_462, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_400,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_400,r2
+		mov.l _mame_change_pc16_462,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_400,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_462, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-7,r7
-
+	add #-12,r7
 
 
 	.align 2
-	_mame_change_pc16_400: .long _mame_change_pc16
-	z80_callgcc_start_400: .long z80_callgcc_start
-	z80_callgcc_end_400: .long z80_callgcc_end
 
+	_mame_change_pc16_462: .long _mame_change_pc16
+
+	_z80_ICount_462: .long _z80_ICount 
 
 
 	.align 5
-dont_take_jump399:
+dont_take_jump462:
 	add #1,r6        ! skip over the displacement
+	
 	
 
 	
@@ -43381,12 +47600,18 @@ dont_take_jump399:
 
 
 
+	
 	
 	
 op_30:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -43399,16 +47624,10 @@ op_30:
 		
 	
 
-	bf dont_take_jump400
+	bf dont_take_jump463
 
 	
 	
-	
-	
-
-	
-
-
 	
 	
 	
@@ -43416,51 +47635,81 @@ op_30:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
-	add r0,r6
+
+        add r0,r6
+	
 	
 
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_463, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_401,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_401,r2
+		mov.l _mame_change_pc16_463,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_401,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_463, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-7,r7
-
+	add #-12,r7
 
 
 	.align 2
-	_mame_change_pc16_401: .long _mame_change_pc16
-	z80_callgcc_start_401: .long z80_callgcc_start
-	z80_callgcc_end_401: .long z80_callgcc_end
 
+	_mame_change_pc16_463: .long _mame_change_pc16
+
+	_z80_ICount_463: .long _z80_ICount 
 
 
 	.align 5
-dont_take_jump400:
+dont_take_jump463:
 	add #1,r6        ! skip over the displacement
+	
 	
 
 	
@@ -43470,12 +47719,18 @@ dont_take_jump400:
 
 
 
+	
 	
 	
 op_28:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -43483,16 +47738,10 @@ op_28:
 		tst #0xFF,r0
 	
 
-	bf dont_take_jump401
+	bf dont_take_jump464
 
 	
 	
-	
-	
-
-	
-
-
 	
 	
 	
@@ -43500,51 +47749,81 @@ op_28:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
-	add r0,r6
+
+        add r0,r6
+	
 	
 
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_464, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_402,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_402,r2
+		mov.l _mame_change_pc16_464,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_402,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_464, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-7,r7
-
+	add #-12,r7
 
 
 	.align 2
-	_mame_change_pc16_402: .long _mame_change_pc16
-	z80_callgcc_start_402: .long z80_callgcc_start
-	z80_callgcc_end_402: .long z80_callgcc_end
 
+	_mame_change_pc16_464: .long _mame_change_pc16
+
+	_z80_ICount_464: .long _z80_ICount 
 
 
 	.align 5
-dont_take_jump401:
+dont_take_jump464:
 	add #1,r6        ! skip over the displacement
+	
 	
 
 	
@@ -43554,12 +47833,18 @@ dont_take_jump401:
 
 
 
+	
 	
 	
 op_20:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -43567,16 +47852,10 @@ op_20:
 		tst #0xFF,r0
 	
 
-	bt dont_take_jump402
+	bt dont_take_jump465
 
 	
 	
-	
-	
-
-	
-
-
 	
 	
 	
@@ -43584,51 +47863,81 @@ op_20:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
-	add r0,r6
+
+        add r0,r6
+	
 	
 
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_465, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_403,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_403,r2
+		mov.l _mame_change_pc16_465,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_403,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_465, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-7,r7
-
+	add #-12,r7
 
 
 	.align 2
-	_mame_change_pc16_403: .long _mame_change_pc16
-	z80_callgcc_start_403: .long z80_callgcc_start
-	z80_callgcc_end_403: .long z80_callgcc_end
 
+	_mame_change_pc16_465: .long _mame_change_pc16
+
+	_z80_ICount_465: .long _z80_ICount 
 
 
 	.align 5
-dont_take_jump402:
+dont_take_jump465:
 	add #1,r6        ! skip over the displacement
+	
 	
 
 	
@@ -43638,6 +47947,7 @@ dont_take_jump402:
 
 
 
+	
 	
 	
 op_e9:
@@ -43649,29 +47959,57 @@ op_e9:
 
 	
 
-
 	mov.l @(_z80_HL - _z80_BC,r5),r0
+	
 	extu.w r0,r6
 
 
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_466, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_404,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_404,r2
+		mov.l _mame_change_pc16_466,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_404,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_466, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -43683,13 +48021,13 @@ op_e9:
 
 
 	.align 2
-	_mame_change_pc16_404: .long _mame_change_pc16
-	z80_callgcc_start_404: .long z80_callgcc_start
-	z80_callgcc_end_404: .long z80_callgcc_end
+	_mame_change_pc16_466: .long _mame_change_pc16
+	_z80_ICount_466: .long _z80_ICount 
 
 
 
 
+	
 	
 	
 dd_e9:
@@ -43701,29 +48039,57 @@ dd_e9:
 
 	
 
-
 	mov.l @(_z80_IX - _z80_BC,r5),r0
+	
 	extu.w r0,r6
 
 
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_467, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_405,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_405,r2
+		mov.l _mame_change_pc16_467,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_405,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_467, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -43735,13 +48101,13 @@ dd_e9:
 
 
 	.align 2
-	_mame_change_pc16_405: .long _mame_change_pc16
-	z80_callgcc_start_405: .long z80_callgcc_start
-	z80_callgcc_end_405: .long z80_callgcc_end
+	_mame_change_pc16_467: .long _mame_change_pc16
+	_z80_ICount_467: .long _z80_ICount 
 
 
 
 
+	
 	
 	
 fd_e9:
@@ -43753,29 +48119,57 @@ fd_e9:
 
 	
 
-
 	mov.l @(_z80_IY - _z80_BC,r5),r0
+	
 	extu.w r0,r6
 
 
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_468, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_406,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_406,r2
+		mov.l _mame_change_pc16_468,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_406,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_468, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -43787,13 +48181,13 @@ fd_e9:
 
 
 	.align 2
-	_mame_change_pc16_406: .long _mame_change_pc16
-	z80_callgcc_start_406: .long z80_callgcc_start
-	z80_callgcc_end_406: .long z80_callgcc_end
+	_mame_change_pc16_468: .long _mame_change_pc16
+	_z80_ICount_468: .long _z80_ICount 
 
 
 
 
+	
 	
 	
 op_10:
@@ -43808,7 +48202,7 @@ op_10:
 
 	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
 	dt r0
-	bt/s dont_take_jump407
+	bt/s dont_take_jump469
 	mov.b r0,@(_z80_BC - _z80_BC + 1,r5)
 
 	
@@ -43818,7 +48212,7 @@ op_10:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r0
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -43828,21 +48222,49 @@ op_10:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_469, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_407,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_407,r2
+		mov.l _mame_change_pc16_469,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_407,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_469, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -43852,21 +48274,20 @@ op_10:
 	add #-13,r7
 
 
-
-	.align 2
-	_mame_change_pc16_407: .long _mame_change_pc16
-	z80_callgcc_start_407: .long z80_callgcc_start
-	z80_callgcc_end_407: .long z80_callgcc_end
-
-
 	.align 5
-dont_take_jump407:
+dont_take_jump469:
 	add #1,r6        ! skip over the displacement
 	
 
 	
 	jmp @r12
 	add #-8,r7
+
+	.align 2
+
+	_mame_change_pc16_469: .long _mame_change_pc16
+
+	_z80_ICount_469: .long _z80_ICount 
 
 
 
@@ -43875,6 +48296,7 @@ dont_take_jump407:
 ! call and return group
 
 
+	
 	
 	
 op_cd:
@@ -43886,7 +48308,7 @@ op_cd:
 
 	
 
-
+	
 	
 	
 	
@@ -43897,7 +48319,7 @@ op_cd:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -43910,7 +48332,7 @@ op_cd:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -43920,8 +48342,10 @@ op_cd:
 
 	! Write the PC
 	mov.l @(_z80_SP - _z80_BC,r5),r0
+
+	
 	mov.l r1,@-r15     ! Save the new PC into the stack
-	mov r6,r1
+	mov r6,r1        
 
        ! Un-base PC
 
@@ -43929,6 +48353,7 @@ op_cd:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -43939,6 +48364,7 @@ op_cd:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -43949,24 +48375,205 @@ op_cd:
 	extu.w r6,r6          ! Prepare PC
        ! Base PC
 
+
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_470, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_408,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_408,r2
+		mov.l _mame_change_pc16_470,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_408,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_470, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
+
+	
+
+
+	
+	jmp @r12
+	add #-17,r7
+
+
+	.align 2
+
+	_mame_change_pc16_470: .long _mame_change_pc16
+
+	_z80_ICount_470: .long _z80_ICount 
+
+
+
+	
+	
+	
+op_c4:
+
+   
+	
+	
+	
+
+	
+
+
+	
+	
+		mov r13,r0
+		tst #0xFF,r0
+	
+
+	bt dont_take_call_471
+	
+	
+	
+	
+	
+	
+	
+	
+
+	
+		mov.l @(4,r9),r0    ! r0 = OP_RAM
+		mov.b @(r0,r6),r2
+		add #1,r6              
+	
+	
+
+	extu.b r2,r2
+
+	
+	
+	
+
+	
+		mov.l @(4,r9),r0    ! r0 = OP_RAM
+		mov.b @(r0,r6),r1
+		add #1,r6              
+	
+	
+
+	shll8 r1
+	or r2,r1
+
+
+	! Write the PC
+	mov.l @(_z80_SP - _z80_BC,r5),r0
+
+	
+	mov.l r1,@-r15     ! Save the new PC into the stack
+	mov r6,r1        
+
+       ! Un-base PC
+
+	add #-1,r0
+	
+	
+		mov.l @(4,r10),r2
+                
+		jsr @r2
+		shlr8 r1
+	
+
+	add #-1,r0
+	mov r6,r1
+       ! Un-base PC
+	
+	
+		mov.l @(4,r10),r2
+                
+		jsr @r2
+		nop
+	
+
+
+	mov.l @r15+,r6
+	mov.w r0,@(_z80_SP - _z80_BC,r5)            ! Writeback SP
+	extu.w r6,r6          ! Prepare PC
+       ! Base PC
+
+
+	
+	
+		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_471, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+
+		mov.l _mame_change_pc16_471,r2
+		jsr @r2
+		mov r6,r4
+
+		
+
+	mov.l _z80_ICount_471, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -43977,136 +48584,7 @@ op_cd:
 
 
 
-	.align 2
-	_mame_change_pc16_408: .long _mame_change_pc16
-	z80_callgcc_start_408: .long z80_callgcc_start
-	z80_callgcc_end_408: .long z80_callgcc_end
-
-
-
-
-	
-	
-op_c4:
-
-   
-!	DEF_LN
-	
-
-	
-	
-		mov r13,r0
-		tst #0xFF,r0
-	
-
-	bt dont_take_call_408
-	
-	
-	
-	
-	
-
-	
-
-
-	
-	
-	
-	
-	
-	
-
-	
-		mov.l @(4,r9),r0    ! r0 = OP_RAM
-		mov.b @(r0,r6),r2
-		add #1,r6		
-	
-	
-
-	extu.b r2,r2
-
-	
-	
-	
-
-	
-		mov.l @(4,r9),r0    ! r0 = OP_RAM
-		mov.b @(r0,r6),r1
-		add #1,r6		
-	
-	
-
-	shll8 r1
-	or r2,r1
-
-
-	! Write the PC
-	mov.l @(_z80_SP - _z80_BC,r5),r0
-	mov.l r1,@-r15     ! Save the new PC into the stack
-	mov r6,r1
-
-       ! Un-base PC
-
-	add #-1,r0
-	
-	
-		mov.l @(4,r10),r2
-		jsr @r2
-		shlr8 r1
-	
-
-	add #-1,r0
-	mov r6,r1
-       ! Un-base PC
-	
-	
-		mov.l @(4,r10),r2
-		jsr @r2
-		nop
-	
-
-
-	mov.l @r15+,r6
-	mov.w r0,@(_z80_SP - _z80_BC,r5)            ! Writeback SP
-	extu.w r6,r6          ! Prepare PC
-       ! Base PC
-
-	
-	
-		
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_409,r2
-	jsr @r2
-	nop
-
-
-		mov.l _mame_change_pc16_409,r2
-		jsr @r2
-		mov r6,r4
-
-		
-	mov.l z80_callgcc_end_409,r2
-	jsr @r2
-	nop
-	lds.l @r15+,pr          ! restoring SH procedure register
-
-	
-
-
-	
-	jmp @r12
-	add #-10,r7
-
-
-
-	.align 2
-	_mame_change_pc16_409: .long _mame_change_pc16
-	z80_callgcc_start_409: .long z80_callgcc_start
-	z80_callgcc_end_409: .long z80_callgcc_end
-
-
-
-dont_take_call_408:
+dont_take_call_471:
 	add #2,r6
 	
 
@@ -44114,16 +48592,26 @@ dont_take_call_408:
 	jmp @r12
 	add #-10,r7
 
+	.align 2
+
+	_mame_change_pc16_471: .long _mame_change_pc16
+
+	_z80_ICount_471: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_cc:
 
    
-!	DEF_LN
 	
+	
+	
+
+	
+
 
 	
 	
@@ -44131,16 +48619,9 @@ op_cc:
 		tst #0xFF,r0
 	
 
-	bf dont_take_call_409
+	bf dont_take_call_472
 	
 	
-	
-	
-	
-
-	
-
-
 	
 	
 	
@@ -44151,7 +48632,7 @@ op_cc:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44164,7 +48645,7 @@ op_cc:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44174,8 +48655,10 @@ op_cc:
 
 	! Write the PC
 	mov.l @(_z80_SP - _z80_BC,r5),r0
+
+	
 	mov.l r1,@-r15     ! Save the new PC into the stack
-	mov r6,r1
+	mov r6,r1        
 
        ! Un-base PC
 
@@ -44183,6 +48666,7 @@ op_cc:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -44193,6 +48677,7 @@ op_cc:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -44203,42 +48688,64 @@ op_cc:
 	extu.w r6,r6          ! Prepare PC
        ! Base PC
 
+
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_472, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_410,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_410,r2
+		mov.l _mame_change_pc16_472,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_410,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_472, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-10,r7
+	add #-17,r7
 
 
 
-	.align 2
-	_mame_change_pc16_410: .long _mame_change_pc16
-	z80_callgcc_start_410: .long z80_callgcc_start
-	z80_callgcc_end_410: .long z80_callgcc_end
-
-
-
-dont_take_call_409:
+dont_take_call_472:
 	add #2,r6
 	
 
@@ -44246,16 +48753,26 @@ dont_take_call_409:
 	jmp @r12
 	add #-10,r7
 
+	.align 2
+
+	_mame_change_pc16_472: .long _mame_change_pc16
+
+	_z80_ICount_472: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_d4:
 
    
-!	DEF_LN
 	
+	
+	
+
+	
+
 
 	
 	
@@ -44268,16 +48785,9 @@ op_d4:
 		
 	
 
-	bf dont_take_call_410
+	bf dont_take_call_473
 	
 	
-	
-	
-	
-
-	
-
-
 	
 	
 	
@@ -44288,7 +48798,7 @@ op_d4:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44301,7 +48811,7 @@ op_d4:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44311,8 +48821,10 @@ op_d4:
 
 	! Write the PC
 	mov.l @(_z80_SP - _z80_BC,r5),r0
+
+	
 	mov.l r1,@-r15     ! Save the new PC into the stack
-	mov r6,r1
+	mov r6,r1        
 
        ! Un-base PC
 
@@ -44320,6 +48832,7 @@ op_d4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -44330,6 +48843,7 @@ op_d4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -44340,42 +48854,64 @@ op_d4:
 	extu.w r6,r6          ! Prepare PC
        ! Base PC
 
+
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_473, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_411,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_411,r2
+		mov.l _mame_change_pc16_473,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_411,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_473, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-10,r7
+	add #-17,r7
 
 
 
-	.align 2
-	_mame_change_pc16_411: .long _mame_change_pc16
-	z80_callgcc_start_411: .long z80_callgcc_start
-	z80_callgcc_end_411: .long z80_callgcc_end
-
-
-
-dont_take_call_410:
+dont_take_call_473:
 	add #2,r6
 	
 
@@ -44383,16 +48919,26 @@ dont_take_call_410:
 	jmp @r12
 	add #-10,r7
 
+	.align 2
+
+	_mame_change_pc16_473: .long _mame_change_pc16
+
+	_z80_ICount_473: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_dc:
 
    
-!	DEF_LN
 	
+	
+	
+
+	
+
 
 	
 	
@@ -44405,16 +48951,9 @@ op_dc:
 		
 	
 
-	bt dont_take_call_411
+	bt dont_take_call_474
 	
 	
-	
-	
-	
-
-	
-
-
 	
 	
 	
@@ -44425,7 +48964,7 @@ op_dc:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44438,7 +48977,7 @@ op_dc:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44448,8 +48987,10 @@ op_dc:
 
 	! Write the PC
 	mov.l @(_z80_SP - _z80_BC,r5),r0
+
+	
 	mov.l r1,@-r15     ! Save the new PC into the stack
-	mov r6,r1
+	mov r6,r1        
 
        ! Un-base PC
 
@@ -44457,6 +48998,7 @@ op_dc:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -44467,6 +49009,7 @@ op_dc:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -44477,42 +49020,64 @@ op_dc:
 	extu.w r6,r6          ! Prepare PC
        ! Base PC
 
+
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_474, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_412,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_412,r2
+		mov.l _mame_change_pc16_474,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_412,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_474, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-10,r7
+	add #-17,r7
 
 
 
-	.align 2
-	_mame_change_pc16_412: .long _mame_change_pc16
-	z80_callgcc_start_412: .long z80_callgcc_start
-	z80_callgcc_end_412: .long z80_callgcc_end
-
-
-
-dont_take_call_411:
+dont_take_call_474:
 	add #2,r6
 	
 
@@ -44520,16 +49085,26 @@ dont_take_call_411:
 	jmp @r12
 	add #-10,r7
 
+	.align 2
+
+	_mame_change_pc16_474: .long _mame_change_pc16
+
+	_z80_ICount_474: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_e4:
 
    
-!	DEF_LN
 	
+	
+	
+
+	
+
 
 	
 	
@@ -44542,16 +49117,9 @@ op_e4:
 		
 	
 
-	bf dont_take_call_412
+	bf dont_take_call_475
 	
 	
-	
-	
-	
-
-	
-
-
 	
 	
 	
@@ -44562,7 +49130,7 @@ op_e4:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44575,7 +49143,7 @@ op_e4:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44585,8 +49153,10 @@ op_e4:
 
 	! Write the PC
 	mov.l @(_z80_SP - _z80_BC,r5),r0
+
+	
 	mov.l r1,@-r15     ! Save the new PC into the stack
-	mov r6,r1
+	mov r6,r1        
 
        ! Un-base PC
 
@@ -44594,6 +49164,7 @@ op_e4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -44604,6 +49175,7 @@ op_e4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -44614,42 +49186,64 @@ op_e4:
 	extu.w r6,r6          ! Prepare PC
        ! Base PC
 
+
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_475, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_413,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_413,r2
+		mov.l _mame_change_pc16_475,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_413,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_475, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-10,r7
+	add #-17,r7
 
 
 
-	.align 2
-	_mame_change_pc16_413: .long _mame_change_pc16
-	z80_callgcc_start_413: .long z80_callgcc_start
-	z80_callgcc_end_413: .long z80_callgcc_end
-
-
-
-dont_take_call_412:
+dont_take_call_475:
 	add #2,r6
 	
 
@@ -44657,16 +49251,26 @@ dont_take_call_412:
 	jmp @r12
 	add #-10,r7
 
+	.align 2
+
+	_mame_change_pc16_475: .long _mame_change_pc16
+
+	_z80_ICount_475: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_ec:
 
    
-!	DEF_LN
 	
+	
+	
+
+	
+
 
 	
 	
@@ -44679,16 +49283,9 @@ op_ec:
 		
 	
 
-	bt dont_take_call_413
+	bt dont_take_call_476
 	
 	
-	
-	
-	
-
-	
-
-
 	
 	
 	
@@ -44699,7 +49296,7 @@ op_ec:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44712,7 +49309,7 @@ op_ec:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44722,8 +49319,10 @@ op_ec:
 
 	! Write the PC
 	mov.l @(_z80_SP - _z80_BC,r5),r0
+
+	
 	mov.l r1,@-r15     ! Save the new PC into the stack
-	mov r6,r1
+	mov r6,r1        
 
        ! Un-base PC
 
@@ -44731,6 +49330,7 @@ op_ec:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -44741,6 +49341,7 @@ op_ec:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -44751,42 +49352,64 @@ op_ec:
 	extu.w r6,r6          ! Prepare PC
        ! Base PC
 
+
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_476, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_414,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_414,r2
+		mov.l _mame_change_pc16_476,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_414,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_476, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-10,r7
+	add #-17,r7
 
 
 
-	.align 2
-	_mame_change_pc16_414: .long _mame_change_pc16
-	z80_callgcc_start_414: .long z80_callgcc_start
-	z80_callgcc_end_414: .long z80_callgcc_end
-
-
-
-dont_take_call_413:
+dont_take_call_476:
 	add #2,r6
 	
 
@@ -44794,16 +49417,26 @@ dont_take_call_413:
 	jmp @r12
 	add #-10,r7
 
+	.align 2
+
+	_mame_change_pc16_476: .long _mame_change_pc16
+
+	_z80_ICount_476: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_f4:
 
    
-!	DEF_LN
 	
+	
+	
+
+	
+
 
 	
 	
@@ -44813,16 +49446,9 @@ op_f4:
 		
 	
 
-	bf dont_take_call_414
+	bf dont_take_call_477
 	
 	
-	
-	
-	
-
-	
-
-
 	
 	
 	
@@ -44833,7 +49459,7 @@ op_f4:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44846,7 +49472,7 @@ op_f4:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44856,8 +49482,10 @@ op_f4:
 
 	! Write the PC
 	mov.l @(_z80_SP - _z80_BC,r5),r0
+
+	
 	mov.l r1,@-r15     ! Save the new PC into the stack
-	mov r6,r1
+	mov r6,r1        
 
        ! Un-base PC
 
@@ -44865,6 +49493,7 @@ op_f4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -44875,6 +49504,7 @@ op_f4:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -44885,42 +49515,64 @@ op_f4:
 	extu.w r6,r6          ! Prepare PC
        ! Base PC
 
+
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_477, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_415,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_415,r2
+		mov.l _mame_change_pc16_477,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_415,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_477, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-10,r7
+	add #-17,r7
 
 
 
-	.align 2
-	_mame_change_pc16_415: .long _mame_change_pc16
-	z80_callgcc_start_415: .long z80_callgcc_start
-	z80_callgcc_end_415: .long z80_callgcc_end
-
-
-
-dont_take_call_414:
+dont_take_call_477:
 	add #2,r6
 	
 
@@ -44928,16 +49580,26 @@ dont_take_call_414:
 	jmp @r12
 	add #-10,r7
 
+	.align 2
+
+	_mame_change_pc16_477: .long _mame_change_pc16
+
+	_z80_ICount_477: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_fc:
 
    
-!	DEF_LN
 	
+	
+	
+
+	
+
 
 	
 	
@@ -44947,16 +49609,9 @@ op_fc:
 		
 	
 
-	bt dont_take_call_415
+	bt dont_take_call_478
 	
 	
-	
-	
-	
-
-	
-
-
 	
 	
 	
@@ -44967,7 +49622,7 @@ op_fc:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44980,7 +49635,7 @@ op_fc:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -44990,8 +49645,10 @@ op_fc:
 
 	! Write the PC
 	mov.l @(_z80_SP - _z80_BC,r5),r0
+
+	
 	mov.l r1,@-r15     ! Save the new PC into the stack
-	mov r6,r1
+	mov r6,r1        
 
        ! Un-base PC
 
@@ -44999,6 +49656,7 @@ op_fc:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -45009,6 +49667,7 @@ op_fc:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -45019,42 +49678,64 @@ op_fc:
 	extu.w r6,r6          ! Prepare PC
        ! Base PC
 
+
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_478, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_416,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_416,r2
+		mov.l _mame_change_pc16_478,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_416,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_478, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-10,r7
+	add #-17,r7
 
 
 
-	.align 2
-	_mame_change_pc16_416: .long _mame_change_pc16
-	z80_callgcc_start_416: .long z80_callgcc_start
-	z80_callgcc_end_416: .long z80_callgcc_end
-
-
-
-dont_take_call_415:
+dont_take_call_478:
 	add #2,r6
 	
 
@@ -45062,9 +49743,15 @@ dont_take_call_415:
 	jmp @r12
 	add #-10,r7
 
+	.align 2
+
+	_mame_change_pc16_478: .long _mame_change_pc16
+
+	_z80_ICount_478: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_c9:
@@ -45076,11 +49763,11 @@ op_c9:
 
 	
 
-
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -45089,6 +49776,7 @@ op_c9:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -45104,21 +49792,49 @@ op_c9:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_479, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_417,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_417,r2
+		mov.l _mame_change_pc16_479,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_417,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_479, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -45128,21 +49844,26 @@ op_c9:
 	add #-10,r7
 
 
-
 	.align 2
-	_mame_change_pc16_417: .long _mame_change_pc16
-	z80_callgcc_start_417: .long z80_callgcc_start
-	z80_callgcc_end_417: .long z80_callgcc_end
+
+	_mame_change_pc16_479: .long _mame_change_pc16
+
+	_z80_ICount_479: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 op_c0:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -45150,20 +49871,13 @@ op_c0:
 		tst #0xFF,r0
 	
 
-	bt dont_take_ret_417
-
-	
-	
-	
-	
-
-	
-
+	bt dont_take_ret_480
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -45172,6 +49886,7 @@ op_c0:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -45187,52 +49902,84 @@ op_c0:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_480, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_418,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_418,r2
+		mov.l _mame_change_pc16_480,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_418,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_480, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-5,r7
+	add #-11,r7
 
+
+dont_take_ret_480:
+	
+	jmp @r12
+	add #-5,r7
 
 
 	.align 2
-	_mame_change_pc16_418: .long _mame_change_pc16
-	z80_callgcc_start_418: .long z80_callgcc_start
-	z80_callgcc_end_418: .long z80_callgcc_end
+
+	_mame_change_pc16_480: .long _mame_change_pc16
+
+	_z80_ICount_480: .long _z80_ICount 
 
 
 
-dont_take_ret_417:
 	
-	jmp @r12
-	add #-5,r7
-
-
-
-
 	
 	
 op_c8:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -45240,20 +49987,13 @@ op_c8:
 		tst #0xFF,r0
 	
 
-	bf dont_take_ret_418
-
-	
-	
-	
-	
-
-	
-
+	bf dont_take_ret_481
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -45262,6 +50002,7 @@ op_c8:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -45277,52 +50018,84 @@ op_c8:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_481, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_419,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_419,r2
+		mov.l _mame_change_pc16_481,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_419,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_481, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-5,r7
+	add #-11,r7
 
+
+dont_take_ret_481:
+	
+	jmp @r12
+	add #-5,r7
 
 
 	.align 2
-	_mame_change_pc16_419: .long _mame_change_pc16
-	z80_callgcc_start_419: .long z80_callgcc_start
-	z80_callgcc_end_419: .long z80_callgcc_end
+
+	_mame_change_pc16_481: .long _mame_change_pc16
+
+	_z80_ICount_481: .long _z80_ICount 
 
 
 
-dont_take_ret_418:
 	
-	jmp @r12
-	add #-5,r7
-
-
-
-
 	
 	
 op_d0:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -45335,20 +50108,13 @@ op_d0:
 		
 	
 
-	bf dont_take_ret_419
-
-	
-	
-	
-	
-
-	
-
+	bf dont_take_ret_482
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -45357,6 +50123,7 @@ op_d0:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -45372,52 +50139,84 @@ op_d0:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_482, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_420,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_420,r2
+		mov.l _mame_change_pc16_482,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_420,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_482, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-5,r7
+	add #-11,r7
 
+
+dont_take_ret_482:
+	
+	jmp @r12
+	add #-5,r7
 
 
 	.align 2
-	_mame_change_pc16_420: .long _mame_change_pc16
-	z80_callgcc_start_420: .long z80_callgcc_start
-	z80_callgcc_end_420: .long z80_callgcc_end
+
+	_mame_change_pc16_482: .long _mame_change_pc16
+
+	_z80_ICount_482: .long _z80_ICount 
 
 
 
-dont_take_ret_419:
 	
-	jmp @r12
-	add #-5,r7
-
-
-
-
 	
 	
 op_d8:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -45430,20 +50229,13 @@ op_d8:
 		
 	
 
-	bt dont_take_ret_420
-
-	
-	
-	
-	
-
-	
-
+	bt dont_take_ret_483
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -45452,6 +50244,7 @@ op_d8:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -45467,52 +50260,84 @@ op_d8:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_483, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_421,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_421,r2
+		mov.l _mame_change_pc16_483,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_421,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_483, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-5,r7
+	add #-11,r7
 
+
+dont_take_ret_483:
+	
+	jmp @r12
+	add #-5,r7
 
 
 	.align 2
-	_mame_change_pc16_421: .long _mame_change_pc16
-	z80_callgcc_start_421: .long z80_callgcc_start
-	z80_callgcc_end_421: .long z80_callgcc_end
+
+	_mame_change_pc16_483: .long _mame_change_pc16
+
+	_z80_ICount_483: .long _z80_ICount 
 
 
 
-dont_take_ret_420:
 	
-	jmp @r12
-	add #-5,r7
-
-
-
-
 	
 	
 op_e0:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -45525,20 +50350,13 @@ op_e0:
 		
 	
 
-	bf dont_take_ret_421
-
-	
-	
-	
-	
-
-	
-
+	bf dont_take_ret_484
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -45547,6 +50365,7 @@ op_e0:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -45562,52 +50381,84 @@ op_e0:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_484, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_422,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_422,r2
+		mov.l _mame_change_pc16_484,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_422,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_484, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-5,r7
+	add #-11,r7
 
+
+dont_take_ret_484:
+	
+	jmp @r12
+	add #-5,r7
 
 
 	.align 2
-	_mame_change_pc16_422: .long _mame_change_pc16
-	z80_callgcc_start_422: .long z80_callgcc_start
-	z80_callgcc_end_422: .long z80_callgcc_end
+
+	_mame_change_pc16_484: .long _mame_change_pc16
+
+	_z80_ICount_484: .long _z80_ICount 
 
 
 
-dont_take_ret_421:
 	
-	jmp @r12
-	add #-5,r7
-
-
-
-
 	
 	
 op_e8:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -45620,20 +50471,13 @@ op_e8:
 		
 	
 
-	bt dont_take_ret_422
-
-	
-	
-	
-	
-
-	
-
+	bt dont_take_ret_485
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -45642,6 +50486,7 @@ op_e8:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -45657,52 +50502,84 @@ op_e8:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_485, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_423,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_423,r2
+		mov.l _mame_change_pc16_485,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_423,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_485, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-5,r7
+	add #-11,r7
 
+
+dont_take_ret_485:
+	
+	jmp @r12
+	add #-5,r7
 
 
 	.align 2
-	_mame_change_pc16_423: .long _mame_change_pc16
-	z80_callgcc_start_423: .long z80_callgcc_start
-	z80_callgcc_end_423: .long z80_callgcc_end
+
+	_mame_change_pc16_485: .long _mame_change_pc16
+
+	_z80_ICount_485: .long _z80_ICount 
 
 
 
-dont_take_ret_422:
 	
-	jmp @r12
-	add #-5,r7
-
-
-
-
 	
 	
 op_f0:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -45712,20 +50589,13 @@ op_f0:
 		
 	
 
-	bf dont_take_ret_423
-
-	
-	
-	
-	
-
-	
-
+	bf dont_take_ret_486
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -45734,6 +50604,7 @@ op_f0:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -45749,52 +50620,84 @@ op_f0:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_486, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_424,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_424,r2
+		mov.l _mame_change_pc16_486,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_424,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_486, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-5,r7
+	add #-11,r7
 
+
+dont_take_ret_486:
+	
+	jmp @r12
+	add #-5,r7
 
 
 	.align 2
-	_mame_change_pc16_424: .long _mame_change_pc16
-	z80_callgcc_start_424: .long z80_callgcc_start
-	z80_callgcc_end_424: .long z80_callgcc_end
+
+	_mame_change_pc16_486: .long _mame_change_pc16
+
+	_z80_ICount_486: .long _z80_ICount 
 
 
 
-dont_take_ret_423:
 	
-	jmp @r12
-	add #-5,r7
-
-
-
-
 	
 	
 op_f8:
 
    
 	
+	
+	
+
+	
+
 
 	
 	
@@ -45804,20 +50707,13 @@ op_f8:
 		
 	
 
-	bt dont_take_ret_424
-
-	
-	
-	
-	
-
-	
-
+	bt dont_take_ret_487
 
 	
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -45826,6 +50722,7 @@ op_f8:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -45841,46 +50738,73 @@ op_f8:
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_487, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_425,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_425,r2
+		mov.l _mame_change_pc16_487,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_425,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_487, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
 
 	
 	jmp @r12
-	add #-5,r7
+	add #-11,r7
 
+
+dont_take_ret_487:
+	
+	jmp @r12
+	add #-5,r7
 
 
 	.align 2
-	_mame_change_pc16_425: .long _mame_change_pc16
-	z80_callgcc_start_425: .long z80_callgcc_start
-	z80_callgcc_end_425: .long z80_callgcc_end
+
+	_mame_change_pc16_487: .long _mame_change_pc16
+
+	_z80_ICount_487: .long _z80_ICount 
 
 
 
-dont_take_ret_424:
 	
-	jmp @r12
-	add #-5,r7
-
-
-
-
 	
 	
 ed_4d:
@@ -45897,6 +50821,7 @@ ed_4d:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -45905,6 +50830,7 @@ ed_4d:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -45918,11 +50844,11 @@ ed_4d:
 
 
 	! Restore IFF1 & signal the BUS
-	mov.l _z80_IFF2_426,r0
+	mov.l _z80_IFF2_488,r0
 	mov.b @r0,r1        ! TMP_REG = IFF2
-	mov.l _z80_RetI_426,r2
+	mov.l _z80_RetI_488,r2
 	mov.l @r2,r2
-	mov.l _z80_IFF1_426,r0
+	mov.l _z80_IFF1_488,r0
 	jsr @r2
 	mov.b r1,@r0
 
@@ -45932,12 +50858,13 @@ ed_4d:
 
 	
 .align 2
-	_z80_IFF1_426: .long _z80_IFF1
-	_z80_IFF2_426: .long _z80_IFF2
-	_z80_RetI_426: .long _z80_RetI
+	_z80_IFF1_488: .long _z80_IFF1
+	_z80_IFF2_488: .long _z80_IFF2
+	_z80_RetI_488: .long _z80_RetI
 
 
 
+	
 	
 	
 ed_45:
@@ -45954,6 +50881,7 @@ ed_45:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -45962,6 +50890,7 @@ ed_45:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -45975,7 +50904,8 @@ ed_45:
 
 
 	! Restore IFF1 & signal the BUS
-	mov.l _z80_IFF2_427,r0
+	mov.l _z80_IFF2_489,r0
+
 	mov.b @r0,r1
 	dt r0                ! IFF1 is immediately before IFF2
 	mov.b r1,@r0
@@ -45986,11 +50916,12 @@ ed_45:
 
 	
 .align 2
-	_z80_IFF1_427: .long _z80_IFF1
-	_z80_IFF2_427: .long _z80_IFF2
+	_z80_IFF1_489: .long _z80_IFF1
+	_z80_IFF2_489: .long _z80_IFF2
 
 
 
+	
 	
 	
 ed_5d:
@@ -46007,6 +50938,7 @@ ed_5d:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -46015,6 +50947,7 @@ ed_5d:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -46028,7 +50961,8 @@ ed_5d:
 
 
 	! Restore IFF1 & signal the BUS
-	mov.l _z80_IFF2_428,r0
+	mov.l _z80_IFF2_490,r0
+
 	mov.b @r0,r1
 	dt r0                ! IFF1 is immediately before IFF2
 	mov.b r1,@r0
@@ -46039,11 +50973,12 @@ ed_5d:
 
 	
 .align 2
-	_z80_IFF1_428: .long _z80_IFF1
-	_z80_IFF2_428: .long _z80_IFF2
+	_z80_IFF1_490: .long _z80_IFF1
+	_z80_IFF2_490: .long _z80_IFF2
 
 
 
+	
 	
 	
 ed_55:
@@ -46060,6 +50995,7 @@ ed_55:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -46068,6 +51004,7 @@ ed_55:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -46081,7 +51018,8 @@ ed_55:
 
 
 	! Restore IFF1 & signal the BUS
-	mov.l _z80_IFF2_429,r0
+	mov.l _z80_IFF2_491,r0
+
 	mov.b @r0,r1
 	dt r0                ! IFF1 is immediately before IFF2
 	mov.b r1,@r0
@@ -46092,11 +51030,12 @@ ed_55:
 
 	
 .align 2
-	_z80_IFF1_429: .long _z80_IFF1
-	_z80_IFF2_429: .long _z80_IFF2
+	_z80_IFF1_491: .long _z80_IFF1
+	_z80_IFF2_491: .long _z80_IFF2
 
 
 
+	
 	
 	
 ed_6d:
@@ -46113,6 +51052,7 @@ ed_6d:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -46121,6 +51061,7 @@ ed_6d:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -46134,7 +51075,8 @@ ed_6d:
 
 
 	! Restore IFF1 & signal the BUS
-	mov.l _z80_IFF2_430,r0
+	mov.l _z80_IFF2_492,r0
+
 	mov.b @r0,r1
 	dt r0                ! IFF1 is immediately before IFF2
 	mov.b r1,@r0
@@ -46145,11 +51087,12 @@ ed_6d:
 
 	
 .align 2
-	_z80_IFF1_430: .long _z80_IFF1
-	_z80_IFF2_430: .long _z80_IFF2
+	_z80_IFF1_492: .long _z80_IFF1
+	_z80_IFF2_492: .long _z80_IFF2
 
 
 
+	
 	
 	
 ed_65:
@@ -46166,6 +51109,7 @@ ed_65:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -46174,6 +51118,7 @@ ed_65:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -46187,7 +51132,8 @@ ed_65:
 
 
 	! Restore IFF1 & signal the BUS
-	mov.l _z80_IFF2_431,r0
+	mov.l _z80_IFF2_493,r0
+
 	mov.b @r0,r1
 	dt r0                ! IFF1 is immediately before IFF2
 	mov.b r1,@r0
@@ -46198,11 +51144,12 @@ ed_65:
 
 	
 .align 2
-	_z80_IFF1_431: .long _z80_IFF1
-	_z80_IFF2_431: .long _z80_IFF2
+	_z80_IFF1_493: .long _z80_IFF1
+	_z80_IFF2_493: .long _z80_IFF2
 
 
 
+	
 	
 	
 ed_7d:
@@ -46219,6 +51166,7 @@ ed_7d:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -46227,6 +51175,7 @@ ed_7d:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -46240,7 +51189,8 @@ ed_7d:
 
 
 	! Restore IFF1 & signal the BUS
-	mov.l _z80_IFF2_432,r0
+	mov.l _z80_IFF2_494,r0
+
 	mov.b @r0,r1
 	dt r0                ! IFF1 is immediately before IFF2
 	mov.b r1,@r0
@@ -46251,11 +51201,12 @@ ed_7d:
 
 	
 .align 2
-	_z80_IFF1_432: .long _z80_IFF1
-	_z80_IFF2_432: .long _z80_IFF2
+	_z80_IFF1_494: .long _z80_IFF1
+	_z80_IFF2_494: .long _z80_IFF2
 
 
 
+	
 	
 	
 ed_75:
@@ -46272,6 +51223,7 @@ ed_75:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.w @(_z80_SP - _z80_BC,r5),r0
 	
@@ -46280,6 +51232,7 @@ ed_75:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		add #1,r0
 	
@@ -46293,7 +51246,8 @@ ed_75:
 
 
 	! Restore IFF1 & signal the BUS
-	mov.l _z80_IFF2_433,r0
+	mov.l _z80_IFF2_495,r0
+
 	mov.b @r0,r1
 	dt r0                ! IFF1 is immediately before IFF2
 	mov.b r1,@r0
@@ -46304,11 +51258,12 @@ ed_75:
 
 	
 .align 2
-	_z80_IFF1_433: .long _z80_IFF1
-	_z80_IFF2_433: .long _z80_IFF2
+	_z80_IFF1_495: .long _z80_IFF1
+	_z80_IFF2_495: .long _z80_IFF2
 
 
 
+	
 	
 	
 op_c7:
@@ -46320,15 +51275,16 @@ op_c7:
 
 	
 
-
 	! Write the PC
 	mov.w @(_z80_SP - _z80_BC,r5),r0
+
 	mov r6,r1
     ! Un-base PC
 	add #-1,r0
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -46339,6 +51295,7 @@ mov r6,r1
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -46351,21 +51308,49 @@ mov r6,r1
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_496, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_434,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_434,r2
+		mov.l _mame_change_pc16_496,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_434,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_496, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -46374,16 +51359,15 @@ mov r6,r1
 	jmp @r12
 	add #-11,r7
 
-
-
 	.align 2
-	_mame_change_pc16_434: .long _mame_change_pc16
-	z80_callgcc_start_434: .long z80_callgcc_start
-	z80_callgcc_end_434: .long z80_callgcc_end
+
+	_mame_change_pc16_496: .long _mame_change_pc16
+
+	_z80_ICount_496: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 op_cf:
@@ -46395,15 +51379,16 @@ op_cf:
 
 	
 
-
 	! Write the PC
 	mov.w @(_z80_SP - _z80_BC,r5),r0
+
 	mov r6,r1
     ! Un-base PC
 	add #-1,r0
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -46414,6 +51399,7 @@ mov r6,r1
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -46426,21 +51412,49 @@ mov r6,r1
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_497, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_435,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_435,r2
+		mov.l _mame_change_pc16_497,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_435,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_497, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -46449,16 +51463,15 @@ mov r6,r1
 	jmp @r12
 	add #-11,r7
 
-
-
 	.align 2
-	_mame_change_pc16_435: .long _mame_change_pc16
-	z80_callgcc_start_435: .long z80_callgcc_start
-	z80_callgcc_end_435: .long z80_callgcc_end
+
+	_mame_change_pc16_497: .long _mame_change_pc16
+
+	_z80_ICount_497: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 op_d7:
@@ -46470,15 +51483,16 @@ op_d7:
 
 	
 
-
 	! Write the PC
 	mov.w @(_z80_SP - _z80_BC,r5),r0
+
 	mov r6,r1
     ! Un-base PC
 	add #-1,r0
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -46489,6 +51503,7 @@ mov r6,r1
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -46501,21 +51516,49 @@ mov r6,r1
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_498, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_436,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_436,r2
+		mov.l _mame_change_pc16_498,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_436,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_498, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -46524,16 +51567,15 @@ mov r6,r1
 	jmp @r12
 	add #-11,r7
 
-
-
 	.align 2
-	_mame_change_pc16_436: .long _mame_change_pc16
-	z80_callgcc_start_436: .long z80_callgcc_start
-	z80_callgcc_end_436: .long z80_callgcc_end
+
+	_mame_change_pc16_498: .long _mame_change_pc16
+
+	_z80_ICount_498: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 op_df:
@@ -46545,15 +51587,16 @@ op_df:
 
 	
 
-
 	! Write the PC
 	mov.w @(_z80_SP - _z80_BC,r5),r0
+
 	mov r6,r1
     ! Un-base PC
 	add #-1,r0
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -46564,6 +51607,7 @@ mov r6,r1
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -46576,21 +51620,49 @@ mov r6,r1
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_499, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_437,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_437,r2
+		mov.l _mame_change_pc16_499,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_437,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_499, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -46599,16 +51671,15 @@ mov r6,r1
 	jmp @r12
 	add #-11,r7
 
-
-
 	.align 2
-	_mame_change_pc16_437: .long _mame_change_pc16
-	z80_callgcc_start_437: .long z80_callgcc_start
-	z80_callgcc_end_437: .long z80_callgcc_end
+
+	_mame_change_pc16_499: .long _mame_change_pc16
+
+	_z80_ICount_499: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 op_e7:
@@ -46620,15 +51691,16 @@ op_e7:
 
 	
 
-
 	! Write the PC
 	mov.w @(_z80_SP - _z80_BC,r5),r0
+
 	mov r6,r1
     ! Un-base PC
 	add #-1,r0
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -46639,6 +51711,7 @@ mov r6,r1
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -46651,21 +51724,49 @@ mov r6,r1
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_500, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_438,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_438,r2
+		mov.l _mame_change_pc16_500,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_438,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_500, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -46674,16 +51775,15 @@ mov r6,r1
 	jmp @r12
 	add #-11,r7
 
-
-
 	.align 2
-	_mame_change_pc16_438: .long _mame_change_pc16
-	z80_callgcc_start_438: .long z80_callgcc_start
-	z80_callgcc_end_438: .long z80_callgcc_end
+
+	_mame_change_pc16_500: .long _mame_change_pc16
+
+	_z80_ICount_500: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 op_ef:
@@ -46695,15 +51795,16 @@ op_ef:
 
 	
 
-
 	! Write the PC
 	mov.w @(_z80_SP - _z80_BC,r5),r0
+
 	mov r6,r1
     ! Un-base PC
 	add #-1,r0
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -46714,6 +51815,7 @@ mov r6,r1
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -46726,21 +51828,49 @@ mov r6,r1
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_501, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_439,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_439,r2
+		mov.l _mame_change_pc16_501,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_439,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_501, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -46749,16 +51879,15 @@ mov r6,r1
 	jmp @r12
 	add #-11,r7
 
-
-
 	.align 2
-	_mame_change_pc16_439: .long _mame_change_pc16
-	z80_callgcc_start_439: .long z80_callgcc_start
-	z80_callgcc_end_439: .long z80_callgcc_end
+
+	_mame_change_pc16_501: .long _mame_change_pc16
+
+	_z80_ICount_501: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 op_f7:
@@ -46770,15 +51899,16 @@ op_f7:
 
 	
 
-
 	! Write the PC
 	mov.w @(_z80_SP - _z80_BC,r5),r0
+
 	mov r6,r1
     ! Un-base PC
 	add #-1,r0
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -46789,6 +51919,7 @@ mov r6,r1
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -46801,21 +51932,49 @@ mov r6,r1
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_502, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_440,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_440,r2
+		mov.l _mame_change_pc16_502,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_440,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_502, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -46824,16 +51983,15 @@ mov r6,r1
 	jmp @r12
 	add #-11,r7
 
-
-
 	.align 2
-	_mame_change_pc16_440: .long _mame_change_pc16
-	z80_callgcc_start_440: .long z80_callgcc_start
-	z80_callgcc_end_440: .long z80_callgcc_end
+
+	_mame_change_pc16_502: .long _mame_change_pc16
+
+	_z80_ICount_502: .long _z80_ICount 
 
 
 
-
+	
 	
 	
 op_ff:
@@ -46845,15 +52003,16 @@ op_ff:
 
 	
 
-
 	! Write the PC
 	mov.w @(_z80_SP - _z80_BC,r5),r0
+
 	mov r6,r1
     ! Un-base PC
 	add #-1,r0
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -46864,6 +52023,7 @@ mov r6,r1
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		nop
 	
@@ -46876,21 +52036,49 @@ mov r6,r1
 	
 	
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_503, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_441,r2
-	jsr @r2
-	nop
 
 
-		mov.l _mame_change_pc16_441,r2
+		mov.l _mame_change_pc16_503,r2
 		jsr @r2
 		mov r6,r4
 
 		
-	mov.l z80_callgcc_end_441,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_503, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 	
 
@@ -46899,13 +52087,11 @@ mov r6,r1
 	jmp @r12
 	add #-11,r7
 
-
-
 	.align 2
-	_mame_change_pc16_441: .long _mame_change_pc16
-	z80_callgcc_start_441: .long z80_callgcc_start
-	z80_callgcc_end_441: .long z80_callgcc_end
 
+	_mame_change_pc16_503: .long _mame_change_pc16
+
+	_z80_ICount_503: .long _z80_ICount 
 
 
 
@@ -46913,6 +52099,7 @@ mov r6,r1
 ! I/O
 
 
+	
 	
 	
 op_d3:
@@ -46933,7 +52120,7 @@ op_d3:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -46950,36 +52137,64 @@ op_d3:
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_442,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_Out_442, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_504, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_504, r2
 	mov.l @r2,r2
 	extu.w r0,r4   ! first parameter  (address)
 	jsr @r2
 	extu.b r1,r5   ! second parameter (data)
 	
-	mov.l z80_callgcc_end_442,r2
-	jsr @r2
-	nop
-	lds.l @r15+,pr          ! restoring SH procedure register
 
+	mov.l _z80_ICount_504, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
 
 	
+
+
+
 	
 	jmp @r12
 	add #-11,r7
 
 
 .align 2
-	_z80_Out_442: .long _z80_Out
-	z80_callgcc_start_442: .long z80_callgcc_start
-	z80_callgcc_end_442: .long z80_callgcc_end
+	_z80_Out_504: .long _z80_Out
+	_z80_ICount_504: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_db:
@@ -47000,7 +52215,7 @@ op_db:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -47017,24 +52232,52 @@ op_db:
 		
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_443,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_In_443, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_505, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_505, r2
 	mov.l @r2,r2
 	jsr @r2
 	extu.w r0,r4          ! SH requires to get parameter value here
 	
-	mov.l z80_callgcc_end_443,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_505, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 		mov r0,r3
-	
+		
 	
 	
 	jmp @r12
@@ -47042,12 +52285,12 @@ op_db:
 
 
 .align 2
-	_z80_In_443: .long _z80_In
-	z80_callgcc_start_443: .long z80_callgcc_start
-	z80_callgcc_end_443: .long z80_callgcc_end
+	_z80_In_505: .long _z80_In
+	_z80_ICount_505: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_40:
@@ -47067,20 +52310,48 @@ ed_40:
 		
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_444,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_In_444, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_506, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_506, r2
 	mov.l @r2,r2
 	jsr @r2
 	extu.w r0,r4          ! SH requires to get parameter value here
 	
-	mov.l z80_callgcc_end_444,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_506, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 		mov.b r0,@(_z80_BC - _z80_BC + 1,r5)          ! write the result
@@ -47100,12 +52371,12 @@ ed_40:
 
 
 .align 2
-	_z80_In_444: .long _z80_In
-	z80_callgcc_start_444: .long z80_callgcc_start
-	z80_callgcc_end_444: .long z80_callgcc_end
+	_z80_In_506: .long _z80_In
+	_z80_ICount_506: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_48:
@@ -47125,20 +52396,48 @@ ed_48:
 		
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_445,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_In_445, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_507, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_507, r2
 	mov.l @r2,r2
 	jsr @r2
 	extu.w r0,r4          ! SH requires to get parameter value here
 	
-	mov.l z80_callgcc_end_445,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_507, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 		mov.b r0,@(_z80_BC - _z80_BC,r5)          ! write the result
@@ -47158,12 +52457,12 @@ ed_48:
 
 
 .align 2
-	_z80_In_445: .long _z80_In
-	z80_callgcc_start_445: .long z80_callgcc_start
-	z80_callgcc_end_445: .long z80_callgcc_end
+	_z80_In_507: .long _z80_In
+	_z80_ICount_507: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_50:
@@ -47183,20 +52482,48 @@ ed_50:
 		
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_446,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_In_446, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_508, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_508, r2
 	mov.l @r2,r2
 	jsr @r2
 	extu.w r0,r4          ! SH requires to get parameter value here
 	
-	mov.l z80_callgcc_end_446,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_508, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 		mov.b r0,@(_z80_DE - _z80_BC + 1,r5)          ! write the result
@@ -47216,12 +52543,12 @@ ed_50:
 
 
 .align 2
-	_z80_In_446: .long _z80_In
-	z80_callgcc_start_446: .long z80_callgcc_start
-	z80_callgcc_end_446: .long z80_callgcc_end
+	_z80_In_508: .long _z80_In
+	_z80_ICount_508: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_58:
@@ -47241,20 +52568,48 @@ ed_58:
 		
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_447,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_In_447, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_509, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_509, r2
 	mov.l @r2,r2
 	jsr @r2
 	extu.w r0,r4          ! SH requires to get parameter value here
 	
-	mov.l z80_callgcc_end_447,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_509, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 		mov.b r0,@(_z80_DE - _z80_BC,r5)          ! write the result
@@ -47274,12 +52629,12 @@ ed_58:
 
 
 .align 2
-	_z80_In_447: .long _z80_In
-	z80_callgcc_start_447: .long z80_callgcc_start
-	z80_callgcc_end_447: .long z80_callgcc_end
+	_z80_In_509: .long _z80_In
+	_z80_ICount_509: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_60:
@@ -47299,20 +52654,48 @@ ed_60:
 		
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_448,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_In_448, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_510, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_510, r2
 	mov.l @r2,r2
 	jsr @r2
 	extu.w r0,r4          ! SH requires to get parameter value here
 	
-	mov.l z80_callgcc_end_448,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_510, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 		mov.b r0,@(_z80_HL - _z80_BC + 1,r5)          ! write the result
@@ -47332,12 +52715,12 @@ ed_60:
 
 
 .align 2
-	_z80_In_448: .long _z80_In
-	z80_callgcc_start_448: .long z80_callgcc_start
-	z80_callgcc_end_448: .long z80_callgcc_end
+	_z80_In_510: .long _z80_In
+	_z80_ICount_510: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_68:
@@ -47357,20 +52740,48 @@ ed_68:
 		
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_449,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_In_449, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_511, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_511, r2
 	mov.l @r2,r2
 	jsr @r2
 	extu.w r0,r4          ! SH requires to get parameter value here
 	
-	mov.l z80_callgcc_end_449,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_511, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 		mov.b r0,@(_z80_HL - _z80_BC,r5)          ! write the result
@@ -47390,12 +52801,12 @@ ed_68:
 
 
 .align 2
-	_z80_In_449: .long _z80_In
-	z80_callgcc_start_449: .long z80_callgcc_start
-	z80_callgcc_end_449: .long z80_callgcc_end
+	_z80_In_511: .long _z80_In
+	_z80_ICount_511: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_70:
@@ -47413,20 +52824,48 @@ ed_70:
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_450,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_In_450, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_512, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_512, r2
 	mov.l @r2,r2
 	jsr @r2
 	extu.w r0,r4          ! SH requires to get parameter value here
 	
-	mov.l z80_callgcc_end_450,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_512, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 
@@ -47444,12 +52883,12 @@ ed_70:
 
 
 .align 2
-	_z80_In_450: .long _z80_In
-	z80_callgcc_start_450: .long z80_callgcc_start
-	z80_callgcc_end_450: .long z80_callgcc_end
+	_z80_In_512: .long _z80_In
+	_z80_ICount_512: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_78:
@@ -47469,24 +52908,52 @@ ed_78:
 		
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_451,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_In_451, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_513, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_513, r2
 	mov.l @r2,r2
 	jsr @r2
 	extu.w r0,r4          ! SH requires to get parameter value here
 	
-	mov.l z80_callgcc_end_451,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_513, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 		mov r0,r3
-	
+		
 	
 	
 	
@@ -47502,12 +52969,12 @@ ed_78:
 
 
 .align 2
-	_z80_In_451: .long _z80_In
-	z80_callgcc_start_451: .long z80_callgcc_start
-	z80_callgcc_end_451: .long z80_callgcc_end
+	_z80_In_513: .long _z80_In
+	_z80_ICount_513: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_41:
@@ -47522,26 +52989,55 @@ ed_41:
 
 	mov.l @(_z80_BC - _z80_BC,r5),r1
 	
+	
 		mov.b @(_z80_BC - _z80_BC + 1,r5),r0
 		
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_452,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_Out_452, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_514, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_514, r2
 	mov.l @r2,r2
 	extu.w r1,r4   ! first parameter  (address)
 	jsr @r2
 	extu.b r0,r5   ! second parameter (data)
 	
-	mov.l z80_callgcc_end_452,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_514, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 	
@@ -47552,12 +53048,12 @@ ed_41:
 
 
 .align 2
-	_z80_Out_452: .long _z80_Out
-	z80_callgcc_start_452: .long z80_callgcc_start
-	z80_callgcc_end_452: .long z80_callgcc_end
+	_z80_Out_514: .long _z80_Out
+	_z80_ICount_514: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_49:
@@ -47572,26 +53068,55 @@ ed_49:
 
 	mov.l @(_z80_BC - _z80_BC,r5),r1
 	
+	
 		mov.b @(_z80_BC - _z80_BC,r5),r0
 		
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_453,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_Out_453, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_515, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_515, r2
 	mov.l @r2,r2
 	extu.w r1,r4   ! first parameter  (address)
 	jsr @r2
 	extu.b r0,r5   ! second parameter (data)
 	
-	mov.l z80_callgcc_end_453,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_515, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 	
@@ -47602,12 +53127,12 @@ ed_49:
 
 
 .align 2
-	_z80_Out_453: .long _z80_Out
-	z80_callgcc_start_453: .long z80_callgcc_start
-	z80_callgcc_end_453: .long z80_callgcc_end
+	_z80_Out_515: .long _z80_Out
+	_z80_ICount_515: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_51:
@@ -47622,26 +53147,55 @@ ed_51:
 
 	mov.l @(_z80_BC - _z80_BC,r5),r1
 	
+	
 		mov.b @(_z80_DE - _z80_BC + 1,r5),r0
 		
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_454,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_Out_454, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_516, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_516, r2
 	mov.l @r2,r2
 	extu.w r1,r4   ! first parameter  (address)
 	jsr @r2
 	extu.b r0,r5   ! second parameter (data)
 	
-	mov.l z80_callgcc_end_454,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_516, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 	
@@ -47652,12 +53206,12 @@ ed_51:
 
 
 .align 2
-	_z80_Out_454: .long _z80_Out
-	z80_callgcc_start_454: .long z80_callgcc_start
-	z80_callgcc_end_454: .long z80_callgcc_end
+	_z80_Out_516: .long _z80_Out
+	_z80_ICount_516: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_59:
@@ -47672,26 +53226,55 @@ ed_59:
 
 	mov.l @(_z80_BC - _z80_BC,r5),r1
 	
+	
 		mov.b @(_z80_DE - _z80_BC,r5),r0
 		
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_455,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_Out_455, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_517, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_517, r2
 	mov.l @r2,r2
 	extu.w r1,r4   ! first parameter  (address)
 	jsr @r2
 	extu.b r0,r5   ! second parameter (data)
 	
-	mov.l z80_callgcc_end_455,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_517, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 	
@@ -47702,12 +53285,12 @@ ed_59:
 
 
 .align 2
-	_z80_Out_455: .long _z80_Out
-	z80_callgcc_start_455: .long z80_callgcc_start
-	z80_callgcc_end_455: .long z80_callgcc_end
+	_z80_Out_517: .long _z80_Out
+	_z80_ICount_517: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_61:
@@ -47722,26 +53305,55 @@ ed_61:
 
 	mov.l @(_z80_BC - _z80_BC,r5),r1
 	
+	
 		mov.b @(_z80_HL - _z80_BC + 1,r5),r0
 		
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_456,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_Out_456, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_518, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_518, r2
 	mov.l @r2,r2
 	extu.w r1,r4   ! first parameter  (address)
 	jsr @r2
 	extu.b r0,r5   ! second parameter (data)
 	
-	mov.l z80_callgcc_end_456,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_518, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 	
@@ -47752,12 +53364,12 @@ ed_61:
 
 
 .align 2
-	_z80_Out_456: .long _z80_Out
-	z80_callgcc_start_456: .long z80_callgcc_start
-	z80_callgcc_end_456: .long z80_callgcc_end
+	_z80_Out_518: .long _z80_Out
+	_z80_ICount_518: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_69:
@@ -47772,26 +53384,55 @@ ed_69:
 
 	mov.l @(_z80_BC - _z80_BC,r5),r1
 	
+	
 		mov.b @(_z80_HL - _z80_BC,r5),r0
 		
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_457,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_Out_457, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_519, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_519, r2
 	mov.l @r2,r2
 	extu.w r1,r4   ! first parameter  (address)
 	jsr @r2
 	extu.b r0,r5   ! second parameter (data)
 	
-	mov.l z80_callgcc_end_457,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_519, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 	
@@ -47802,12 +53443,12 @@ ed_69:
 
 
 .align 2
-	_z80_Out_457: .long _z80_Out
-	z80_callgcc_start_457: .long z80_callgcc_start
-	z80_callgcc_end_457: .long z80_callgcc_end
+	_z80_Out_519: .long _z80_Out
+	_z80_ICount_519: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_71:
@@ -47826,21 +53467,49 @@ ed_71:
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_458,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_Out_458, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_520, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_520, r2
 	mov.l @r2,r2
 	extu.w r0,r4   ! first parameter  (address)
 	jsr @r2
 	extu.b r1,r5   ! second parameter (data)
 	
-	mov.l z80_callgcc_end_458,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_520, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 
@@ -47850,12 +53519,12 @@ ed_71:
 
 
 .align 2
-	_z80_Out_458: .long _z80_Out
-	z80_callgcc_start_458: .long z80_callgcc_start
-	z80_callgcc_end_458: .long z80_callgcc_end
+	_z80_Out_520: .long _z80_Out
+	_z80_ICount_520: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_79:
@@ -47870,25 +53539,54 @@ ed_79:
 
 	mov.l @(_z80_BC - _z80_BC,r5),r1
 	
+	
 		
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_459,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_Out_459, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_521, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_521, r2
 	mov.l @r2,r2
 	extu.w r1,r4   ! first parameter  (address)
 	jsr @r2
 	extu.b r3,r5   ! second parameter (data)
 	
-	mov.l z80_callgcc_end_459,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_521, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 	
@@ -47899,12 +53597,12 @@ ed_79:
 
 
 .align 2
-	_z80_Out_459: .long _z80_Out
-	z80_callgcc_start_459: .long z80_callgcc_start
-	z80_callgcc_end_459: .long z80_callgcc_end
+	_z80_Out_521: .long _z80_Out
+	_z80_ICount_521: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_a2:
@@ -47920,33 +53618,54 @@ ed_a2:
 
 
 	
-	
-	
-	
-
-	
-
-
 	! In from BC
 	mov.b @(_z80_BC - _z80_BC,r5),r0
 	extu.b r0,r0            ! high byte clear? (documentation is fuzzy)
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_461,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_In_461, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_522, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_522, r2
 	mov.l @r2,r2
 	jsr @r2
 	extu.w r0,r4          ! SH requires to get parameter value here
 	
-	mov.l z80_callgcc_end_461,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_522, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 	mov r0,r1
@@ -47966,9 +53685,11 @@ ed_a2:
 
 	
 	! Write to (HL)
+
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -47988,12 +53709,12 @@ ed_a2:
 
 
 .align 2
-	_z80_In_461: .long _z80_In
-	z80_callgcc_start_461: .long z80_callgcc_start
-	z80_callgcc_end_461: .long z80_callgcc_end
+	_z80_In_522: .long _z80_In
+	_z80_ICount_522: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_aa:
@@ -48009,33 +53730,164 @@ ed_aa:
 
 
 	
-	
-	
-	
-
-	
-
-
 	! In from BC
 	mov.b @(_z80_BC - _z80_BC,r5),r0
 	extu.b r0,r0            ! high byte clear? (documentation is fuzzy)
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_463,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_In_463, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_523, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_523, r2
 	mov.l @r2,r2
 	jsr @r2
 	extu.w r0,r4          ! SH requires to get parameter value here
 	
-	mov.l z80_callgcc_end_463,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_523, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
+
+
+	mov r0,r1
+
+	
+
+	! Decrease B
+	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
+	add #-1,r0
+	mov.b r0,@(_z80_BC - _z80_BC + 1,r5)
+	
+	
+
+	
+	! Set Z
+	mov r0,r13
+
+	
+	! Write to (HL)
+
+	
+	
+		mov.l @(4,r10),r2
+                
+		jsr @r2
+		mov.w @(_z80_HL - _z80_BC,r5),r0
+	
+
+
+	! Writeback HL register
+	add #-1,r0
+	mov.w r0,@(_z80_HL - _z80_BC,r5)
+
+    ! This is a prime example of the weirdness of the Z80...
+	
+
+
+	
+	jmp @r12
+	add #-16,r7
+
+
+.align 2
+	_z80_In_523: .long _z80_In
+	_z80_ICount_523: .long _z80_ICount 
+
+
+
+	
+	
+	
+ed_b2:
+
+	
+	
+ 
+	
+	
+
+	
+
+linxr_loop524:
+	! In from BC
+	mov.b @(_z80_BC - _z80_BC,r5),r0
+	extu.b r0,r0            ! high byte clear? (documentation is fuzzy)
+	
+	
+	
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_524, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_524, r2
+	mov.l @r2,r2
+	jsr @r2
+	extu.w r0,r4          ! SH requires to get parameter value here
+	
+
+	mov.l _z80_ICount_524, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 	mov r0,r1
@@ -48058,6 +53910,123 @@ ed_aa:
 	
 	
 		mov.l @(4,r10),r2
+                
+		jsr @r2
+		mov.w @(_z80_HL - _z80_BC,r5),r0
+	
+
+
+	! Writeback HL register
+	add #1,r0
+	mov.w r0,@(_z80_HL - _z80_BC,r5)
+
+    ! This is a prime example of the weirdness of the Z80...
+	
+
+.align 5
+	_z80_In_524: .long _z80_Out
+.align 5
+linxr_zero524:
+nop
+
+
+
+
+	
+	jmp @r12
+	add #-16,r7
+
+
+.align 2
+	_z80_ICount_524: .long _z80_ICount 
+
+
+
+	
+	
+	
+ed_ba:
+
+	
+	
+ 
+	
+	
+
+	
+
+linxr_loop525:
+	! In from BC
+	mov.b @(_z80_BC - _z80_BC,r5),r0
+	extu.b r0,r0            ! high byte clear? (documentation is fuzzy)
+	
+	
+	
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_525, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_In_525, r2
+	mov.l @r2,r2
+	jsr @r2
+	extu.w r0,r4          ! SH requires to get parameter value here
+	
+
+	mov.l _z80_ICount_525, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
+
+
+	mov r0,r1
+
+	
+
+	! Decrease B
+	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
+	add #-1,r0
+	mov.b r0,@(_z80_BC - _z80_BC + 1,r5)
+	
+	
+
+	
+	! Set Z
+	mov r0,r13
+
+	
+	! Write to (HL)
+	
+	
+		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.w @(_z80_HL - _z80_BC,r5),r0
 	
@@ -48070,6 +54039,14 @@ ed_aa:
     ! This is a prime example of the weirdness of the Z80...
 	
 
+.align 5
+	_z80_In_525: .long _z80_Out
+.align 5
+linxr_zero525:
+nop
+
+
+
 
 	
 	jmp @r12
@@ -48077,42 +54054,11 @@ ed_aa:
 
 
 .align 2
-	_z80_In_463: .long _z80_In
-	z80_callgcc_start_463: .long z80_callgcc_start
-	z80_callgcc_end_463: .long z80_callgcc_end
+	_z80_ICount_525: .long _z80_ICount 
 
 
 
 	
-	
-ed_b2:
-
-	
-	
-
-
-	
-	jmp @r12
-	add #-16,r7
-
-
-
-
-	
-	
-ed_ba:
-
-	
-	
-
-
-	
-	jmp @r12
-	add #-16,r7
-
-
-
-
 	
 	
 ed_a3:
@@ -48132,6 +54078,7 @@ ed_a3:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -48150,21 +54097,49 @@ ed_a3:
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_464,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_Out_464, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_526, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_526, r2
 	mov.l @r2,r2
 	extu.w r0,r4   ! first parameter  (address)
 	jsr @r2
 	extu.b r1,r5   ! second parameter (data)
 	
-	mov.l z80_callgcc_end_464,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_526, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 
@@ -48190,12 +54165,12 @@ ed_a3:
 
 
 .align 2
-	_z80_Out_464: .long _z80_Out
-	z80_callgcc_start_464: .long z80_callgcc_start
-	z80_callgcc_end_464: .long z80_callgcc_end
+	_z80_Out_526: .long _z80_Out
+	_z80_ICount_526: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_ab:
@@ -48215,6 +54190,7 @@ ed_ab:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		mov.l @(_z80_HL - _z80_BC,r5),r0
 	
@@ -48233,21 +54209,49 @@ ed_ab:
 	
 	
 	
-	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_465,r2
-	jsr @r2
-	nop
+	
 
-	mov.l _z80_Out_465, r2
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_527, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_527, r2
 	mov.l @r2,r2
 	extu.w r0,r4   ! first parameter  (address)
 	jsr @r2
 	extu.b r1,r5   ! second parameter (data)
 	
-	mov.l z80_callgcc_end_465,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_527, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 
 
@@ -48273,12 +54277,12 @@ ed_ab:
 
 
 .align 2
-	_z80_Out_465: .long _z80_Out
-	z80_callgcc_start_465: .long z80_callgcc_start
-	z80_callgcc_end_465: .long z80_callgcc_end
+	_z80_Out_527: .long _z80_Out
+	_z80_ICount_527: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_b3:
@@ -48286,14 +54290,123 @@ ed_b3:
 	
 	
 
+	
+	
+
+	
+
+!!`lotxr_loop'ln:
+
+	! Read from (HL)
+        
+	
+		mov.l @r10,r2
+                mov.l @(_z80_HL - _z80_BC,r5),r0
+		jsr @r2
+		shlr16 r0
+	
+
+
+	
+
+	! Writeback HL register
+	add #1,r0
+	mov.w r0,@(_z80_HL - _z80_BC,r5)
+	
+	! Out to BC
+	mov.b @(_z80_BC - _z80_BC,r5),r0
+	extu.b r0,r0            ! high byte clear? (documentation is fuzzy)
+!vbt à corriger        
+	
+	
+	
+	
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_528, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_528, r2
+	mov.l @r2,r2
+	extu.w r0,r4   ! first parameter  (address)
+	jsr @r2
+	extu.b r1,r5   ! second parameter (data)
+	
+
+	mov.l _z80_ICount_528, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
+
+
+
+	! Decrease B
+	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
+	dt r0
+	bt/s lotxr_zero528
+	mov.b r0,@(_z80_BC - _z80_BC + 1,r5)
+
+	add #-5,r7        
+	add #-2,r6
+	bra lotxr_end528:
+
+lotxr_zero528:
+	
+	! Set Z
+	mov r0,r13
+
+	
+	
+
+
+.align 5
+lotxr_end528:
+
+
+	jmp @r12
+	add #-16,r7
+
+
+!ALIGN
+	_z80_Out_528: .long _z80_Out
 
 	
 	jmp @r12
 	add #-16,r7
 
+.align 2
+	_z80_ICount_528: .long _z80_ICount 
 
 
 
+	
 	
 	
 ed_bb:
@@ -48303,9 +54416,117 @@ ed_bb:
 
 	
 	
+
+	
+
+!!`lotxr_loop'ln:
+
+	! Read from (HL)
+        
+	
+		mov.l @r10,r2
+                mov.l @(_z80_HL - _z80_BC,r5),r0
+		jsr @r2
+		shlr16 r0
+	
+
+
+	
+
+	! Writeback HL register
+	add #-1,r0
+	mov.w r0,@(_z80_HL - _z80_BC,r5)
+	
+	! Out to BC
+	mov.b @(_z80_BC - _z80_BC,r5),r0
+	extu.b r0,r0            ! high byte clear? (documentation is fuzzy)
+!vbt à corriger        
+	
+	
+	
+	
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_529, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	sts.l pr,@-r15          ! saving SH procedure register
+
+	mov.l _z80_Out_529, r2
+	mov.l @r2,r2
+	extu.w r0,r4   ! first parameter  (address)
+	jsr @r2
+	extu.b r1,r5   ! second parameter (data)
+	
+
+	mov.l _z80_ICount_529, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
+
+
+
+	! Decrease B
+	mov.b @(_z80_BC - _z80_BC + 1,r5),r0
+	dt r0
+	bt/s lotxr_zero529
+	mov.b r0,@(_z80_BC - _z80_BC + 1,r5)
+
+	add #-5,r7        
+	add #-2,r6
+	bra lotxr_end529:
+
+lotxr_zero529:
+	
+	! Set Z
+	mov r0,r13
+
+	
+	
+
+
+.align 5
+lotxr_end529:
+
+
 	jmp @r12
 	add #-16,r7
 
+
+!ALIGN
+	_z80_Out_529: .long _z80_Out
+
+	
+	jmp @r12
+	add #-16,r7
+
+.align 2
+	_z80_ICount_529: .long _z80_ICount 
 
 
 
@@ -48313,6 +54534,7 @@ ed_bb:
 ! misc
 
 
+	
 	
 	
 op_27:
@@ -48326,7 +54548,7 @@ op_27:
 
 
 	mov r8,r0          ! r0 = flags
-	mov.l DAA_Table_466,r1
+	mov.l DAA_Table_530,r1
 	tst #0x02,r0
 	extu.b r3,r3      ! Para calcular desp. tabla DAA
 	and #0x3,r0       ! Enmascarar registro banderas
@@ -48334,9 +54556,9 @@ op_27:
 	bt/s .daa_nh_set
 	or r3,r0          ! r0 = zAF
 
-	mov.l daatbl_offset_466,r2
+	mov.l daatbl_offset_530,r2
 	add r2,r1
-	
+
 .daa_nh_set:
 	shll r0
 	mov.w @(r0,r1),r3
@@ -48375,11 +54597,12 @@ op_27:
 
 
 .align 2
-	daatbl_offset_466: .long 512*4
-	DAA_Table_466: .long DAA_Table
+	daatbl_offset_530: .long 512*4
+	DAA_Table_530: .long DAA_Table
 
 
 
+	
 	
 	
 op_2f:
@@ -48402,6 +54625,7 @@ op_2f:
 
 	
 	
+	
 ed_44:
 
 	
@@ -48412,7 +54636,7 @@ ed_44:
 	
 
 
-	mov.l NEG_Table_467,r0
+	mov.l NEG_Table_531,r0
 	extu.b r3,r3
 	mov.b @(r0,r3),r8
 	neg r3,r3
@@ -48447,10 +54671,11 @@ ed_44:
 
 
 	.align 2
-	NEG_Table_467: .long NEG_Table
+	NEG_Table_531: .long NEG_Table
 
 
 
+	
 	
 	
 ed_4c:
@@ -48463,7 +54688,7 @@ ed_4c:
 	
 
 
-	mov.l NEG_Table_468,r0
+	mov.l NEG_Table_532,r0
 	extu.b r3,r3
 	mov.b @(r0,r3),r8
 	neg r3,r3
@@ -48498,10 +54723,11 @@ ed_4c:
 
 
 	.align 2
-	NEG_Table_468: .long NEG_Table
+	NEG_Table_532: .long NEG_Table
 
 
 
+	
 	
 	
 ed_54:
@@ -48514,7 +54740,7 @@ ed_54:
 	
 
 
-	mov.l NEG_Table_469,r0
+	mov.l NEG_Table_533,r0
 	extu.b r3,r3
 	mov.b @(r0,r3),r8
 	neg r3,r3
@@ -48549,10 +54775,11 @@ ed_54:
 
 
 	.align 2
-	NEG_Table_469: .long NEG_Table
+	NEG_Table_533: .long NEG_Table
 
 
 
+	
 	
 	
 ed_5c:
@@ -48565,7 +54792,7 @@ ed_5c:
 	
 
 
-	mov.l NEG_Table_470,r0
+	mov.l NEG_Table_534,r0
 	extu.b r3,r3
 	mov.b @(r0,r3),r8
 	neg r3,r3
@@ -48600,10 +54827,11 @@ ed_5c:
 
 
 	.align 2
-	NEG_Table_470: .long NEG_Table
+	NEG_Table_534: .long NEG_Table
 
 
 
+	
 	
 	
 ed_64:
@@ -48616,7 +54844,7 @@ ed_64:
 	
 
 
-	mov.l NEG_Table_471,r0
+	mov.l NEG_Table_535,r0
 	extu.b r3,r3
 	mov.b @(r0,r3),r8
 	neg r3,r3
@@ -48651,10 +54879,11 @@ ed_64:
 
 
 	.align 2
-	NEG_Table_471: .long NEG_Table
+	NEG_Table_535: .long NEG_Table
 
 
 
+	
 	
 	
 ed_6c:
@@ -48667,7 +54896,7 @@ ed_6c:
 	
 
 
-	mov.l NEG_Table_472,r0
+	mov.l NEG_Table_536,r0
 	extu.b r3,r3
 	mov.b @(r0,r3),r8
 	neg r3,r3
@@ -48702,10 +54931,11 @@ ed_6c:
 
 
 	.align 2
-	NEG_Table_472: .long NEG_Table
+	NEG_Table_536: .long NEG_Table
 
 
 
+	
 	
 	
 ed_74:
@@ -48718,7 +54948,7 @@ ed_74:
 	
 
 
-	mov.l NEG_Table_473,r0
+	mov.l NEG_Table_537,r0
 	extu.b r3,r3
 	mov.b @(r0,r3),r8
 	neg r3,r3
@@ -48753,10 +54983,11 @@ ed_74:
 
 
 	.align 2
-	NEG_Table_473: .long NEG_Table
+	NEG_Table_537: .long NEG_Table
 
 
 
+	
 	
 	
 ed_7c:
@@ -48769,7 +55000,7 @@ ed_7c:
 	
 
 
-	mov.l NEG_Table_474,r0
+	mov.l NEG_Table_538,r0
 	extu.b r3,r3
 	mov.b @(r0,r3),r8
 	neg r3,r3
@@ -48804,10 +55035,11 @@ ed_7c:
 
 
 	.align 2
-	NEG_Table_474: .long NEG_Table
+	NEG_Table_538: .long NEG_Table
 
 
 
+	
 	
 	
 op_3f:
@@ -48833,6 +55065,7 @@ op_3f:
 
 	
 	
+	
 op_37:
 
 	
@@ -48852,6 +55085,7 @@ op_37:
 
 	
 	
+	
 op_00:
 
 	
@@ -48864,6 +55098,7 @@ op_00:
 
 	
 	
+	
 op_76:
 
 	
@@ -48874,7 +55109,7 @@ op_76:
 	
 
 
-	mov.l _z80_TempICount_475,r2
+	mov.l _z80_TempICount_539,r2
 	mov.l @r2,r1    ! TempICount
 	mov #3,r0
 	and r0,r7
@@ -48888,7 +55123,7 @@ op_76:
 
 halt_zero:
 	mov.l r1,@r2
-	mov.l _z80_halted_475,r2
+	mov.l _z80_halted_539,r2
 	mov #1,r0
 	
 	
@@ -48896,20 +55131,21 @@ halt_zero:
 
 
 	! jump to z80_finish
-	mov.l z80_finish_476,r0
+	mov.l z80_finish_540,r0
 	jmp @r0
 	mov.b r0,@r2
 
 .align 2
-	z80_finish_476: .long z80_finish
+	z80_finish_540: .long z80_finish
 
 
 	.align 2
-	_z80_halted_475: .long _z80_halted
-	_z80_TempICount_475: .long _z80_TempICount
+	_z80_halted_539: .long _z80_halted
+	_z80_TempICount_539: .long _z80_TempICount
 
 
 
+	
 	
 	
 op_fb:
@@ -48924,12 +55160,12 @@ op_fb:
 
 	! set the P/V bit, for use in "LD I,A" etc
 	mov #0x01,r0
-	mov.l _z80_IFF1_477,r1
-	mov.l _z80_IFF2_477,r2
+	mov.l _z80_IFF1_541,r1
+	mov.l _z80_IFF2_541,r2
 	mov.b r0,@r1            ! setting IFF1
 	mov.b r0,@r2          ! setting IFF2
 
-	mov.l _z80_afterEI_477,r1
+	mov.l _z80_afterEI_541,r1
 	mov #1,r0
 	mov.b r0,@r1
 
@@ -48938,7 +55174,7 @@ op_fb:
 	! set ICount to one so it will terminate
 	! after the next instruction.
 	! we can then pick it up again and carry on.
-	mov.l _z80_TempICount_477,r1
+	mov.l _z80_TempICount_541,r1
 	mov.l r7,@r1
 
 	
@@ -48955,13 +55191,14 @@ op_fb:
 
 
 	.align 2
-	_z80_TempICount_477: .long _z80_TempICount
-	_z80_IFF1_477: .long _z80_IFF1
-	_z80_IFF2_477: .long _z80_IFF2
-	_z80_afterEI_477: .long _z80_afterEI
+	_z80_TempICount_541: .long _z80_TempICount
+	_z80_IFF1_541: .long _z80_IFF1
+	_z80_IFF2_541: .long _z80_IFF2
+	_z80_afterEI_541: .long _z80_afterEI
 
 
 
+	
 	
 	
 op_f3:
@@ -48975,7 +55212,7 @@ op_f3:
 
 
 	mov #0,r0
-	mov.l _z80_IFF1_478,r1
+	mov.l _z80_IFF1_542,r1
 	mov.w r0,@r1    ! Loads zero in zIFF1 and zIFF2
 
 	
@@ -48984,10 +55221,11 @@ op_f3:
 
 	
 	.align 2
-	_z80_IFF1_478: .long _z80_IFF1
+	_z80_IFF1_542: .long _z80_IFF1
 
 
 
+	
 	
 	
 ed_46:
@@ -49000,7 +55238,7 @@ ed_46:
 	
 
 
-	mov.l _z80_IM_479,r1
+	mov.l _z80_IM_543,r1
 	mov #0,r0
 	mov.b r0,@r1
 
@@ -49010,10 +55248,11 @@ ed_46:
 
 	
 	.align 2
-	_z80_IM_479: .long _z80_IM
+	_z80_IM_543: .long _z80_IM
 
 
 
+	
 	
 	
 ed_66:
@@ -49026,7 +55265,7 @@ ed_66:
 	
 
 
-	mov.l _z80_IM_480,r1
+	mov.l _z80_IM_544,r1
 	mov #0,r0
 	mov.b r0,@r1
 
@@ -49036,10 +55275,11 @@ ed_66:
 
 	
 	.align 2
-	_z80_IM_480: .long _z80_IM
+	_z80_IM_544: .long _z80_IM
 
 
 
+	
 	
 	
 ed_56:
@@ -49052,7 +55292,7 @@ ed_56:
 	
 
 
-	mov.l _z80_IM_481,r1
+	mov.l _z80_IM_545,r1
 	mov #1,r0
 	mov.b r0,@r1
 
@@ -49062,10 +55302,11 @@ ed_56:
 
 	
 	.align 2
-	_z80_IM_481: .long _z80_IM
+	_z80_IM_545: .long _z80_IM
 
 
 
+	
 	
 	
 ed_76:
@@ -49078,7 +55319,7 @@ ed_76:
 	
 
 
-	mov.l _z80_IM_482,r1
+	mov.l _z80_IM_546,r1
 	mov #1,r0
 	mov.b r0,@r1
 
@@ -49088,10 +55329,11 @@ ed_76:
 
 	
 	.align 2
-	_z80_IM_482: .long _z80_IM
+	_z80_IM_546: .long _z80_IM
 
 
 
+	
 	
 	
 ed_4e:
@@ -49104,7 +55346,7 @@ ed_4e:
 	
 
 
-	mov.l _z80_IM_483,r1
+	mov.l _z80_IM_547,r1
 	mov #1,r0
 	mov.b r0,@r1
 
@@ -49114,10 +55356,11 @@ ed_4e:
 
 	
 	.align 2
-	_z80_IM_483: .long _z80_IM
+	_z80_IM_547: .long _z80_IM
 
 
 
+	
 	
 	
 ed_6e:
@@ -49130,7 +55373,7 @@ ed_6e:
 	
 
 
-	mov.l _z80_IM_484,r1
+	mov.l _z80_IM_548,r1
 	mov #1,r0
 	mov.b r0,@r1
 
@@ -49140,10 +55383,11 @@ ed_6e:
 
 	
 	.align 2
-	_z80_IM_484: .long _z80_IM
+	_z80_IM_548: .long _z80_IM
 
 
 
+	
 	
 	
 ed_5e:
@@ -49156,7 +55400,7 @@ ed_5e:
 	
 
 
-	mov.l _z80_IM_485,r1
+	mov.l _z80_IM_549,r1
 	mov #2,r0
 	mov.b r0,@r1
 
@@ -49166,10 +55410,11 @@ ed_5e:
 
 	
 	.align 2
-	_z80_IM_485: .long _z80_IM
+	_z80_IM_549: .long _z80_IM
 
 
 
+	
 	
 	
 ed_7e:
@@ -49182,7 +55427,7 @@ ed_7e:
 	
 
 
-	mov.l _z80_IM_486,r1
+	mov.l _z80_IM_550,r1
 	mov #2,r0
 	mov.b r0,@r1
 
@@ -49192,7 +55437,7 @@ ed_7e:
 
 	
 	.align 2
-	_z80_IM_486: .long _z80_IM
+	_z80_IM_550: .long _z80_IM
 
 
 
@@ -49206,7 +55451,14 @@ ed_7e:
 
 	
 	
+	
 op_cb:
+
+	
+	
+	
+
+	
 
 
 		mov.l @r9,r0    ! OP_ROM
@@ -49222,12 +55474,20 @@ op_cb:
 
 .align 2
 	CBTable_addr: .long CBTable
+	_z80_ICount_551: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_ed:
+
+	
+	
+	
+
+	
 
 
 		mov.l @r9,r0    ! OP_ROM
@@ -49242,12 +55502,20 @@ op_ed:
 
 	.align 2
 	EDTable_addr: .long EDTable
+	_z80_ICount_552: .long _z80_ICount 
 
 
 
+	
 	
 	
 op_dd:
+
+	
+	
+	
+
+	
 
 
 		mov.l @r9,r0    ! OP_ROM
@@ -49259,6 +55527,8 @@ op_dd:
 	mov.l @(r0,r1),r0
 	jmp @r0
 	add #1,r14
+	.align 2
+	_z80_ICount_553: .long _z80_ICount 
 
 .align 2
 	DDTable_addr: .long DDTable
@@ -49267,7 +55537,14 @@ op_dd:
 
 	
 	
+	
 op_fd:
+
+	
+	
+	
+
+	
 
 
 		mov.l @r9,r0    ! OP_ROM
@@ -49279,11 +55556,14 @@ op_fd:
 	mov.l @(r0,r1),r0
 	jmp @r0
 	add #1,r14
+	.align 2
+	_z80_ICount_554: .long _z80_ICount 
 
 .align 2
 	FDTable_addr: .long FDTable
 
 
+	
 	
 	
 dd_cb:
@@ -49293,9 +55573,15 @@ dd_cb:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -49306,7 +55592,7 @@ dd_cb:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -49314,14 +55600,17 @@ dd_cb:
 	shll2 r2
 	mov.l @(r0,r2),r2
 	mov.l @(_z80_IX - _z80_BC,r5),r0
+	
 	add #1,r14
 	jmp @r2
 	add r1,r0
 
 .align 2
 	DDCBTable_addr: .long DDCBTable
+	_z80_ICount_555: .long _z80_ICount 
 
 
+	
 	
 	
 fd_cb:
@@ -49331,9 +55620,15 @@ fd_cb:
 	
 
 	
+
+	
+	
+	
+
+	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r1
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -49344,7 +55639,7 @@ fd_cb:
 	
 		mov.l @(4,r9),r0    ! r0 = OP_RAM
 		mov.b @(r0,r6),r2
-		add #1,r6		
+		add #1,r6              
 	
 	
 
@@ -49358,8 +55653,10 @@ fd_cb:
 
 .align 2
 	DDCBTable_addr2: .long DDCBTable
+	_z80_ICount_556: .long _z80_ICount 
 
 
+	
 	
 	
 ed_xx:
@@ -49371,6 +55668,7 @@ ed_xx:
 
 
 
+	
 	
 	
 dd_xx:
@@ -49386,6 +55684,7 @@ dd_xx:
 
 	
 	
+	
 fd_xx:
 
 	add #-1,r6
@@ -49395,53 +55694,6 @@ fd_xx:
 	jmp @r12
 	add #-0,r7
 
-
-
-! callgcc start procedure
-.align 5
-z80_callgcc_start:
-	
-
-	
-
-	mov.l _z80_ICount_cgs, r2
-	mov.l @r2,r2
-	mov.l r7,@r2
-
-	mov.l r6,@(_z80_PC - _z80_BC,r5)
-	mov.l r3,@-r15
-	mov.l r4,@-r15
-	mov.l r5,@-r15
-mov.l r7,@-r15
-	
-	rts
-	nop
-
-.align 2
-	_z80_ICount_cgs: .long _z80_ICount
-
-! callgcc end procedure
-.align 5
-z80_callgcc_end:
-	
-mov.l @r15+,r7
-	mov.l @r15+,r5
-	mov.l @r15+,r4
-	mov.l @r15+,r3
-	mov.l @(_z80_PC - _z80_BC,r5),r6
-	
-
-	mov.l _z80_ICount_cge, r2
-	mov.l @r2,r2
-	mov.l @r2,r7
-
-
-	
-	rts
-	nop
-
-.align 2
-	_z80_ICount_cge: .long _z80_ICount
 
 
 ! called when out-of-cycles
@@ -49456,7 +55708,7 @@ z80_finish:
 	! Revisar este codigo
 	mov.l _z80_ICount_zf,r0
 	mov.l @(_z80_TempICount-_z80_ICount,r0),r2
-	add r2,r7
+	mov r2,r7
 
 	mov #0,r0
 	mov.b r0,@r1    ! _z80_afterEI = 0
@@ -49497,6 +55749,7 @@ z80_finish:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -49505,6 +55758,7 @@ z80_finish:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov r6,r1
 	
@@ -49555,6 +55809,7 @@ z80_finish:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		or r1,r0
 	
@@ -49563,6 +55818,7 @@ z80_finish:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		extu.b r1,r6
 	
@@ -49602,12 +55858,12 @@ really_finish:
 
 
 	exts.b r13,r13
-	mov.l Byte_Flags_487,r0
+	mov.l Byte_Flags_557,r0
 	mov.b @(r0,r13),r1    ! TMP_REG = SZ000P00
 
 	mov r8,r0
 	tst #0x08,r0     ! test P/V indicator
-	bt/s .no_veval487
+	bt/s .no_veval557
 	or r11,r1                      ! TMP_REG = SZ000P0C
 
 	mov #~0x04,r2
@@ -49617,7 +55873,7 @@ really_finish:
 	shll2 r2               ! V flag in place
 	or r2,r1    ! TMP_REG = SZ000V0C
 
-.no_veval487:
+.no_veval557:
 	shlr r8                            ! ignore V
 	shlr r8                            ! T = H
 	movt r2               ! DIRT_REG = H
@@ -49653,8 +55909,12 @@ really_finish:
 	mov.l _z80_ICount_zf,r0
 	mov.l @r0,r0
 	mov.l r7,@r0
-	extu.w r6,r6
 	mov.l _z80_ICount_zf,r0
+
+
+	extu.w r6,r6
+
+
 	mov.l @(_z80_Initial_ICount - _z80_ICount,r0),r0
 	mov.l r6,@(_z80_PC - _z80_BC,r5)
 	sub r7,r0
@@ -49675,12 +55935,18 @@ really_finish:
 	_z80_Fetch_zf:   .long _z80_Fetch
 	_z80_AF_zf:      .long _z80_AF
 	_z80_R_zf:       .long _z80_R
-	Byte_Flags_487: .long Byte_Flags
+	Byte_Flags_557: .long Byte_Flags
 
 
 ! Fetch decode
 .align 5
 z80_fdl:
+	
+	
+	
+
+	
+
 	
 		mov.l @r9,r0    ! OP_ROM
 		mov.b @(r0,r6),r0
@@ -49698,20 +55964,14 @@ z80_fdl:
 .contexec:
 	jmp @r0
 	add #1,r14
+	.align 2
+	_z80_ICount_558: .long _z80_ICount 
 
 
 ! Memread
 .align 5
 _z80_memread:
-
 	
-		
-	
-	
-
-	
-
-
 		extu.w r0,r0
 		mov r0,r1    ! Load address into TMP_REG
 		shlr8 r1
@@ -49719,42 +55979,75 @@ _z80_memread:
 		mov.l _z80_Read_mr,r10
 		shll r1
 		add r10,r1
-		mov.l @r1,r10
-		tst r10,r10
-		bf .use_rhandler
-
+		
+			mov.l @r1,r10
+			tst r10,r10
+			bf .use_rhandler
+		
 		mov.l @(4,r1),r1
 		mov.l _z80_memread_mr,r10    ! restore MEM_REG address
 		rts
 		mov.b @(r0,r1),r1
-
-	.align 5
+.align 5
 	.use_rhandler:
+		
+	
+	
+
+	
+
 		mov.l r0,@-r15
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_559, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_488,r2
-	jsr @r2
-	nop
 
 		jsr @r10
 		extu.w r0,r4
 		
-	mov.l z80_callgcc_end_488,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_559, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 		mov.l _z80_memread_mr,r10    ! restore MEM_REG address
 		exts.b r0,r1
 		rts
 		mov.l @r15+,r0
-
+      
 	.align 2
 		_z80_Read_mr:    .long _z80_Read
 		_z80_memread_mr: .long _z80_Mem_Handlers
-		z80_callgcc_start_488: .long z80_callgcc_start
-		z80_callgcc_end_488: .long z80_callgcc_end
+		_z80_ICount_559: .long _z80_ICount 
 	
 
 
@@ -49762,13 +56055,6 @@ _z80_memread:
 .align 5
 _z80_memwrite:
 	
-		
-	
-	
-
-	
-
-
 		extu.w r0,r0
 		mov r0,r2    ! Load address into DIRT_REG
 		shlr8 r2
@@ -49787,21 +56073,55 @@ _z80_memwrite:
 
 	.align 5
 	.use_whandler:
+		
+	
+	
+
+	
+
 		mov.l r0,@-r15
 		
+	
+
+!ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+!	mov.l zPC,ezPC_MEM
+	mov.l r3,@-r15
+	mov.l r4,@-r15
+	mov.l r5,@-r15
+	mov.l r6,@-r15
+	mov.l r7,@-r15
+
+	mov.l _z80_ICount_560, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
+!	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
-	mov.l z80_callgcc_start_489,r2
-	jsr @r2
-	nop
 
 		extu.w r0,r4         ! Load address
 		jsr @r10
 		extu.b r1,r5
 		
-	mov.l z80_callgcc_end_489,r2
-	jsr @r2
-	nop
+
+	mov.l _z80_ICount_560, r2
+	mov.l @r2,r2
+	mov.l @r2,r7
+
+
 	lds.l @r15+,pr          ! restoring SH procedure register
+!	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+
+	mov.l @r15+,r7
+	mov.l @r15+,r6
+	mov.l @r15+,r5
+	mov.l @r15+,r4
+	mov.l @r15+,r3
+
+!	mov.l ezPC_MEM,zPC
+!ifdef(`BASED_PC',`add FETCH_REG,zPC')
+
+	
 
 		mov.l _z80_memwrite_mw,r10    ! restore MEM_REG address
 		rts
@@ -49810,8 +56130,7 @@ _z80_memwrite:
 	.align 2
 		_z80_Write_mw:    .long _z80_Write
 		_z80_memwrite_mw: .long _z80_Mem_Handlers
-		z80_callgcc_start_489: .long z80_callgcc_start
-		z80_callgcc_end_489: .long z80_callgcc_end
+		_z80_ICount_560: .long _z80_ICount 
 	
 
 
@@ -49873,7 +56192,11 @@ _z80_emulate_2:
 	mov.l r10,@-r15
 	mov.l _OpTable_emul,r4    ! Load opcode table
 	mov.l r11,@-r15
-	pref @r5                      ! Prefetch z80 registers
+
+	
+		pref @r5                      ! Prefetch z80 registers
+	
+
 	mov.l r12,@-r15
 	mov.l r13,@-r15
 	mov.l r14,@-r15
@@ -49881,6 +56204,7 @@ _z80_emulate_2:
 
 	! Cache de registros z80
 	mov.l @r0,r8                   ! zF
+	
 	mov.l z80_fdl_emul,r12     ! Load fdl address to execute fdl
 	mov r8,r3
 	mov.l @(_z80_PC-_z80_AF,r0),r6    ! ezPC
@@ -49916,6 +56240,7 @@ _z80_emulate_2:
 	mov.l _z80_Fetch_emul,r9    ! FETCH_REG
 	mov.l @r9,r9
 	mov.l _z80_Mem_Handlers_emul,r10
+	
 	
 
 	mov.l _z80_halted_emul,r2
@@ -49974,25 +56299,32 @@ not_halted:
 .align 5
 .global _z80_reset_2
 _z80_reset_2:
-	mov #0,r0       ! just zero it all
 	mov.l context_start_reset,r1
-	mov.l registers_end_reset,r2
+	mov #0,r0
+	mov.l r0,@(_z80_PC-context_start,r1)   ! PC = 0
 
-rloop:
-	mov.l r0,@-r2
-	cmp/eq r1,r2
-	bf rloop
-
-	mov #-1,r0                             ! r0 = -1
-	mov.w r0,@(_z80_IX-context_start,r1)   ! IX = 0xFFFF
-	mov.w r0,@(_z80_IY-context_start,r1)   ! IY = 0xFFFF
-	mov #0x40,r0
+	mov.l _z80_IFF1_560,r2
+	mov.w r0,@r2    ! Loads zero in zIFF1 and zIFF2
+	mov.l _z80_IM_560,r2
+	mov.b r0,@r2    ! IM = 0
+	mov.l _z80_I_560,r2
+	mov.b r0,@r2    ! I = 0
+	mov.l _z80_R_560,r2
+	mov.b r0,@r2    ! R = 0
+	mov.l _z80_IRQLine_560,r2
+	mov.b r0,@r2    ! IRQLine = 0
+	mov.l _z80_halted_560,r2
 	rts
-	mov.b r0,@(_z80_AF-context_start,r1) ! AF = 0x0040
+	mov.b r0,@r2    ! halted = 0
 
 	.align 2
 	context_start_reset: .long context_start
-	registers_end_reset: .long registers_end
+	_z80_IFF1_560: .long _z80_IFF1
+	_z80_IM_560: .long _z80_IM
+	_z80_I_560: .long _z80_I
+	_z80_R_560: .long _z80_R
+	_z80_IRQLine_560: .long _z80_IRQLine
+	_z80_halted_560: .long _z80_halted
 
 
 ! void z80_raise_IRQ_2(UBYTE vector)
@@ -50068,6 +56400,7 @@ _z80_raise_IRQ_2:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		shlr8 r1
 	
@@ -50076,6 +56409,7 @@ _z80_raise_IRQ_2:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov r6,r1
 	
@@ -50126,6 +56460,7 @@ _z80_raise_IRQ_2:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		or r1,r0
 	
@@ -50134,6 +56469,7 @@ _z80_raise_IRQ_2:
 	
 	
 		mov.l @r10,r2
+                
 		jsr @r2
 		extu.b r1,r6
 	
@@ -50219,19 +56555,21 @@ _z80_cause_NMI_2:
 	! Add extra cycles
 	mov.l _z80_Extra_Cycles_cnmi,r0
 	mov.l @r0,r1
+	
 	add #11,r1
 	mov.l r1,@r0
 
 	mov.l _z80_PC_cnmi,r4
 	mov.l _z80_Mem_Handlers_cnmi,r10    ! Necesario para las escrituras
 	mov.w @r4,r1
-	mov.l _z80_SP_cnmi,r5
+ 	mov.l _z80_SP_cnmi,r5
 	mov.w @r5,r0
 	add #-1,r0
 	shlr8 r1
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov r0,r7
 	
@@ -50242,6 +56580,7 @@ _z80_cause_NMI_2:
 	
 	
 		mov.l @(4,r10),r2
+                
 		jsr @r2
 		mov.w @r4,r1
 	
@@ -50433,8 +56772,11 @@ _z80_get_reg_2:
 	! Normal register loading
 	mov.l _context_start_gr,r0
 	shll2 r4
+        
+
 	rts
 	mov.l @(r0,r4),r0
+
 
 .nirreg:
 	mov #12,r1
@@ -50615,6 +56957,7 @@ _z80_set_reg_2:
 	! Fijar registro IR
 	! No se puede cargar como palabra larga por alineamiento
 	mov.l _sreg_z80_R,r0
+
 	mov r5,r1
 	mov.w r5,@r0        ! first R word
 	shlr16 r1
@@ -50750,7 +57093,11 @@ _z80_map_read_2:
 	
 		mov #1,r1
 		extu.w r5,r5
-		mov #3,r3      ! 2^3 ancho datos descriptores
+
+		
+			mov #3,r3      ! 2^3 ancho datos descriptores
+		
+
 		shll8 r1       ! r1 = incr. banco = 256
 		mov #0,r2
 
@@ -50761,7 +57108,10 @@ _z80_map_read_2:
 	
 		cmp/hi r5,r4
 		bt/s mr_finish
-		shld r3,r7
+
+		
+			shld r3,r7
+		
 
 		mov.l r2,@(r0,r7)    ! volcar 0
 		add #4,r7
@@ -50799,7 +57149,11 @@ _z80_map_write_2:
 	
 		mov #1,r1
 		extu.w r5,r5
-		mov #3,r3      ! 2^3 ancho datos descriptores
+
+		
+			mov #3,r3      ! 2^3 ancho datos descriptores
+		
+
 		shll8 r1       ! r1 = incr. banco = 256
 		mov #0,r2
 
@@ -50810,7 +57164,10 @@ _z80_map_write_2:
 
 		cmp/hi r5,r4
 		bt/s mw_finish
-		shld r3,r7
+
+		
+			shld r3,r7
+		
 
 		mov.l r2,@(r0,r7)
 		add #4,r7
@@ -50834,60 +57191,61 @@ _z80_map_write_2:
 ! start/end = the area it covers
 ! method = 0 for direct, 1 for handled
 ! data = RAM for direct, handler for handled
+
 .align 5
-.global _z80_add_read_2
-_z80_add_read_2:
-
-
-	
-		extu.w r4,r4
-		mov.l _z80_Read_ar,r0
-		mov #1,r1
-		extu.w r5,r5
-
-		! if direct, subtract the start from the memory area
-		tst r6,r6
-
-		bf/s ar_dont_adjust
-		shll8 r1       ! r1 = incr. banco = 256
-
-		mov #0,r2
-
-		sub r4,r7
-		bra ar_loop
-		mov r7,r6
-
-	ar_dont_adjust:
-		mov #0,r6
-		mov r7,r2
-
-	ar_loop:
-		! if theres no area left inbetween, stop now.
-		mov r4,r7
-		shlr8 r7
-	
-		cmp/hi r5,r4
-		bt/s ar_finish	
-		shll2 r7
-		shll r7
-
-		mov.l r2,@(r0,r7)
-		add #4,r7
-		mov.l r6,@(r0,r7)
-		bra ar_loop          ! continuar
-		add r1,r4            ! incr. banco
+	.global _z80_add_read_2
+	_z80_add_read_2:
 
 	
+		
+			extu.w r4,r4
+			mov.l _z80_Read_ar,r0
+			mov #1,r1
+			extu.w r5,r5
 
-	ar_finish:
-		rts
-		nop
+			! if direct, subtract the start from the memory area
+			tst r6,r6
 
+			bf/s ar_dont_adjust
+			shll8 r1       ! r1 = incr. banco = 256
 
+			mov #0,r2
 
-	.align 2
-	_z80_Read_ar: .long _z80_Read
+			sub r4,r7
+			bra ar_loop
+			mov r7,r6
 
+		ar_dont_adjust:
+			mov #0,r6
+			mov r7,r2
+
+		ar_loop:
+			! if theres no area left inbetween, stop now.
+			mov r4,r7
+			shlr8 r7
+		
+			cmp/hi r5,r4
+			bt/s ar_finish	
+			shll2 r7
+			shll r7
+
+			mov.l r2,@(r0,r7)
+			add #4,r7
+			mov.l r6,@(r0,r7)
+			bra ar_loop          ! continuar
+			add r1,r4            ! incr. banco
+
+		
+
+		ar_finish:
+			rts
+			nop
+	
+
+	
+		.align 2
+		_z80_Read_ar: .long _z80_Read
+	
 
 
 ! void z80_add_write_2(UWORD start, UWORD end, int method, void *data)

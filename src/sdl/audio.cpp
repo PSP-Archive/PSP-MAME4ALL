@@ -165,8 +165,14 @@ void init_sound(unsigned rate, int stereo, int bits)
 #else
 	;
 #endif
-	Mix_PlayMusic(Mix_LoadMUS(DATA_PREFIX MUSIC_FILENAME),-1);
-	Mix_VolumeMusic(80);
+#ifdef DREAMCAST
+	Mix_Music *music=Mix_LoadMUS(DATA_SD_PREFIX MUSIC_FILENAME);
+#else
+	Mix_Music *music=NULL;
+#endif
+	if (!music) music=Mix_LoadMUS(DATA_PREFIX MUSIC_FILENAME);
+	Mix_PlayMusic(music,-1);
+	Mix_VolumeMusic(60);
 	n_render_sndbuff=2;
 	mixedAudio=render_sndbuff=sndbuffer[2];
 	n_callback_sndbuff=0;

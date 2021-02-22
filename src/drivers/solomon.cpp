@@ -13,10 +13,18 @@ int  solomon_vh_start(void);
 void solomon_vh_stop(void);
 void solomon_vh_screenrefresh(struct osd_bitmap *bitmap,int full_refresh);
 
+#ifdef USE_CZ80
+#include "cz80/cz80.h"
+extern cz80_struc *mame4all_cz80_struc;
+#else
+#ifdef USE_RAZE
+unsigned short Z80_GetBC(void);
+#endif
+#endif
+
 
 static int solomon_0xe603_r(int offset)
 {
-        Z80_Regs regs;
 
 	if (Z80_GetPC()==0x161) // all the time .. return 0 to act as before  for coin / startup etc.
 	{
@@ -24,10 +32,21 @@ static int solomon_0xe603_r(int offset)
 	}
 	else if (Z80_GetPC()==0x4cf0) // stop it clearing the screen at certain scores
 	{
-		Z80_GetRegs(&regs);
 #ifdef USE_DRZ80
-		return (regs.Z80BC>>16)&0x08;
+#ifdef USE_CZ80
+		return (Cz80_Get_BC(mame4all_cz80_struc))&0x08;
 #else
+#ifdef USE_RAZE
+		return Z80_GetBC()&0x08;
+#else
+        	Z80_Regs regs;
+		Z80_GetRegs(&regs);
+		return (regs.Z80BC>>16)&0x08;
+#endif
+#endif
+#else
+        	Z80_Regs regs;
+		Z80_GetRegs(&regs);
 		return regs.BC.B.l & 0x08;
 #endif
 	}

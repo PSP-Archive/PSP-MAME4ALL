@@ -1,9 +1,9 @@
 NAME   = mame4all
 O      = o
 RM     = rm -f
-CC     = gcc
-CXX    = g++
-AS     = c++
+CC     = gcc-3
+CXX    = g++-3
+AS     = c++-3
 AR     = ar
 STRIP  = strip
 
@@ -21,6 +21,7 @@ else
 MAME4ALL_AGED=1
 MAME4ALL_CLASSIC=1
 MAME4ALL_GOLD=1
+MAME4ALL_ALL=1
 endif
 endif
 endif
@@ -53,7 +54,7 @@ CPPFLAGS  = $(DEFAULT_CFLAGS) $(MORE_CFLAGS)
 
 all: $(PROG)
 
-NASM_OPTS=-f gnuwin32 -DUSE_MAME_FETCH 
+NASM_OPTS=-f win32 -DUSE_MAME_FETCH 
 
 ifndef MAME4ALL_GOLD
 NASM_OPTS+=-DUSE_MAME_CHANGE_PC
@@ -107,7 +108,7 @@ src/raze/raze/raze_4.o: src/raze/raze/raze_4.asm
 include objs.mk
 
 $(PROG): $(OBJS) $(OBJS_CPU) $(DRIVERS)
-	$(CC) -L/usr/local/lib -o $(PROG) -lmingw32 $(OBJS_CPU) $(DRIVERS) $(OBJS) -lz -lSDL_static_129 -mwindows -mno-cygwin -luser32 -lgdi32 -lwinmm -ldxguid
+	$(CC) -L/usr/lib/mingw -L/usr/local/lib -o $(PROG) -lmingw32 $(OBJS_CPU) $(DRIVERS) $(OBJS) -lz -lSDL_static_129 -mwindows -mno-cygwin -luser32 -lgdi32 -lwinmm -ldxguid
 	$(STRIP) $(PROG).exe
 
 run: $(PROG)

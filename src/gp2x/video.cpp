@@ -14,10 +14,15 @@ unsigned int dirtypalette;
 
 /* Timing variables */
 extern int frameskip;
+#ifndef MAME4ALL_BENCH
 int gp2x_frameskip=2;
 int gp2x_frameskip_auto=1;
+#else
+int gp2x_frameskip=5;
+int gp2x_frameskip_auto=0;
+#endif
 int gp2x_double_buffer=0;
-#ifdef GP2X
+#if !defined(DREAMCAST) || defined(MAME4ALL_BENCH)
 int gp2x_vsync=0;
 #else
 int gp2x_vsync=1;
@@ -52,9 +57,18 @@ int visible_game_width_offset;
 int visible_game_height_offset;
 
 static int frame_buffer=0;
+
+#ifdef PSP_RES
+int gp2x_text_width=480;
+#else
 int gp2x_text_width=320;
-#ifdef GP2X
+#endif
+
+#if defined(GP2X) || defined(PSP)
 int gp2x_showfps=0;
+#endif
+
+#ifdef GP2X
 int gp2x_bordertvout=0;
 int gp2x_bordertvout_width=6;
 int gp2x_bordertvout_height=8;
@@ -130,12 +144,26 @@ void gp2x_adjust_display(void) {
 			gp2x_yscreen = (320-visible_game_height) / 2;
 		}
 		gp2x_yoffset+= visible_game_height_offset;
-		
-	} else
+	}
+	else
 #else
 	if (gp2x_rotate==1)
 	{
 // DIV2
+#ifdef PSP_RES
+		gp2x_xoffset=visible_game_width_offset;
+		gp2x_yoffset=visible_game_height_offset;
+		gp2x_xscreen=0;
+		gp2x_yscreen=0;
+		gp2x_width=visible_game_width;
+		gp2x_height=visible_game_height;
+		gp2x_xmax=960;
+		gp2x_ymax=544;
+		if (gp2x_xmax&15)
+			gp2x_xmax+=16;
+		gp2x_xmax&=0x07F0;
+		(visible_game_height>544)?gp2x_xscreen=(visible_game_width-960)/2:gp2x_xscreen=(960-visible_game_width)/2;
+#else
 		gp2x_xoffset=0;
 		gp2x_yoffset=0;
 		gp2x_xscreen=0;
@@ -158,6 +186,7 @@ void gp2x_adjust_display(void) {
 		}
 		gp2x_yoffset+= visible_game_height_offset;
 		gp2x_width&=0x07E0;
+#endif
 	} else
 #ifdef DREAMCAST
 	if (gp2x_rotate==3)
@@ -172,7 +201,6 @@ void gp2x_adjust_display(void) {
 		gp2x_height=visible_game_height;
 		if (gp2x_height>512)
 			gp2x_height=512;
-
 		if (Machine->orientation & ORIENTATION_SWAP_XY)
 		{
 			if (gp2x_width<gp2x_height)
@@ -181,7 +209,7 @@ void gp2x_adjust_display(void) {
 				gp2x_yscreen=0;
 //				gp2x_xmax=(4*gp2x_height)/3;
 //				gp2x_xmax=gp2x_height;
-gp2x_xmax=(23*gp2x_height)/20;
+				gp2x_xmax=(23*gp2x_height)/20;
 				if (gp2x_xmax>512)
 					gp2x_xmax=512;
 				gp2x_xscreen=(gp2x_xmax-gp2x_width)/2;
@@ -215,11 +243,31 @@ gp2x_xmax=(23*gp2x_height)/20;
 		gp2x_yscreen=0;
 		gp2x_width=visible_game_width;
 		gp2x_height=visible_game_height;
+#ifdef PSP_RES
+		gp2x_xmax=480;
+#else
 		gp2x_xmax=320;
+#endif
 		gp2x_ymax=(visible_game_height<<8)/visible_game_width;
+#ifdef PSP_RES
+		gp2x_ymax*=480;
+#else
 		gp2x_ymax*=320;
+#endif
 		gp2x_ymax>>=8;
 //		if ((visible_game_width>visible_game_height)&&(gp2x_ymax<=240))
+#ifdef PSP_RES
+		if (gp2x_ymax<=272)
+			gp2x_yscreen=((272-gp2x_ymax)/2)&0x00FE;
+		else
+		{
+			gp2x_ymax=272;
+			gp2x_xmax=(visible_game_width<<8)/visible_game_height;
+			gp2x_xmax*=272;
+			gp2x_xmax>>=8;
+			if (gp2x_xmax>480)
+				gp2x_xmax=480;
+#else
 		if (gp2x_ymax<=240)
 			gp2x_yscreen=((240-gp2x_ymax)/2)&0x00FE;
 		else
@@ -230,17 +278,37 @@ gp2x_xmax=(23*gp2x_height)/20;
 			gp2x_xmax>>=8;
 			if (gp2x_xmax>320)
 				gp2x_xmax=320;
+#endif
 			else
 			if (gp2x_xmax&15)
 				gp2x_xmax+=16;
 			gp2x_xmax&=0x07F0;
+#ifdef PSP_RES
+			gp2x_xscreen=((480-gp2x_xmax)/2)&0x00FD;
+#else
 			gp2x_xscreen=((320-gp2x_xmax)/2)&0x00FD;
+#endif
 		}
-
-	} else
+	}
+	else
 #endif
 	{
 		/* Image not rotated */
+#ifdef PSP_RES
+		gp2x_xoffset=visible_game_width_offset;
+		gp2x_yoffset=visible_game_height_offset;
+		gp2x_xscreen=0;
+		gp2x_yscreen=0;
+		gp2x_width=visible_game_width;
+		gp2x_height=visible_game_height;
+		gp2x_xmax=480;
+		gp2x_ymax=272;
+		if (gp2x_xmax&15)
+			gp2x_xmax+=16;
+		gp2x_xmax&=0x07F0;
+		if (gp2x_rotate!=3)
+			(visible_game_width>480)?gp2x_xscreen=(visible_game_width-480)/2:gp2x_xscreen=(480-visible_game_width)/2;
+#else
 		gp2x_xoffset=0;
 		gp2x_yoffset=0;
 		gp2x_xscreen=0;
@@ -266,7 +334,7 @@ gp2x_xmax=(23*gp2x_height)/20;
 #ifndef GP2X
 		gp2x_width&=0x07F0;
 #endif
-
+#endif
 	}
 #ifndef GP2X
 	update_p_update_display_func(gp2x_rotate&3);
@@ -348,20 +416,10 @@ static void gp2x_text(unsigned char *screen, int x, int y, char *text, int color
 	unsigned int i,l;
 	screen=screen+x+y*gp2x_text_width;
 
-#ifdef GP2X	
-	if (gp2x_bordertvout)
+	for (i=0;i<strlen(text);i++)
 	{
-		screen+=((((gp2x_bordertvout_width*gp2x_text_width)/100)+7)&~7)/2;
-		if (gp2x_rotate)
-		screen+=(((((gp2x_bordertvout_height*(gp2x_rotate&1?visible_game_width:visible_game_height))/100)+7)&~7)/2)*gp2x_text_width;
-		else
-		screen+=(((((gp2x_bordertvout_height*240)/100)+7)&~7)/2)*gp2x_text_width;
-	}
-#endif
-
-	for (i=0;i<strlen(text);i++) {
-		
-		for (l=0;l<8;l++) {
+		for (l=0;l<8;l++)
+		{
 			screen[l*gp2x_text_width+0]=(fontdata8x8[((text[i])*8)+l]&0x80)?color:screen[l*gp2x_text_width+0];
 			screen[l*gp2x_text_width+1]=(fontdata8x8[((text[i])*8)+l]&0x40)?color:screen[l*gp2x_text_width+1];
 			screen[l*gp2x_text_width+2]=(fontdata8x8[((text[i])*8)+l]&0x20)?color:screen[l*gp2x_text_width+2];
@@ -372,7 +430,19 @@ static void gp2x_text(unsigned char *screen, int x, int y, char *text, int color
 			screen[l*gp2x_text_width+7]=(fontdata8x8[((text[i])*8)+l]&0x01)?color:screen[l*gp2x_text_width+7];
 		}
 		screen+=8;
-	} 
+	}
+
+#ifdef GP2X
+	if (gp2x_bordertvout)
+	{
+		screen+=((((gp2x_bordertvout_width*gp2x_text_width)/100)+7)&~7)/2;
+		if (gp2x_rotate)
+			screen+=(((((gp2x_bordertvout_height*(gp2x_rotate&1?visible_game_width:visible_game_height))/100)+7)&~7)/2)*gp2x_text_width;
+		else
+			screen+=(((((gp2x_bordertvout_height*240)/100)+7)&~7)/2)*gp2x_text_width;
+	}
+#endif
+
 #if !defined(GP2X) && defined(GP2X_SDLWRAPPER_NODOUBLEBUFFER)
 	if (gp2x_sdlwrapper_is_single)
 		gp2x_video_flip_single();
@@ -406,6 +476,9 @@ void gp2x_gamelist_text_out_fmt(int x, int y, char* fmt, ...)
 /* Debug information function*/
 void gp2x_text_out(int x, int y, char *texto) {
 	gp2x_text(gp2x_screen8,x,y,texto,1);
+#ifdef OUTPUT_VIDEO_TEXT
+	puts(texto);
+#endif
 }
 
 /* Debug information function*/
@@ -413,6 +486,9 @@ void gp2x_text_out_int(int x, int y, int entero) {
 	char texto[50];
 	sprintf(texto,"%d\n",entero);
 	gp2x_text(gp2x_screen8,x,y,texto,1);
+#ifdef OUTPUT_VIDEO_TEXT
+	puts(texto);
+#endif
 }
 
 static int log=0;
@@ -445,8 +521,17 @@ void gp2x_text_pause(void) {
 	gp2x_text(gp2x_screen8,1,1,"PAUSE\0",0);
 	gp2x_text(gp2x_screen8,0,0,"PAUSE\0",1);
 #else
+#ifdef PSP_RES
+	gp2x_text(gp2x_screen8,190,160,"Arcade  Paused!\0",0);
+	gp2x_text(gp2x_screen8,190,160,"Arcade  Paused!\0",1);
+	gp2x_text(gp2x_screen8,190,170,"L+R to Continue\0",0);
+	gp2x_text(gp2x_screen8,190,170,"L+R to Continue\0",1);
+	gp2x_text(gp2x_screen8,190,180,"or HOME to Quit\0",0);
+	gp2x_text(gp2x_screen8,190,180,"or HOME to Quit\0",1);
+#else
 	gp2x_text(gp2x_screen8,141,111,"PAUSE\0",0);
 	gp2x_text(gp2x_screen8,140,110,"PAUSE\0",1);
+#endif
 #endif
 	gp2x_video_flip_single();
 }
@@ -463,7 +548,11 @@ void gp2x_text_log(char *texto) {
 	}
 	gp2x_text_out(0,log,texto);
 	log+=8;
+#ifdef PSP_RES
+	if(log>271) log=0;
+#else
 	if(log>239) log=0;
+#endif
 }
 
 /* Debug Log information funcion */
@@ -478,7 +567,11 @@ void gp2x_text_log_int(int entero) {
 	}
 	gp2x_text_out_int(0,log,entero);
 	log+=8;
+#ifdef PSP_RES
+	if(log>271) log=0;
+#else
 	if(log>239) log=0;
+#endif
 }
 
 /* Variadic functions guide found at http://www.unixpapa.com/incnote/variadic.html */
@@ -536,8 +629,10 @@ struct osd_bitmap *osd_new_bitmap(int width,int height,int depth)       /* ASG 9
 
 		if (!(bitmap->_private = gp2x_malloc((height + 2 * safety) * rowlen)))
 		{
+#ifndef DREAMCAST
 			gp2x_text_log("osd_new_bitmap(): Out of Memory");
 			gp2x_free(bitmap);
+#endif
 			return 0;
 		}
 
@@ -546,21 +641,21 @@ struct osd_bitmap *osd_new_bitmap(int width,int height,int depth)       /* ASG 9
 
 		if (!(bitmap->line = (unsigned char**)gp2x_malloc(height * sizeof(unsigned char *))))
 		{
+#ifndef DREAMCAST
 			gp2x_text_log("osd_new_bitmap(): Out of Memory");
 			gp2x_free(bm);
 			gp2x_free(bitmap);
+#endif
 			return 0;
 		}
 
 		for (i = 0;i < height;i++)
 			bitmap->line[i] = &bm[(i + safety) * rowlen + safety];
-
-		/*osd_clearbitmap(bitmap);*/
 	}
-	
+#ifndef DREAMCAST
 	if(!bitmap)
 		gp2x_text_log("osd_new_bitmap(): Out of Memory");
-
+#endif
 	return bitmap;
 }
 
@@ -796,6 +891,35 @@ void gp2x_clear_screen(void)
    	gp2x_video_flip_single();
 }
 
+#ifdef PSP
+unsigned long prev;
+/* Wait for correct synchronization */
+INLINE void update_timing (void)
+{
+	unsigned long curr=gp2x_timer_read();
+	unsigned long previ=prev;
+	unsigned long interval=((frameskip+1) * 1000)/(Machine->drv->frames_per_second);
+
+	/* now wait until it's time to update the screen */
+	if ((curr-previ)<interval) {
+		/* Auto-Frameskip -> frameskip-- */
+		if (gp2x_frameskip_auto && frameskip>0)
+			frameskip--;
+		//if (gp2x_vsync!=-1 && ((!gp2x_frameskip_auto) || (!frameskip) || (gp2x_vsync==1)))
+		{
+			while ((curr - previ) < interval) {
+				curr = gp2x_timer_read();
+			}
+		}
+	} else if ((curr-previ)>(interval)) {
+		/* Auto-Frameskip -> frameskip++ */
+		if (gp2x_frameskip_auto && frameskip<gp2x_frameskip)
+			frameskip++;
+	}
+	prev = curr;
+}
+#endif
+
 #ifdef GP2X
 static int gp2x_fps;
 int osd_update_frameskip (void)
@@ -903,13 +1027,13 @@ unsigned mame4all_totalframes=0;
 #ifdef DEBUG_FRAMERATE
 unsigned mame4all_frameskipped=0;
 unsigned mame4all_frameswaiting=0;
-double mame4all_framerate=0.0;
-extern double mame4all_real_framerate;
+float mame4all_framerate=0.0;
+extern float mame4all_real_framerate;
 extern unsigned mame4all_real_totalframes;
 void print_frameskip(void)
 {
-	double sk=(((double)mame4all_frameskipped)*100.0)/((double)mame4all_totalframes);
-	double wt=(((double)mame4all_frameswaiting)*100.0)/((double)mame4all_totalframes);
+	float sk=(((float)mame4all_frameskipped)*100.0)/((float)mame4all_totalframes);
+	float wt=(((float)mame4all_frameswaiting)*100.0)/((float)mame4all_totalframes);
 	printf("%i frames, skipped %i (%.2f%%), waiting %i (%.2f%%)\n",mame4all_totalframes,mame4all_frameskipped,sk,mame4all_frameswaiting,wt);
 	printf("Machine framerate %.4f\n", mame4all_framerate);
 	printf("Real framerate %.4f (%i frames)\n", mame4all_real_framerate,mame4all_real_totalframes);
@@ -928,9 +1052,9 @@ INLINE void calculate_framerate(unsigned now)
 		if (now-start_time>=1000)
 		{
 			if (mame4all_framerate!=0.0)
-				mame4all_framerate=(mame4all_framerate+((double)(mame4all_totalframes-start_numframes)))/2.0;
+				mame4all_framerate=(mame4all_framerate+((float)(mame4all_totalframes-start_numframes)))/2.0;
 			else
-				mame4all_framerate=(double)(mame4all_totalframes-start_numframes);
+				mame4all_framerate=(float)(mame4all_totalframes-start_numframes);
 			start_time=now;
 			start_numframes=mame4all_totalframes;
 		}
@@ -939,6 +1063,7 @@ INLINE void calculate_framerate(unsigned now)
 #else
 #define calculate_framerate(AHORA)
 #endif
+
 int osd_update_frameskip(void)
 {
 	static int cuantos=0;
@@ -947,6 +1072,13 @@ int osd_update_frameskip(void)
 	calculate_framerate(ahora);
 	proximo_frameskip+=frameskip_umbral;
 	mame4all_totalframes++;
+#ifdef DEBUG_FRAMERATE_MAX
+	if (mame4all_totalframes>DEBUG_FRAMERATE_MAX)
+	{
+		print_frameskip();
+		exit(0);
+	}
+#endif
 	if ((ahora-frameskip_medio)>proximo_frameskip)
 	{
 		cuantos++;
@@ -1267,15 +1399,40 @@ extern update_display_func p_update_display;
 void update_p_update_display_func();
 #endif
 
+#ifdef MAME4ALL_BENCH
+static void update_bench(void)
+{
+	static Uint32 t=0;
+	static Uint32 init=0;
+	if (!t)
+		init=SDL_GetTicks();
+	t++;
+	if (t>MAME4ALL_BENCH)
+	{
+		Uint32 f=SDL_GetTicks()-init;
+		puts("-----");
+		printf("BENCH TOTAL TIME %.3f sec\n",(double)f/1000.0);
+//		printf("\t\t %.3f FPS\n",(1000.0*MAME4ALL_BENCH)/((double)f));
+		puts("-----");
+		fflush(stdout);
+		exit(0);
+	}
+}
+#endif
 
 /* Update the display. */
 void osd_update_display(void)
 {
-#ifdef GP2X
+#if defined(GP2X) || defined(PSP)
 	/* Update Timing */
 	update_timing();
 #endif
 
+#ifdef PSP
+	/* Wait VSync */
+	if (gp2x_vsync==1)
+		gp2x_video_wait_vsync();
+#endif
 	/* Manage the palette */
 	if (dirtypalette)
 		update_palette();
@@ -1293,5 +1450,9 @@ void osd_update_display(void)
 	/* Double Buffer Video Flip */
 	if (gp2x_double_buffer)
 		gp2x_video_flip();
+#endif
+
+#ifdef MAME4ALL_BENCH
+	update_bench();
 #endif
 }

@@ -66,19 +66,36 @@ void irem_sound_cmd_w(int offset, int value);
 int mpatrol_input_port_3_r(int offset);
 
 
+#ifdef USE_CZ80
+#include "cz80/cz80.h"
+extern cz80_struc *mame4all_cz80_struc;
+#else
+#ifdef USE_RAZE
+unsigned char Z80_GetE(void);
+#endif
+#endif
+
 
 /* this looks like some kind of protection. The game does strange things */
 /* if a read from this address doesn't return the value it expects. */
 int mpatrol_protection_r(int offset)
 {
-	Z80_Regs regs;
-
-
-	Z80_GetRegs(&regs);
 
 #ifndef USE_DRZ80 /* FRANXIS 01-09-2005 */
-	return regs.DE.B.l;
+#ifdef USE_CZ80
+	return Cz80_Get_DE(mame4all_cz80_struc)&0xFF;
 #else
+#ifdef USE_RAZE
+	return Z80_GetE();
+#else
+	Z80_Regs regs;
+	Z80_GetRegs(&regs);
+	return regs.DE.B.l;
+#endif
+#endif
+#else
+	Z80_Regs regs;
+	Z80_GetRegs(&regs);
 	return (regs.Z80DE>>16)&0xFF;
 #endif
 }

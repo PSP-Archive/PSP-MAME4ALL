@@ -66,6 +66,9 @@ int readroms(void)
 	const struct RomModule *romp;
 	int checksumwarning = 0;
 	int lengthwarning = 0;
+#ifdef USE_FILECACHE
+	int first_time_rom=1;
+#endif
 
 	romp = Machine->gamedrv->rom;
 
@@ -135,8 +138,19 @@ int readroms(void)
 			}
 
 			name = romp->name;
+#ifdef USE_FILECACHE
+			if (first_time_rom)
+				gp2x_text_log("Caching...");
+			else
+#endif
 			gp2x_text_log((char *)name);
 			f = osd_fopen(Machine->gamedrv->name,name,OSD_FILETYPE_ROM,0);
+#ifdef USE_FILECACHE
+			if (first_time_rom) {
+				first_time_rom=0;
+				gp2x_text_log((char *)name);
+			}
+#endif
 			if (f == 0 && Machine->gamedrv->clone_of)
 			{
 				/* if the game is a clone, try loading the ROM from the main version */

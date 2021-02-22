@@ -10,7 +10,7 @@
 
 int Z80_ICount;
 
-#ifndef MAME4ALL_GOLD
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,7 +134,6 @@ static z80_struct_t *z80=(z80_struct_t *)&z80s[0];
 
 void mame_change_pc16(unsigned newpc)
 {
-//printf("mame_change_pc16 %X\n",newpc);fflush(stdout);
 	register unsigned short pc=(unsigned short)(newpc&0xFFFF);
 	change_pc16((pc));
 }
@@ -264,16 +263,140 @@ static void get_write_map(void)
 #endif
 
 
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+extern Z80_Regs mameZ80;
+void mameZ80_Reset(Z80_DaisyChain *daisy_chain);
+void mameZ80_GetRegs(Z80_Regs *Regs);
+void mameZ80_SetRegs (Z80_Regs *Regs);
+unsigned mameZ80_GetPC (void);
+unsigned mameZ80_GetSP (void);
+void mameZ80_Cause_Interrupt(int);
+void mameZ80_Clear_Pending_Interrupts(void);
+int mameZ80_Execute(int);
+extern struct GameDriver gorf_driver;
+extern struct GameDriver gorfpgm1_driver;
+extern struct GameDriver wow_driver;
+extern struct GameDriver bosco_driver;
+extern struct GameDriver bosconm_driver;
+extern struct GameDriver missile_driver;
+extern struct GameDriver missile2_driver;
+extern struct GameDriver suprmatk_driver;
+extern struct GameDriver btime_driver;
+extern struct GameDriver btimea_driver;
+extern struct GameDriver cookrace_driver;
+extern struct GameDriver eggs_driver;
+extern struct GameDriver scregg_driver;
+extern struct GameDriver lnc_driver;
+extern struct GameDriver bnj_driver;
+extern struct GameDriver brubber_driver;
+extern struct GameDriver caractn_driver;
+extern struct GameDriver zoar_driver;
+extern struct GameDriver berzerk_driver;
+extern struct GameDriver berzerk1_driver;
+extern struct GameDriver frenzy_driver;
+extern struct GameDriver frenzy1_driver;
+extern struct GameDriver maketrax_driver;
+extern struct GameDriver spacfury_driver;
+extern struct GameDriver spacfura_driver;
+extern struct GameDriver zektor_driver;
+extern struct GameDriver tacscan_driver;
+extern struct GameDriver elim2_driver;
+extern struct GameDriver elim4_driver;
+extern struct GameDriver startrek_driver;
+extern struct GameDriver astrob_driver;
+extern struct GameDriver astrob1_driver;
+extern struct GameDriver spaceod_driver;
+extern struct GameDriver s005_driver;
+extern struct GameDriver monsterb_driver;
+extern struct GameDriver pignewta_driver;
+extern struct GameDriver pignewt_driver;
+extern struct GameDriver starwars_driver;
+extern struct GameDriver empire_driver;
+extern struct GameDriver tempest_driver;
+extern struct GameDriver tempest1_driver;
+extern struct GameDriver tempest2_driver;
+extern struct GameDriver temptube_driver;
+extern struct GameDriver spyhunt_driver;
+extern struct GameDriver rampage_driver;
+extern struct GameDriver powerdrv_driver;
+extern struct GameDriver maxrpm_driver;
+extern struct GameDriver sarge_driver;
+extern struct GameDriver dotron_driver;
+extern struct GameDriver dotrone_driver;
+#endif
+
 void Z80_Reset(Z80_DaisyChain *daisy_chain)
 {
-#ifndef MAME4ALL_GOLD
-	z80=(z80_struct_t *)&z80s[cpu_getactivecpu()];
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	int forced=0
+#ifndef NO_DRIVER_GENERIC_8BIT
+	 || (Machine->gamedrv == (const struct GameDriver *) &wow_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &gorf_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &gorfpgm1_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &bosco_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &bosconm_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &missile_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &missile2_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &suprmatk_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &btime_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &btimea_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &cookrace_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &eggs_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &scregg_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &lnc_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &bnj_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &brubber_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &caractn_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &zoar_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &berzerk_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &berzerk1_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &frenzy_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &frenzy1_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &maketrax_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &spacfury_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &spacfura_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &zektor_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &tacscan_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &elim2_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &elim4_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &startrek_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &astrob_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &astrob1_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &spaceod_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &s005_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &monsterb_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &pignewta_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &pignewt_driver)
 #endif
+#ifndef NO_DRIVER_ATARIVG
+	 || (Machine->gamedrv == (const struct GameDriver *) &starwars_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &empire_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &tempest_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &tempest1_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &tempest2_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &temptube_driver)
+#endif
+#ifndef NO_DRIVER_MCR
+	 || (Machine->gamedrv == (const struct GameDriver *) &spyhunt_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &rampage_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &powerdrv_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &maxrpm_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &sarge_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &dotron_driver)
+	 || (Machine->gamedrv == (const struct GameDriver *) &dotrone_driver)
+#endif
+	;
+
+	z80=(z80_struct_t *)&z80s[cpu_getactivecpu()];
 printf("RAZE Z80_Reset %i\n",cpu_getactivecpu()); fflush(stdout);
-if (daisy_chain)
-{
-puts(" Caution !!! Z80_DaisyChain not implementated yet !!!");fflush(stdout);
-}
+	if (daisy_chain || forced)
+	{
+		z80=NULL;
+		mameZ80_Reset(daisy_chain);
+	}
+	else
+#endif
+	{
 	z80_init_memmap();
 	z80_map_fetch(0x0000, 0xffff,OP_ROM);
 #ifdef RAZE_ONLY_HANDLER
@@ -290,113 +413,151 @@ puts(" Caution !!! Z80_DaisyChain not implementated yet !!!");fflush(stdout);
 	Z80_Clear_Pending_Interrupts();
 	z80_set_reg(Z80_REG_SP,0xf000);
 	change_pc16(z80_get_reg(Z80_REG_PC));
+	}
 }
 
 void Z80_GetRegs(Z80_Regs *Regs)
 {
-#ifndef MAME4ALL_GOLD
-	*((z80_struct_t **)Regs)=z80;
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (z80)
+		*((z80_struct_t **)Regs)=z80;
+	else
+		mameZ80_GetRegs(Regs);
 #endif
 }
 
+unsigned char Z80_GetB(void)
+{
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (!z80)
+		return mameZ80.BC.B.h;			
+	else
+#endif
+	return z80_get_reg(Z80_REG_BC)>>8;
+}
+
+unsigned char Z80_GetD(void)
+{
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (!z80)
+		return mameZ80.DE.B.h;
+	else
+#endif
+	return z80_get_reg(Z80_REG_DE)>>8;
+}
+
+unsigned char Z80_GetE(void)
+{
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (!z80)
+		return mameZ80.DE.B.l;
+	else
+#endif
+	return z80_get_reg(Z80_REG_DE)&0xFF;
+}
+
+unsigned short Z80_GetHL(void)
+{
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (!z80)
+		return mameZ80.HL.D;
+	else
+#endif
+	return z80_get_reg(Z80_REG_HL)&0xFFFF;
+}
+
+unsigned short Z80_GetHL2(void)
+{
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (!z80)
+		return mameZ80.HL2.D;
+	else
+#endif
+	return z80_get_reg(Z80_REG_HL2)&0xFFFF;
+}
+
+unsigned short Z80_GetBC(void)
+{
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (!z80)
+		return mameZ80.BC.B.l;
+	else
+#endif
+	return z80_get_reg(Z80_REG_BC)&0xFFFF;
+}
+
+
 void Z80_SetRegs (Z80_Regs *Regs)
 {
-#ifndef MAME4ALL_GOLD
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 	z80=*((z80_struct_t **)Regs);
-	if (z80)
+	if (((unsigned)z80>=(unsigned)&z80s[0])&&((unsigned)z80<=(unsigned)&z80s[MAX_CPU]))
 	{
 		unsigned short pc=z80_get_reg(Z80_REG_PC);
 		change_pc16(pc);
 		z80_set_reg(Z80_REG_PC,pc);
+	}
+	else
+	{
+		z80=NULL;
+		mameZ80_SetRegs(Regs);
 	}
 #endif
 }
 
 unsigned Z80_GetPC (void)
 {
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (!z80)
+		return mameZ80_GetPC();
+	else
+#endif
 	return z80_get_reg(Z80_REG_PC);
 }
 
 unsigned Z80_GetSP (void)
 {
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (!z80)
+		return mameZ80_GetSP();
+	else
+#endif
 	return z80_get_reg(Z80_REG_SP);
 }
 
 
 void Z80_Cause_Interrupt(int type)
 {
-//printf("Z80_Cause_Interrupt(%.2X), HALT=%i, %s\n",type,z80_get_reg(Z80_REG_Halted),z80_get_reg(Z80_REG_IFF1)? "EI":"DI");fflush(stdout);
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (!z80)
+		mameZ80_Cause_Interrupt(type);
+	else
+#endif
+	{
 	if (type == Z80_NMI_INT)
 		z80_cause_NMI();
 	else if (type >= 0)
-	{
-// if ((type & 0xff)!=0xff)
-// printf("IRQ %X\n",type & 0xff);
-// if (z80_get_reg(Z80_REG_IM)!=1)
-// printf("IM%i\n",z80_get_reg(Z80_REG_IM));
-//		z80_lower_IRQ();
-//		z80_set_reg(Z80_REG_IRQLine,0);
 		z80_raise_IRQ(type & 0xff);
-//		z80_lower_IRQ();
 	}
 }
 
 void Z80_Clear_Pending_Interrupts(void)
 {
-//puts("Z80_Clear_Pending_Interrupts");
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (!z80)
+		mameZ80_Clear_Pending_Interrupts();
+	else
+#endif
 	z80_lower_IRQ();
-//	z80_set_reg(Z80_REG_IRQLine,0);
 }
-
-#if 0
-int Z80_Execute(int cycles)
-{
-printf("- Z80_Execute(%i) PC=%X \n",cycles,z80_get_reg(Z80_REG_PC));
-Z80_ICount=cycles;
-do
-{
-	Z80_ICount-=z80_emulate(128); //1);
-printf("\tPC=0x%X, HALT=%i\n",z80_get_reg(Z80_REG_PC),z80_get_reg(Z80_REG_Halted));
-	if (z80_get_reg(Z80_REG_Halted))
-			break;
-} while(Z80_ICount>0);
-int ret=cycles - Z80_ICount;
-printf("  PC=%X %i executed. HALT=%i -\n",z80_get_reg(Z80_REG_PC),ret,z80_get_reg(Z80_REG_Halted));
-return ret;
-
-/*
-int ret=z80_emulate(cycles);
-printf(" PC=%X %i executed. HALT=%i\n",z80_get_reg(Z80_REG_PC),ret,z80_get_reg(Z80_REG_Halted));
-static int cuantos=0;
-cuantos++;
-if (cuantos>100) exit(0);
-return ret;
-*/
-}
-#endif
 
 int Z80_Execute(int cycles)
 {
-/*
-cycles=((cycles/5)*5)+5;
-static int cuantos=0;
-printf("%i Z80_Execute(%i)\n",cuantos++,cycles);fflush(stdout);
-int falta=cycles;
-do{
-	unsigned short nowpc=z80_get_reg(Z80_REG_PC);
-printf("PC=%.4X (%.2X%.2X%.2X%.2X)/(%.2X%.2X%.2X%.2X), BC=%.4X DE=%.4X HL=%.4X\n",nowpc,OP_ROM[nowpc+0],OP_ROM[nowpc+1],OP_ROM[nowpc+2],OP_ROM[nowpc+3],OP_RAM[nowpc+0],OP_RAM[nowpc+1],OP_RAM[nowpc+2],OP_RAM[nowpc+3],z80_get_reg(Z80_REG_BC),z80_get_reg(Z80_REG_DE),z80_get_reg(Z80_REG_HL));fflush(stdout);
-	z80_emulate(1);
-	falta-=6;
-}while(falta>0);
-puts("----");fflush(stdout);
-if (cuantos>50)
-#ifndef DREAMCAST
- exit(0);
-#else
- return (int)malloc(1024*1024*20);
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
+	if (!z80)
+		return mameZ80_Execute(cycles);
+	else
 #endif
-return cycles;
-*/
-return z80_emulate(cycles);
+	return z80_emulate(cycles);
 }
 

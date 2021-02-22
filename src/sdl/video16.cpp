@@ -148,7 +148,7 @@ void dc_change_to_hw_scaled(void)
 {
 	int i;
 	pvr_init_params_t dummy_params={{0,0,0,0,0 },4*1024,1,1};
-	SDL_DC_VerticalWait((SDL_bool)gp2x_vsync);
+	SDL_DC_VerticalWait(gp2x_vsync?SDL_TRUE:SDL_FALSE);
 	SDL_Surface *f=gp2x_sdlwrapper_screen;
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	vid_shutdown(); pvr_shutdown();
@@ -162,7 +162,7 @@ void dc_change_to_hw_scaled(void)
 		pvr_scene_finish();
 	}
 	pvr_shutdown();
-	SDL_DC_VerticalWait((SDL_bool)gp2x_vsync);
+	SDL_DC_VerticalWait(gp2x_vsync?SDL_TRUE:SDL_FALSE);
 	SDL_DC_SetVideoDriver(SDL_DC_TEXTURED_VIDEO);
 	SDL_InitSubSystem(SDL_INIT_VIDEO);
 	gp2x_sdlwrapper_screen=SDL_SetVideoMode(512,512,16,SDL_HWSURFACE);
@@ -183,7 +183,7 @@ void dc_change_to_hw_scaled(void)
 	SDL_EventState(SDL_USEREVENT,SDL_IGNORE);
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_FillRect(gp2x_sdlwrapper_screen,NULL,0);
-	SDL_DC_VerticalWait((SDL_bool)gp2x_vsync);
+	SDL_DC_VerticalWait(gp2x_vsync?SDL_TRUE:SDL_FALSE);
 	SDL_Flip(gp2x_sdlwrapper_screen);
 //	SDL_FreeSurface(f);
 	dc_needs_video_reinit=1;

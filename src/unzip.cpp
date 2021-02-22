@@ -73,11 +73,16 @@ int	gUnzipQuiet = 1;		/* flag controls error messages */
 #define ERROR_UNSUPPORTED "The format of this zipfile is not supported, please recompress it"
 
 /* Print a error message */
+#ifdef DEBUG_FILECACHE
 void errormsg(const char* extmsg, const char* usermsg, const char* zipname) {
+	printf("ERROR '%s'\n",extmsg);
 	/* Output to the user with no internal detail */
 	/*if (!gUnzipQuiet)
 		printf("Error in zipfile %s\n%s\n", zipname, usermsg);*/
 }
+#else
+#define errormsg(_EXTMSG_,_USERMSG_,_ZIPNAME_)
+#endif
 
 /* -------------------------------------------------------------------------
    Unzip support
@@ -126,6 +131,9 @@ static int ecd_find_sig (char *buffer, int buflen, int *offset)
 static int ecd_read(ZIP* zip) {
 	char* buf;
 	int buf_length = 1024; /* initial buffer length */
+#ifdef DEBUG_FILECACHE
+	puts("ecd_read");
+#endif
 
 	while (1) {
 		int offset;
@@ -134,6 +142,9 @@ static int ecd_read(ZIP* zip) {
 			buf_length = zip->length;
 
 		if (filecache_seek(zip->fp, zip->length - buf_length, SEEK_SET) != 0) {
+#ifdef DEBUG_FILECACHE
+			printf("ecd_read ERROR seek %i\n",zip->length - buf_length);
+#endif
 			return -1;
 		}
 
@@ -144,6 +155,9 @@ static int ecd_read(ZIP* zip) {
 		}
 
 		if (filecache_read( buf, buf_length, 1, zip->fp ) < 1 /*!=1 FRANXIS 17-01-2005 */) {
+#ifdef DEBUG_FILECACHE
+			printf("ecd_read ERROR read %i\n",buf_length);
+#endif
 			unzip_free(buf);
 			return -1;
 		}
@@ -153,6 +167,9 @@ static int ecd_read(ZIP* zip) {
 
 			zip->ecd = (char*)unzip_malloc( zip->ecd_length );
 			if (!zip->ecd) {
+#ifdef DEBUG_FILECACHE
+				puts("ecd_read ERROR malloc");
+#endif
 				unzip_free(buf);
 				return -1;
 			}
@@ -160,6 +177,9 @@ static int ecd_read(ZIP* zip) {
 			fast_memcpy(zip->ecd, buf + offset, zip->ecd_length);
 
 			unzip_free(buf);
+#ifdef DEBUG_FILECACHE
+			puts("ecd_read ok");
+#endif
 			return 0;
 		}
 
@@ -169,6 +189,9 @@ static int ecd_read(ZIP* zip) {
 			/* double buffer */
 			buf_length = 2*buf_length;
 		} else {
+#ifdef DEBUG_FILECACHE
+			printf("ecd_read ERROR buf_length=%i >= %i\n",buf_length,zip->length);
+#endif
 			return -1;
 		}
 	}
@@ -228,8 +251,14 @@ static int ecd_read(ZIP* zip) {
 */
 ZIP* openzip(const char* zipfile) {
 	/* allocate */
+#ifdef DEBUG_FILECACHE
+	printf("openzip '%s'\n",zipfile);
+#endif
 	ZIP* zip = (ZIP*)unzip_malloc( sizeof(ZIP) );
 	if (!zip) {
+#ifdef DEBUG_FILECACHE
+		puts("openzip ERROR open malloc");
+#endif
 		return 0;
 	}
 
@@ -329,6 +358,9 @@ ZIP* openzip(const char* zipfile) {
 	/* file name */
 	zip->zip = (char*)unzip_malloc(strlen(zipfile)+1);
 	if (!zip->zip) {
+#ifdef DEBUG_FILECACHE
+		puts("openzip ERROR open malloc zip");
+#endif
 		unzip_free(zip->cd);
 		unzip_free(zip->ecd);
 		filecache_close(zip->fp);
@@ -336,6 +368,9 @@ ZIP* openzip(const char* zipfile) {
 		return 0;
 	}
 	strcpy(zip->zip, zipfile);
+#ifdef DEBUG_FILECACHE
+	puts("openzip ok");
+#endif
 
 	return zip;
 }
@@ -348,10 +383,16 @@ ZIP* openzip(const char* zipfile) {
      ==0 error
 */
 struct zipent* readzip(ZIP* zip) {
-
+#ifdef DEBUG_FILECACHE
+	puts("readzip");
+#endif
 	/* end of directory */
-	if (zip->cd_pos >= zip->size_of_cent_dir)
+	if (zip->cd_pos >= zip->size_of_cent_dir) {
+#ifdef DEBUG_FILECACHE
+		printf("readzip ERROR end_dir cd_pos=%i >= %i\n",zip->cd_pos,zip->size_of_cent_dir);
+#endif
 		return 0;
+	}
 
 	/* compile zipent info */
 	zip->ent.cent_file_header_sig = read_dword (zip->cd+zip->cd_pos+ZIPCENSIG);
@@ -384,11 +425,17 @@ struct zipent* readzip(ZIP* zip) {
 	/* skip to next entry in central dir */
 	zip->cd_pos += ZIPCFN + zip->ent.filename_length + zip->ent.extra_field_length + zip->ent.file_comment_length;
 
+#ifdef DEBUG_FILECACHE
+	puts("readzip ok");
+#endif
 	return &zip->ent;
 }
 
 /* Closes a zip stream */
 void closezip(ZIP* zip) {
+#ifdef DEBUG_FILECACHE
+	puts("closezip");
+#endif
 	/* release all */
 	unzip_free(zip->ent.name);
 	unzip_free(zip->cd);
@@ -408,6 +455,9 @@ void closezip(ZIP* zip) {
      readuncompressd() or readcompressed() functions
 */
 void suspendzip(ZIP* zip) {
+#ifdef DEBUG_FILECACHE
+	puts("suspendzip");
+#endif
 	if (zip->fp) {
 		filecache_close(zip->fp);
 		zip->fp = 0;
@@ -422,6 +472,9 @@ void suspendzip(ZIP* zip) {
 	==0 error (zip must be closed with closezip)
 */
 static ZIP* revivezip(ZIP* zip) {
+#ifdef DEBUG_FILECACHE
+	puts("revivezip");
+#endif
 	if (!zip->fp) {
 		zip->fp = filecache_open(zip->zip, "rb");
 		if (!zip->fp) {
@@ -439,6 +492,9 @@ static ZIP* revivezip(ZIP* zip) {
      ZIP file must be opened and not suspended
 */
 void rewindzip(ZIP* zip) {
+#ifdef DEBUG_FILECACHE
+	puts("rewindzip");
+#endif
 	zip->cd_pos = 0;
 }
 
@@ -450,10 +506,17 @@ void rewindzip(ZIP* zip) {
 int seekcompresszip(ZIP* zip, struct zipent* ent) {
 	char buf[ZIPNAME];
 	long offset;
+#ifdef DEBUG_FILECACHE
+	puts("seekcompresszip");
+#endif
 
 	if (!zip->fp) {
-		if (!revivezip(zip))
+		if (!revivezip(zip)) {
+#ifdef DEBUG_FILECACHE
+			puts("seekcompresszip ERROR revivezip");
+#endif
 			return -1;
+		}
 	}
 
 	if (filecache_seek(zip->fp, ent->offset_lcl_hdr_frm_frst_disk, SEEK_SET)!=0) {
@@ -480,6 +543,9 @@ int seekcompresszip(ZIP* zip, struct zipent* ent) {
 
 	}
 
+#ifdef DEBUG_FILECACHE
+	puts("seekcompresszip ok");
+#endif
 	return 0;
 }
 
@@ -491,6 +557,9 @@ int seekcompresszip(ZIP* zip, struct zipent* ent) {
 	<0 error
 */
 int readcompresszip(ZIP* zip, struct zipent* ent, char* data) {
+#ifdef DEBUG_FILECACHE
+	puts("readcompresszip");
+#endif
 	int err = seekcompresszip(zip,ent);
 	if (err!=0)
 		return err;
@@ -499,8 +568,15 @@ int readcompresszip(ZIP* zip, struct zipent* ent, char* data) {
 		errormsg ("Reading compressed data", ERROR_CORRUPT, zip->zip);
 		return -1;
 	}
-
+#ifdef DEBUG_FILECACHE
+	puts("readcompresszip ok");
+#endif
 	return 0;
+}
+
+
+size_t unzip_fread_for_inflate(void *ptr, size_t size, size_t nmemb, FILE *stream) {
+	return filecache_read(ptr, size, nmemb, stream);
 }
 
 /* Read UNcompressed data
@@ -511,6 +587,9 @@ int readcompresszip(ZIP* zip, struct zipent* ent, char* data) {
 	<0 error
 */
 int readuncompresszip(ZIP* zip, struct zipent* ent, char* data) {
+#ifdef DEBUG_FILECACHE
+	printf("readuncompresszip (method=%i)\n",ent->compression_method);
+#endif
 	if (ent->compression_method == 0x0000) {
 		/* file is not compressed, simply stored */
 
@@ -550,6 +629,9 @@ int readuncompresszip(ZIP* zip, struct zipent* ent, char* data) {
 		}
 		inflate_free();
 
+#ifdef DEBUG_FILECACHE
+		puts("readuncompresszip ok");
+#endif
 		return 0;
 	} else {
 		errormsg("Compression method unsupported", ERROR_UNSUPPORTED, zip->zip);
@@ -684,11 +766,18 @@ static int equal_filename(const char* zipfile, const char* file) {
 int /* error */ load_zipped_file (const char* zipfile, const char* filename, unsigned char** buf, unsigned int* length) {
 	ZIP* zip;
 	struct zipent* ent;
+#ifdef DEBUG_FILECACHE
+	printf("load_zipped_file %s %s\n",zipfile,filename);
+#endif
 
 	unzip_reset_malloc();
 	zip = cache_openzip(zipfile);
-	if (!zip)
+	if (!zip) {
+#ifdef DEBUG_FILECACHE
+		puts("load_zipped_file ERROR open");
+#endif
 		return -1;
+	}
 
 	ent = readzip(zip);
 	while (ent) {
@@ -702,17 +791,26 @@ int /* error */ load_zipped_file (const char* zipfile, const char* filename, uns
 			*length = ent->uncompressed_size;
 			*buf = (unsigned char*)unzip_malloc( *length );
 			if (!*buf) {
+#ifdef DEBUG_FILECACHE
+				puts("load_zipped_file ERROR malloc");
+#endif
 				cache_closezip(zip);
 				return -1;
 			}
 
 			if (readuncompresszip(zip, ent, (char*)*buf)!=0) {
+#ifdef DEBUG_FILECACHE
+				puts("load_zipped_file ERROR readuncompresszip");
+#endif
 				unzip_free(*buf);
 				cache_closezip(zip);
 				return -1;
 			}
 
 			cache_suspendzip(zip);
+#ifdef DEBUG_FILECACHE
+			puts("load_zipped_file ok");
+#endif
 			return 0;
 		}
 
@@ -721,6 +819,9 @@ int /* error */ load_zipped_file (const char* zipfile, const char* filename, uns
 	}
 
 	cache_suspendzip(zip);
+#ifdef DEBUG_FILECACHE
+	puts("load_zipped_file ERROR");
+#endif
 	return -1;
 }
 
@@ -730,11 +831,18 @@ int /* error */ load_zipped_file (const char* zipfile, const char* filename, uns
 int /* error */ checksum_zipped_file (const char *zipfile, const char *filename, unsigned int *length, unsigned int *sum) {
 	ZIP* zip;
 	struct zipent* ent;
+#ifdef DEBUG_FILECACHE
+	printf("checksum_zipped_file %s %s\n",zipfile,filename);
+#endif
 
 	unzip_reset_malloc();
 	zip = cache_openzip(zipfile);
-	if (!zip)
+	if (!zip) {
+#ifdef DEBUG_FILECACHE
+		puts("checksum_zipped_file ERROR open");
+#endif
 		return -1;
+	}
 
 	ent = readzip(zip);
 	while (ent) {
@@ -743,6 +851,9 @@ int /* error */ checksum_zipped_file (const char *zipfile, const char *filename,
 			*length = ent->uncompressed_size;
 			*sum = ent->crc32;
 			cache_suspendzip(zip);
+#ifdef DEBUG_FILECACHE
+			puts("checksum_zipped_file ok");
+#endif
 			return 0;
 		}
 
@@ -754,8 +865,12 @@ int /* error */ checksum_zipped_file (const char *zipfile, const char *filename,
 
 	/* NS981003: support for "load by CRC" */
 	zip = cache_openzip(zipfile);
-	if (!zip)
+	if (!zip) {
+#ifdef DEBUG_FILECACHE
+		puts("checksum_zipped_file ERROR open2");
+#endif
 		return -1;
+	}
 
 	ent = readzip(zip);
 	while (ent) {
@@ -764,6 +879,9 @@ int /* error */ checksum_zipped_file (const char *zipfile, const char *filename,
 			*length = ent->uncompressed_size;
 			*sum = ent->crc32;
 			cache_suspendzip(zip);
+#ifdef DEBUG_FILECACHE
+			puts("checksum_zipped_file ok2");
+#endif
 			return 0;
 		}
 
@@ -772,5 +890,8 @@ int /* error */ checksum_zipped_file (const char *zipfile, const char *filename,
 	}
 
 	cache_suspendzip(zip);
+#ifdef DEBUG_FILECACHE
+	puts("checksum_zipped_file ERROR");
+#endif
 	return -1;
 }

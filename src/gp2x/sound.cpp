@@ -25,6 +25,10 @@
 #define SND_UDP_REDUCTION 2.0
 #endif
 
+#ifndef GP2X
+int gp2x_sound_rate=DEFAULT_SAMPLE_RATE;
+#endif
+
 double snd_opm_reduction=SND_OPM_REDUCTION;
 double snd_pcm_reduction=SND_PCM_REDUCTION;
 double snd_str_reduction=SND_STR_REDUCTION;
@@ -196,6 +200,70 @@ int msdos_init_sound(void)
 		snd_str_reduction=SND_STR_REDUCTION*r;
 		snd_udp_reduction=SND_UDP_REDUCTION*r;
 	}
+#ifdef PSP
+	switch(soundcard){
+		case 1:
+		case 2:
+		case 3: /* 22K 16v */
+			default_sample_rate=22050;
+			snd_opm_reduction=1.0;
+			snd_pcm_reduction=1.0;
+			snd_str_reduction=1.0;
+			snd_udp_reduction=1.0;
+			num_voices=16;
+			break;
+		case 4: /* 44K 16v */
+			default_sample_rate=44100;
+			snd_opm_reduction=1.0;
+			snd_pcm_reduction=1.0;
+			snd_str_reduction=1.0;
+			snd_udp_reduction=1.0;
+			num_voices=16;
+			break;
+		case 5: /* 44K 8v */
+			default_sample_rate=44100;
+			snd_opm_reduction=1.0;
+			snd_pcm_reduction=1.0;
+			snd_str_reduction=1.0;
+			snd_udp_reduction=1.0;
+			num_voices=8;
+			break;
+		case 6: /* 44K 4v */
+			default_sample_rate=44100;
+			snd_opm_reduction=1.0;
+			snd_pcm_reduction=1.0;
+			snd_str_reduction=1.0;
+			snd_udp_reduction=1.0;
+			num_voices=4;
+			break;
+		case 7: /* 33K 16v */
+			default_sample_rate=33075;
+			snd_opm_reduction=1.0;
+			snd_pcm_reduction=1.0;
+			snd_str_reduction=1.0;
+			snd_udp_reduction=1.0;
+			num_voices=16;
+			break;
+		case 8: /* 33K 8v */
+			default_sample_rate=33075;
+			snd_opm_reduction=1.0;
+			snd_pcm_reduction=1.0;
+			snd_str_reduction=1.0;
+			snd_udp_reduction=1.0;
+			num_voices=8;
+			break;
+		case 9: /* 33k 4v */
+			default_sample_rate=33075;
+			snd_opm_reduction=1.0;
+			snd_pcm_reduction=1.0;
+			snd_str_reduction=1.0;
+			snd_udp_reduction=1.0;
+			num_voices=4;
+			break;
+		default:
+			break;
+	}
+#endif
 	sound_enable = 1;
 
 	/* update the Machine structure to reflect the actual sample rate */

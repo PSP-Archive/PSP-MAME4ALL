@@ -46,21 +46,41 @@ void mrdo_vh_stop(void);
 void mrdo_vh_screenrefresh(struct osd_bitmap *bitmap,int full_refresh);
 
 
+#ifdef USE_CZ80
+#include "cz80/cz80.h"
+extern cz80_struc *mame4all_cz80_struc;
+#else
+#ifdef USE_RAZE
+unsigned short Z80_GetHL(void);
+#endif
+#endif
+
 
 /* this looks like some kind of protection. The game doesn't clear the screen */
 /* if a read from this address doesn't return the value it expects. */
 int mrdo_SECRE_r(int offset)
 {
-	Z80_Regs regs;
 	unsigned char *RAM = Machine->memory_region[Machine->drv->cpu[0].memory_region];
+	unsigned pos;
 
-
-	Z80_GetRegs(&regs);
 #ifndef USE_DRZ80 /* FRANXIS 01-09-2005 */
-	return RAM[regs.HL.D];
+#ifdef USE_CZ80
+	pos=Cz80_Get_HL(mame4all_cz80_struc);
 #else
-	return RAM[regs.Z80HL>>16];
+#ifdef USE_RAZE
+	pos=Z80_GetHL();
+#else
+	Z80_Regs regs;
+	Z80_GetRegs(&regs);
+	pos=(regs.HL.D);
 #endif
+#endif
+#else
+	Z80_Regs regs;
+	Z80_GetRegs(&regs);
+	pos=(regs.Z80HL>>16);
+#endif
+	return RAM[pos&0xFFFF];
 }
 
 

@@ -20,19 +20,35 @@ void c1943_vh_screenrefresh(struct osd_bitmap *bitmap,int full_refresh);
 int c1943_vh_start(void);
 void c1943_vh_stop(void);
 
-
+#ifdef USE_CZ80
+#include "cz80/cz80.h"
+extern cz80_struc *mame4all_cz80_struc;
+#else
+#ifdef USE_RAZE
+unsigned char Z80_GetB(void);
+#endif
+#endif
 
 /* this is a protection check. The game crashes (thru a jump to 0x8000) */
 /* if a read from this address doesn't return the value it expects. */
 static int c1943_protection_r(int offset)
 {
-	Z80_Regs regs;
 
-
-	Z80_GetRegs(&regs);
 #ifndef USE_DRZ80 /* FRANXIS 01-09-2005 */
-	return regs.BC.B.h;
+#ifdef USE_CZ80
+	return (Cz80_Get_BC(mame4all_cz80_struc)>>8)&0xFF;
 #else
+#ifdef USE_RAZE
+	return Z80_GetB();
+#else
+	Z80_Regs regs;
+	Z80_GetRegs(&regs);
+	return regs.BC.B.h;
+#endif
+#endif
+#else
+	Z80_Regs regs;
+	Z80_GetRegs(&regs);
 	return (regs.Z80BC>>24)&0xFF;
 #endif
 }

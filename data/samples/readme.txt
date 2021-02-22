@@ -1,1 +1,0 @@
-Samples are placed here!

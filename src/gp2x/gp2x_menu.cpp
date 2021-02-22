@@ -3,11 +3,46 @@
 #include <string.h>
 #include "driver.h"
 #include "gp2x_mame.h"
+
+#ifndef PSP
 #include "gfx/gp2xmenu.h"
 #include "gfx/gp2xsplash.h"
+#else
+#ifndef NO_IMAGES
+ #ifdef PSP_RES
+ #include "gfx/gp2xmenu480.h"
+ #ifndef NO_SPLASH
+ #include "gfx/gp2xsplash480.h"
+ #endif
+ #else
+ #include "gfx/gp2xmenu.h"
+ #ifndef NO_SPLASH
+ #include "gfx/gp2xsplash.h"
+ #endif
+ #endif
+#else
+ unsigned char* gp2xmenu_bmp;
+ unsigned char* gp2xsplash_bmp;
+#endif
+#endif
+
+#ifdef DREAMCAST
+extern int sdcard_exists;
+void reinit_sdcard(void);
+#endif
+
+#ifdef PSP
+#include "pspincludes.h"
+//#define PrintMessage printf
+#endif
 
 #ifndef MAME4ALL_CPU_CLOCK
 #define MAME4ALL_CPU_CLOCK 80
+#endif
+
+#ifdef MAME4ALL_BENCH
+#undef MAME4ALL_CPU_CLOCK
+#define MAME4ALL_CPU_CLOCK 100
 #endif
 
 #include <sys/stat.h>
@@ -24,11 +59,19 @@ extern int gp2x_frameskip_auto;
 extern int gp2x_double_buffer;
 extern int gp2x_vsync;
 int gp2x_sound_enable = 1;
-int gp2x_clock_cpu=MAME4ALL_CPU_CLOCK; 	// Clock option for CPU's 
-int gp2x_clock_sound=MAME4ALL_CPU_CLOCK;// Clock option for Audio CPU's 
-int gp2x_freq=200;			// GP2X Clock Frequency 
-int gp2x_save_config=0;			// Save Configuration 
-extern int gp2x_sound_rate;
+int gp2x_clock_cpu=MAME4ALL_CPU_CLOCK; 		// Clock option for CPU's
+#if MAME4ALL_CPU_CLOCK != 100
+int gp2x_clock_sound=(MAME4ALL_CPU_CLOCK-20);	// Clock option for Audio CPU's
+#else
+int gp2x_clock_sound=100;			// Clock option for Audio CPU's
+#endif
+#ifdef PSP
+int gp2x_freq=222;			// PSP Clock Frequency
+#else
+int gp2x_freq=200;			// GP2X Clock Frequency
+#endif
+int gp2x_save_config=0;			// Save Configuration
+
 extern int x_sensitivity;
 extern int y_sensitivity;
 extern int x_reversed;
@@ -43,8 +86,53 @@ extern struct KeySettings *key_settings;
 
 char gp2x_path_mame[24]="\0";
 
+#ifdef PSP
+UINT32 check_free_memory(void)
+{
+	UINT8 *mem;
+	int size_mb = 0;
+	int size_kb = 0;
+	int size_b  = 0;
+
+	while (1)
+	{
+		if ((mem = (UINT8*)malloc(size_mb)) == NULL)
+			break;
+
+		free(mem);
+		size_mb += 1024*1024;
+	}
+	while (1)
+	{
+		if ((mem = (UINT8*)malloc(size_mb + size_kb)) == NULL)
+			break;
+
+		free(mem);
+		size_kb += 1024;
+	}
+	while (1)
+	{
+		if ((mem = (UINT8*)malloc(size_mb + size_kb + size_b)) == NULL)
+			break;
+
+		free(mem);
+		size_b += 100;
+	}
+	while (1)
+	{
+		if ((mem = (UINT8*)malloc(size_mb + size_kb + size_b)) == NULL)
+			break;
+
+		free(mem);
+		size_b++;
+	}
+	return size_mb + size_kb + size_b;
+}
+#endif
+
 void load_bmp_8bpp(unsigned char *out, unsigned char *in) 
 {
+#ifndef PSP
 	int i,x,y;
 	unsigned char r,g,b,c;
 
@@ -87,35 +175,135 @@ void load_bmp_8bpp(unsigned char *out, unsigned char *in)
 		}
 	}
 #endif
+#else
+#ifndef NO_IMAGES
+	int i,x,y;
+	unsigned char r,g,b,c;
+
+	in+=14; /* Skip HEADER */
+	in+=40; /* Skip INFOHD */
+	
+	/* Set Palette */
+	for (i=0;i<256;i++) {
+		b=*in++;
+		g=*in++;
+		r=*in++;
+		c=*in++;
+		gp2x_video_color8(i,r,g,b);
+	}
+	gp2x_video_setpalette();
+	/* Set Bitmap */	
+ #ifdef PSP_RES
+	for (y=271;y!=-1;y--) {
+		for (x=0;x<480;x++) {
+			*out++=in[x+y*480];
+		}
+	}
+ #else
+	for (y=239;y!=-1;y--) {
+		for (x=0;x<320;x++) {
+			*out++=in[x+y*320];
+		}
+	}
+ #endif
+#else
+	int i,x,y;
+	unsigned char r,g,b,c;
+	/* font face color */
+	gp2x_video_color8(255,255,255,255);
+	/* font shadow color */
+	gp2x_video_color8(0,0,0,0);
+	gp2x_video_color8(1,0,0,0);
+
+	/* remaining palette */
+	for (i=2;i<255;i++) {
+		b=255-i;
+		g=0;
+		r=0;
+		c=0;
+		gp2x_video_color8(i,r,g,b);
+	}
+	gp2x_video_setpalette();
+	/* Set Bitmap */	
+ #ifdef PSP_RES
+	for (y=271;y!=-1;y--) {
+		for (x=0;x<480;x++) {
+			*out++=(unsigned char)(x/2+3)&254;
+		}
+	}	
+	gp2x_gamelist_text_out_fmt(150,10,"-= Mame4All " VERSION " =-");
+	gp2x_gamelist_text_out_fmt(118,20,"Largest memory chunk: %u",check_free_memory());
+ #else
+	for (y=239;y!=-1;y--) {
+		for (x=0;x<320;x++) {
+			*out++=(unsigned char)(x/1.25+1)&254;
+		}
+	}
+	gp2x_gamelist_text_out_fmt(66,10,"-= Mame4All " VERSION " =-");
+	gp2x_gamelist_text_out_fmt(46,20,"Largest memory chunk: %u",check_free_memory());
+ #endif
+#endif
+#endif
 }
 
 void gp2x_intro_screen(void) {
+#ifndef NO_IMAGES
 	char name[256];
 	FILE *f;
 	gp2x_video_flip();
 
+#ifdef GP2X
 	/* Problem with relative paths in some GP2X? */
 	f=fopen("/mnt/sd/mamegp2x/mame_gp2x.gpe","rb");
 	if (f) {
 		fclose(f);
 		strcpy(gp2x_path_mame,"/mnt/sd/mamegp2x/\0");
 	}
+#endif
+
+#ifdef PSP
+	strcpy(gp2x_path_mame,"");
+#endif
 
 #ifndef NO_SPLASH
+#ifdef PSP
+#ifdef PSP_RES
+	sprintf(name,"%sskins/pspsplash480.bmp",gp2x_path_mame);
+#else
+	sprintf(name,"%sskins/pspsplash.bmp",gp2x_path_mame);
+#endif
+#else
 	sprintf(name,"%sskins/gp2xsplash.bmp",gp2x_path_mame);
+#endif
 	f=fopen(name,"rb");
 	if (f) {
+#ifdef PSP_RES
+		fread(gp2xsplash_bmp,1,1078+480*272,f);
+#else
 		fread(gp2xsplash_bmp,1,77878,f);
+#endif
 		fclose(f);
 	}
 	load_bmp_8bpp(gp2x_screen8,gp2xsplash_bmp);
 #endif
 	gp2x_video_flip();
-	
+
+#ifdef PSP
+#ifdef PSP_RES
+	sprintf(name,"%sskins/pspmenu480.bmp",gp2x_path_mame);
+#else
+	sprintf(name,"%sskins/pspmenu.bmp",gp2x_path_mame);
+#endif
+#else
 	sprintf(name,"%sskins/gp2xmenu.bmp",gp2x_path_mame);
+#endif
 	f=fopen(name,"rb");
 	if (f) {
+#ifdef PSP_RES
+		fread(gp2xmenu_bmp,1,1078+480*272,f);
+#else
 		fread(gp2xmenu_bmp,1,77878,f);
+#endif
 		fclose(f);
 	}
 #if !defined(GP2X) && !defined(NO_SPLASH)
@@ -125,7 +313,11 @@ void gp2x_intro_screen(void) {
 		unsigned char *pal=&gp2xsplash_bmp[40+14];
 		unsigned char *dat=&gp2xsplash_bmp[40+14+(256*4)];
 
+#ifdef PSP_RES
+		for(i=0;i<480*272;i++)
+#else
 		for(i=0;i<320*240;i++)
+#endif
 		{
 			unsigned char b=pal[(dat[i]*4)+0];
 			unsigned char g=pal[(dat[i]*4)+1];
@@ -151,6 +343,7 @@ void gp2x_intro_screen(void) {
 		pal[(255*4)+0]=pal[(255*4)+1]=pal[(255*4)+2]=255;
 	}
 #endif
+#endif
 }
 
 /* Initialize the list of available games in the SD */
@@ -169,6 +362,27 @@ void game_list_init(void) {
 	}
 	/* <- end mod */
 #endif
+#ifdef PSP
+ strcpy(gp2x_path_mame,"");
+#ifdef WIFI
+ //DownloadFileFTP("roms.txt","roms.txt");
+
+ long lSize;
+ char * buffer;
+
+ FILE * pFile = fopen ("roms.txt","rb");
+ if (pFile!=NULL)
+    {
+    fseek (pFile , 0 , SEEK_END);
+    lSize = ftell (pFile);
+    rewind (pFile);
+    
+    buffer = (char*)gp2x_malloc(lSize);
+    fread (buffer,1,lSize,pFile);
+    }
+
+#endif
+#endif
 	char name[256];
 	struct stat stat_buffer;
 	unsigned int c;
@@ -183,14 +397,32 @@ void game_list_init(void) {
 			continue;
 		}
 		*/
-		
+
+#ifdef WIFI
+  //PrintMessage("cargando lista %s",drivers[c]->name);
+  sprintf(name,"%s.zip",drivers[c]->name);
+  if(strstr(buffer, name)){
+  //if(drivers[c]->name == "captcomm"){
+#else
 		sprintf(name,"%sroms/%s.zip\0", gp2x_path_mame, drivers[c]->name);
 		if (stat(name,&stat_buffer)==0)	{
+#endif
+			game_avail[c]=1;
+			game_num_avail++;
+			continue;
+		}
+		sprintf(name,"%sroms/%s\0", gp2x_path_mame,drivers[c]->name);
+		if (stat(name,&stat_buffer)==0) {
 			game_avail[c]=1;
 			game_num_avail++;
 			continue;
 		}
 	}
+#ifdef WIFI
+ sceKernelDelayThread(2*1000000); // 2 sec to for error?
+ fclose (pFile);
+ gp2x_free (buffer);
+#endif
 }
 #else
 void game_list_init(void) {
@@ -208,7 +440,10 @@ void game_list_init(void) {
 	/* <- end mod */
 #endif
 #ifdef DREAMCAST
-	DIR *d=opendir(ROM_PREFIX "roms");
+	DIR *d;
+	reinit_sdcard();
+	if (sdcard_exists) d=opendir(ROM_SD_PREFIX "roms");
+	else d=opendir(ROM_PREFIX "roms");
 #else
 #ifdef GP2X
 	char name[256];
@@ -236,7 +471,8 @@ void game_list_init(void) {
 		{
 			int encontrado=0;
 			for(i=min;i<max;i++)
-				if (!strcmp(actual->d_name,games[i])){
+				if ((!strcmp(actual->d_name,games[i]))||
+((strlen(actual->d_name)==(strlen(games[i])-4))&&((!strncmp(actual->d_name,games[i],strlen(games[i])-4))))) {
 					game_avail[i]=1;
 					game_num_avail++;
 					if (i==min)
@@ -371,18 +607,34 @@ static void button_text(unsigned long button,char *text)
 #ifdef GP2X
 		strcpy(text,"BUTTON A\0");
 #else
+#ifdef PSP
+		strcpy(text,"BUTTON []\0");
+#else
 		strcpy(text,"BUTTON X\0");
+#endif
 #endif
 	} else if (button==GP2X_X) {
 #ifdef GP2X
 		strcpy(text,"BUTTON X\0");
 #else
+#ifdef PSP
+		strcpy(text,"BUTTON X\0");
+#else
 		strcpy(text,"BUTTON A\0");
 #endif
+#endif
 	} else if (button==GP2X_B) {
+#ifdef PSP
+		strcpy(text,"BUTTON O\0");
+#else
 		strcpy(text,"BUTTON B\0");
+#endif
 	} else if (button==GP2X_Y) {
+#ifdef PSP
+		strcpy(text,"BUTTON ^\0");
+#else
 		strcpy(text,"BUTTON Y\0");
+#endif
 	} else if (button==GP2X_L) {
 		strcpy(text,"BUTTON L\0");
 	} else if (button==GP2X_R) {
@@ -437,6 +689,7 @@ static void controller_config(void)
 	int y_Pos = 48;
 	int options_count = 18;
 	char text[64];
+	int i;
 	char* options[] = 		{	"FIRE01 Auto    = %s",
 						"FIRE02 Auto    = %s",
 						"FIRE03 Auto    = %s",
@@ -506,9 +759,12 @@ static void controller_config(void)
 			strcpy(text,"OFF");
 		gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+128,options[16],text);
 		gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+136,options[17]);
-		
-		gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+152,"Press A or B to confirm");	
 
+#ifdef PSP
+		gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+152,"Press [] or O to confirm");
+#else
+		gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+152,"Press A or B to confirm");
+#endif
 		/* Show currently selected item */
 		gp2x_gamelist_text_out(x_Pos-16,y_Pos+(selected_option*8)," >");
 
@@ -625,7 +881,6 @@ static void controller_config(void)
 	}
 }
 
-
 static void dipswitches_config(void)
 {
 	struct InputPort *inp=NULL;					/* input ports */
@@ -710,7 +965,11 @@ static void dipswitches_config(void)
 			i++;			
 		}	
 
-		gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+8,"Press A or B to confirm");	
+#ifdef PSP
+		gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+8,"Press [] or O to confirm");
+#else
+		gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+8,"Press A or B to confirm");
+#endif
 	
 		gp2x_video_flip();
 
@@ -749,8 +1008,11 @@ static void dipswitches_config(void)
 	}
 }
 
-
-#define SAVEDATASTRUCTURE "gp2x_freq=%d;gp3x_frameskip=%d;gp2x_frameskip_auto=%d;gp2x_clock_cpu=%d;gp2x_sound_enable=%d;gp2x_clock_sound=%d;key_setting=%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%d,%d,%d,%d;gp2x_double_buffer=%d;gp2x_vsync=%d;gp2x_autofire=%d,%d,%d;\0"
+#ifdef PSP
+#define SAVEDATASTRUCTURE "gp2x_freq=%d;gp2x_frameskip=%d;gp2x_frameskip_auto=%d;gp2x_clock_cpu=%d;gp2x_sound_enable=%d;gp2x_clock_sound=%d;key_setting=%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%d,%d,%d,%d;gp2x_double_buffer=%d;gp2x_rotate=%d;gp2x_vsync=%d;gp2x_autofire=%d,%d,%d;\0"
+#else
+#define SAVEDATASTRUCTURE "gp2x_freq=%d;gp3x_frameskip=%d;gp2x_frameskip_auto=%d;gp2x_clock_cpu=%d;gp2x_sound_enable=%d;gp2x_clock_sound=%d;key_setting=%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%d,%d,%d,%d;gp2x_double_buffer=%d;gp2x_rotate=%d;gp2x_vsync=%d;gp2x_autofire=%d,%d,%d;\0"
+#endif
 #define SAVEDATAFILEDEF	"%scfg/mame.cfg\0"
 #define SAVEDATAFILECFG "%scfg/%s.cfg\0"
 /*static*/ int show_options(char *game)
@@ -759,32 +1021,43 @@ static void dipswitches_config(void)
 	int selected_option=0;
 	int x_Pos = 41;
 	int y_Pos = 58;
+#ifdef PSP
+	int options_count = 10;
+#else
 	int options_count = 9;
+#endif
 	char text[256];
 	FILE *f;
 
 	/* Load Configuration Files */
+#ifdef DREAMCAST
+	gp2x_save_config = (sdcard_exists?1:0);
+#else
 	gp2x_save_config = 0;
+#endif
+#ifdef PSP
+  strcpy(gp2x_path_mame,"");
+#endif
 	sprintf(text,SAVEDATAFILEDEF, gp2x_path_mame);
-	f=fopen(text,"r");
+	f=fopen(text,"rt");
 	if (f) {
 		fscanf(f,SAVEDATASTRUCTURE,
 		&gp2x_freq,&gp2x_frameskip,&gp2x_frameskip_auto,&gp2x_clock_cpu,&gp2x_sound_enable,&gp2x_clock_sound,
 		&(key_settings->JOY_FIRE1),&(key_settings->JOY_FIRE2),&(key_settings->JOY_FIRE3),&(key_settings->JOY_FIRE4),
 		&(key_settings->JOY_FIRE5),&(key_settings->JOY_FIRE6),&(key_settings->JOY_FIRE7),&(key_settings->JOY_FIRE8),
 		&(key_settings->JOY_FIRE9),&(key_settings->JOY_FIRE10),&x_sensitivity,&x_reversed,&y_sensitivity,&y_reversed,
-		&gp2x_double_buffer,&gp2x_vsync,&(key_settings->JOY_FIRE1_AUTO),&(key_settings->JOY_FIRE2_AUTO),&(key_settings->JOY_FIRE3_AUTO));
+		&gp2x_double_buffer,&gp2x_rotate, &gp2x_vsync,&(key_settings->JOY_FIRE1_AUTO),&(key_settings->JOY_FIRE2_AUTO),&(key_settings->JOY_FIRE3_AUTO));
 		fclose(f);
 	}
 	sprintf(text,SAVEDATAFILECFG, gp2x_path_mame, game);
-	f=fopen(text,"r");
+	f=fopen(text,"rt");
 	if (f) {
 		fscanf(f,SAVEDATASTRUCTURE,
 		&gp2x_freq,&gp2x_frameskip,&gp2x_frameskip_auto,&gp2x_clock_cpu,&gp2x_sound_enable,&gp2x_clock_sound,
 		&(key_settings->JOY_FIRE1),&(key_settings->JOY_FIRE2),&(key_settings->JOY_FIRE3),&(key_settings->JOY_FIRE4),
 		&(key_settings->JOY_FIRE5),&(key_settings->JOY_FIRE6),&(key_settings->JOY_FIRE7),&(key_settings->JOY_FIRE8),
 		&(key_settings->JOY_FIRE9),&(key_settings->JOY_FIRE10),&x_sensitivity,&x_reversed,&y_sensitivity,&y_reversed,
-		&gp2x_double_buffer,&gp2x_vsync,&(key_settings->JOY_FIRE1_AUTO),&(key_settings->JOY_FIRE2_AUTO),&(key_settings->JOY_FIRE3_AUTO));
+		&gp2x_double_buffer,&gp2x_rotate,&gp2x_vsync,&(key_settings->JOY_FIRE1_AUTO),&(key_settings->JOY_FIRE2_AUTO),&(key_settings->JOY_FIRE3_AUTO));
 		fclose(f);
 	}
 
@@ -813,6 +1086,22 @@ static void dipswitches_config(void)
 			gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+40,"Frame-Skip    %s %d %s","=",gp2x_frameskip,"");
 		}
 #else
+#ifdef PSP
+		switch (gp2x_rotate)
+		{
+			case 0: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+30,"Video         %s","Fixed"); break;
+			case 1: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+30,"Video         %s","Fixed DIV2"); break;
+			case 2: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+30,"Video         %s","SW Scaled"); break;
+			default: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+30,"Video         %s","SW Streched"); break;
+		}
+		/* Frame-Skip */
+		if(gp2x_frameskip_auto && gp2x_frameskip!=0) {
+			gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+40,"Frame-Skip    %s %d %s","<=",gp2x_frameskip, "(Auto-skip)");
+		}
+		else{
+			gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+40,"Frame-Skip    %s %d %s","=",gp2x_frameskip,"");
+		}
+#else
 		switch (gp2x_rotate)
 		{
 			case 0: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+30,"Video         %s","Fixed"); break;
@@ -827,6 +1116,7 @@ static void dipswitches_config(void)
 		}
 		else
 			gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+40,"Frame-Skip    = %d",gp2x_frameskip);
+#endif
 #endif
 
 		/* Video Clock */
@@ -855,11 +1145,25 @@ static void dipswitches_config(void)
 		switch(gp2x_sound_enable)
 		{
 			case 0: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","Sound OFF"); break;
+#ifdef GP2X
 			case 1: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","Sound ON (15 KHz)"); break;
 			case 2: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","Sound ON (22 KHz)"); break;
 			case 3: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","Sound ON (33 KHz)"); break;
 			case 4: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","Sound ON (44 KHz)"); break;
 			case 5: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","Sound ON (11 KHz)"); break;
+#else
+			case 1: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","Sound ON"); break;
+			case 2: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","Emulated but OFF"); break;
+			case 3: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","Accurate and ON"); break;
+#ifdef PSP
+			case 4: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","44k 16v"); break;
+			case 5: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","44k 8v"); break;
+			case 6: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","44k 4v"); break;
+			case 7: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","33k 16v"); break;
+			case 8: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","33k 8v"); break;
+			case 9: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+70,"Sound         %s","33k 4v"); break;
+#endif
+#endif
 		}
 
 		/* Audio Clock */
@@ -877,8 +1181,15 @@ static void dipswitches_config(void)
 			case 1: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+110,"Save Configuration"); break;
 			case 2: gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+110,"Save as Default"); break;
 		}
-		
+#ifdef PSP
+		/* PSP Clock*/
+		gp2x_gamelist_text_out_fmt(x_Pos,y_Pos+120, "PSP Clock     %d MHz", gp2x_freq);
+		gp2x_gamelist_text_out(x_Pos,y_Pos+130,"Press [] to confirm, X return\0");
+#elif defined(DREAMCAST)
+		gp2x_gamelist_text_out(x_Pos,y_Pos+130,"Press A to confirm, B to return\0");
+#else
 		gp2x_gamelist_text_out(x_Pos,y_Pos+130,"Press B to confirm, X to return\0");
+#endif
 
 		/* Show currently selected item */
 		gp2x_gamelist_text_out(x_Pos-16,y_Pos+(selected_option*10)+30," >");
@@ -971,6 +1282,10 @@ static void dipswitches_config(void)
 					gp2x_rotate=3;
 				else if (gp2x_rotate>3)
 					gp2x_rotate=0;
+#ifdef DREAMCAST
+				if (gp2x_rotate==3)
+					gp2x_vsync=1;
+#endif
 
 #endif
 				break;
@@ -990,8 +1305,13 @@ static void dipswitches_config(void)
 						gp2x_frameskip = 0;
 						gp2x_frameskip_auto=!gp2x_frameskip_auto; 
 #else
+#ifdef PSP
+						gp2x_frameskip = 0;
+						gp2x_frameskip_auto=!gp2x_frameskip_auto;
+#else
 						gp2x_frameskip = -1;
 						gp2x_frameskip_auto = 1;
+#endif
 #endif
 					}
 				}
@@ -1003,6 +1323,12 @@ static void dipswitches_config(void)
 						gp2x_frameskip_auto=!gp2x_frameskip_auto; 
 					}
 #else
+#ifdef PSP
+					if (gp2x_frameskip < 0){
+						gp2x_frameskip = 5;
+						gp2x_frameskip_auto=!gp2x_frameskip_auto;
+					}
+#else
 					if (gp2x_frameskip==-1)
 						gp2x_frameskip_auto=1;
 					else if (gp2x_frameskip<-1)
@@ -1010,6 +1336,7 @@ static void dipswitches_config(void)
 						gp2x_frameskip = 5;
 						gp2x_frameskip_auto = 0;
 					}
+#endif
 #endif
 				}
 				break;
@@ -1057,13 +1384,29 @@ static void dipswitches_config(void)
 				if(ExKey & GP2X_RIGHT){
 #endif
 					gp2x_sound_enable++;
+#ifdef PSP
+					if (gp2x_sound_enable>9)
+#else
+#ifdef GP2X
 					if (gp2x_sound_enable>5)
+#else
+					if (gp2x_sound_enable>3)
+#endif
+#endif
 						gp2x_sound_enable=0;
 				}
 				else {
 					gp2x_sound_enable--;
 					if (gp2x_sound_enable<0)
+#ifdef PSP
+						gp2x_sound_enable=9;
+#else
+#ifdef GP2X
 						gp2x_sound_enable=5;
+#else
+						gp2x_sound_enable=3;
+#endif
+#endif
 				}
 #endif
 				break;
@@ -1109,6 +1452,32 @@ static void dipswitches_config(void)
 						gp2x_save_config = 2;
 				}
 				break;
+#ifdef PSP
+			case 9:
+				/* PSP Clock */
+				if(ExKey & GP2X_RIGHT){
+					switch (gp2x_freq) {
+						case 133: gp2x_freq=166;break;
+						case 166: gp2x_freq=200;break;
+						case 200: gp2x_freq=222;break;
+						case 222: gp2x_freq=266;break;
+						case 266: gp2x_freq=300;break;
+						case 300: gp2x_freq=333;break;
+						case 333: gp2x_freq=133;break;
+					}
+				} else {
+					switch (gp2x_freq) {
+						case 133: gp2x_freq=333;break;
+						case 166: gp2x_freq=133;break;
+						case 200: gp2x_freq=166;break;
+						case 222: gp2x_freq=200;break;
+						case 266: gp2x_freq=222;break;
+						case 300: gp2x_freq=266;break;
+						case 333: gp2x_freq=300;break;
+					}
+				}
+				break;
+#endif
 			}
 		}
 #ifndef GP2X
@@ -1120,14 +1489,14 @@ static void dipswitches_config(void)
 			/* Save Configuration Files */
 			if (gp2x_save_config>1) {
 				sprintf(text,SAVEDATAFILEDEF, gp2x_path_mame);
-				f=fopen(text,"w");
+				f=fopen(text,"wt");
 				if (f) {
 					fprintf(f,SAVEDATASTRUCTURE,
 					gp2x_freq,gp2x_frameskip,gp2x_frameskip_auto,gp2x_clock_cpu,gp2x_sound_enable,gp2x_clock_sound,
 					(key_settings->JOY_FIRE1),(key_settings->JOY_FIRE2),(key_settings->JOY_FIRE3),(key_settings->JOY_FIRE4),
 					(key_settings->JOY_FIRE5),(key_settings->JOY_FIRE6),(key_settings->JOY_FIRE7),(key_settings->JOY_FIRE8),
 					(key_settings->JOY_FIRE9),(key_settings->JOY_FIRE10),x_sensitivity,x_reversed,y_sensitivity,y_reversed,
-					gp2x_double_buffer,gp2x_vsync,(key_settings->JOY_FIRE1_AUTO),(key_settings->JOY_FIRE2_AUTO),(key_settings->JOY_FIRE3_AUTO));
+					gp2x_double_buffer,gp2x_rotate,gp2x_vsync,(key_settings->JOY_FIRE1_AUTO),(key_settings->JOY_FIRE2_AUTO),(key_settings->JOY_FIRE3_AUTO));
 					fclose(f);
 #ifdef GP2X
 					sync();
@@ -1136,14 +1505,14 @@ static void dipswitches_config(void)
 			}
 			if (gp2x_save_config>0) {
 				sprintf(text,SAVEDATAFILECFG, gp2x_path_mame, game);
-				f=fopen(text,"w");
+				f=fopen(text,"wt");
 				if (f) {
 					fprintf(f,SAVEDATASTRUCTURE,
 					gp2x_freq,gp2x_frameskip,gp2x_frameskip_auto,gp2x_clock_cpu,gp2x_sound_enable,gp2x_clock_sound,
 					(key_settings->JOY_FIRE1),(key_settings->JOY_FIRE2),(key_settings->JOY_FIRE3),(key_settings->JOY_FIRE4),
 					(key_settings->JOY_FIRE5),(key_settings->JOY_FIRE6),(key_settings->JOY_FIRE7),(key_settings->JOY_FIRE8),
 					(key_settings->JOY_FIRE9),(key_settings->JOY_FIRE10),x_sensitivity,x_reversed,y_sensitivity,y_reversed,
-					gp2x_double_buffer,gp2x_vsync,(key_settings->JOY_FIRE1_AUTO),(key_settings->JOY_FIRE2_AUTO),(key_settings->JOY_FIRE3_AUTO));
+					gp2x_double_buffer,gp2x_rotate,gp2x_vsync,(key_settings->JOY_FIRE1_AUTO),(key_settings->JOY_FIRE2_AUTO),(key_settings->JOY_FIRE3_AUTO));
 					fclose(f);
 #ifdef GP2X
 					sync();
@@ -1165,10 +1534,10 @@ static void dipswitches_config(void)
 	}
 }
 
-
 void select_game(char *game) {
 
 	unsigned long ExKey;
+	int c;
 
 	/* No Selected game */
 	strcpy(game,"builtinn");
@@ -1176,6 +1545,10 @@ void select_game(char *game) {
 	/* Clean screen */
 	gp2x_video_flip();
 
+	/* enable extra PSP-2000 memory */
+#ifdef PSP_2K
+	psp2k_mem_init();
+#endif
 	/* Wait until no key pressed */
 	while(gp2x_joystick_read()&0x8c0ff55) 
 		gp2x_timer_delay(100);
@@ -1188,8 +1561,15 @@ void select_game(char *game) {
 		while(1) { if (gp2x_joystick_read()&GP2X_A) exit(0);}
 	}
 
+#ifdef PSP
+	SetGP2XClock(133);
+#else
 	SetGP2XClock(66);
+#endif
 
+#ifdef MAME4ALL_BENCH
+	gp2x_sound_enable = 0;
+#endif
 	/* Wait until user selects a game */
 	while(1) {
 		game_list_view(&last_game_selected);

@@ -10,9 +10,17 @@ unsigned long ExKey3=0;
 unsigned long ExKey4=0;
 
 struct KeySettings keySettings = {
+#ifdef GP2X
 	GP2X_B,
-	GP2X_X,
+#else
 	GP2X_A,
+#endif
+	GP2X_X,
+#ifdef GP2X
+	GP2X_A,
+#else
+	GP2X_B,
+#endif
 	GP2X_Y,
 	GP2X_L,
 	GP2X_R,
@@ -58,6 +66,13 @@ void msdos_init_input (void)
 		useDiagonal=1;
 	else
 		useDiagonal=0;
+#ifndef GP2X
+	ExKey1=ExKey2=ExKey3=ExKey4=0;
+	{
+		extern Uint32 _st_[];
+		_st_[0]=_st_[1]=_st_[2]=_st_[3]=0;
+	}
+#endif
 }
 
 void msdos_shutdown_input(void) { }
@@ -76,22 +91,26 @@ int osd_key_pressed(int keycode)
 	switch (keycode)
        	{
 #ifdef GP2X
-       		case OSD_KEY_CANCEL:
-       			return ((ExKey1 & GP2X_L) && (ExKey1 & GP2X_R) && ((ExKey1 & GP2X_PUSH)||(ExKey1 & GP2X_START)||(ExKey1 & GP2X_SELECT)));
-    		case OSD_KEY_RESET_MACHINE:
-    			return ((ExKey1 & GP2X_START) && (ExKey1 & GP2X_SELECT));
-       		case OSD_KEY_PAUSE:
-       		case OSD_KEY_UNPAUSE:
+		case OSD_KEY_CANCEL:
+			return ((ExKey1 & GP2X_L) && (ExKey1 & GP2X_R) && ((ExKey1 & GP2X_PUSH)||(ExKey1 & GP2X_START)||(ExKey1 & GP2X_SELECT)));
+		case OSD_KEY_RESET_MACHINE:
+			return ((ExKey1 & GP2X_START) && (ExKey1 & GP2X_SELECT));
+		case OSD_KEY_PAUSE:
+		case OSD_KEY_UNPAUSE:
 			if ((ExKey1 & GP2X_L) && (ExKey1 & GP2X_R) && (ExKey1 & GP2X_Y)) {extern int gp2x_showfps; gp2x_showfps=!gp2x_showfps; while (gp2x_joystick_read()&(GP2X_L|GP2X_R|GP2X_Y)); gp2x_clear_screen(); return 0;}
 			return ((ExKey1 & GP2X_L) && (ExKey1 & GP2X_R));
 #else
 		case OSD_KEY_RESET_MACHINE:
 			return ((ExKey1 & GP2X_PUSH) && (ExKey1 & GP2X_L));
-       		case OSD_KEY_CANCEL:
+		case OSD_KEY_CANCEL:
 			{
 				static int cuenta=0;
 //				if ((ExKey1 & GP2X_PUSH)&&(!(ExKey1 & GP2X_L)))
+#ifdef PSP
+				if (all_ex & GP2X_PUSH)
+#else
 				if ((all_ex & GP2X_PUSH) || ((all_ex & GP2X_PUSH_SUB)==GP2X_PUSH_SUB))
+#endif
 				{
 					osd_mute_sound();
 #ifdef DREAMCAST
@@ -118,10 +137,14 @@ int osd_key_pressed(int keycode)
 				}
 			}
 			return 0;
-       		case OSD_KEY_PAUSE:
-       		case OSD_KEY_UNPAUSE:
+		case OSD_KEY_PAUSE:
+		case OSD_KEY_UNPAUSE:
 //			return (ExKey1 & GP2X_PUSH);
+#ifdef PSP
+			return ((ExKey1 & GP2X_L) && (ExKey1 & GP2X_R));
+#else
 			return ((all_ex & GP2X_PUSH) || ((all_ex & GP2X_PUSH_SUB)==GP2X_PUSH_SUB));
+#endif
 #endif
 
 

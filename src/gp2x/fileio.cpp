@@ -2,6 +2,7 @@
 #include "unzip.h"
 #include <unistd.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 typedef enum
 {
@@ -26,8 +27,16 @@ static int checksum_file(const char* file, unsigned char **p, unsigned int *size
 
 extern char gp2x_path_mame[24];
 
-int cache_stat(char *name) {
+static char cached_stat[128];
 
+int cache_stat(char *name) {
+	static int back_res=0;
+	if (!strncmp((const char *)&cached_stat[0],(const char *)name,128))
+		return back_res;
+	strncpy((char *)&cached_stat[0],(const char *)name,128);
+#ifdef PSP
+	strcpy(gp2x_path_mame,"");
+#endif
     	char filename[256];
 	struct stat stat_buffer;
 
@@ -39,11 +48,18 @@ int cache_stat(char *name) {
 	FILE *f=fopen(filename,"rb");
 	if (f)
 		fclose(f);
+	else
+	{
+		DIR *d=opendir(filename);
+		if (d) closedir(d);
+		f=(FILE*)d;
+	}
 	if (f)
 #endif
-		return 0;
+		back_res=0;
 	else
-		return 1;
+		back_res=1;
+	return back_res;
 }	
 
 int cache_stat_sample(char *name) {
@@ -97,6 +113,19 @@ void *osd_fopen(const char *game,const char *filename,int filetype,int _write)
 				break;
 
 			if (!found) {
+				/* try with a .zip extension */
+				sprintf(name,"%s.zip\0", gamename);
+				/*if (cache_stat(name)==0)*/ {
+					sprintf(name,"%sroms/%s.zip\0", gp2x_path_mame, gamename);
+					if (load_zipped_file(name, filename, &f->data, &f->length)==0) {
+						f->type = kZippedFile;
+						f->offset = 0;
+						f->crc = crc32 (0L, f->data, f->length);
+						found = 1;
+					}
+				}
+			}
+			if (!found) {
 				if (cache_stat(gamename)==0) {
 					sprintf(name,"%sroms/%s/%s\0",gp2x_path_mame, gamename, filename);
 					if (checksum_file (name, &f->data, &f->length, &f->crc)==0) {
@@ -107,11 +136,14 @@ void *osd_fopen(const char *game,const char *filename,int filetype,int _write)
 				}
 			}
 
+
+			break;
+		case OSD_FILETYPE_SAMPLE:
 			if (!found) {
 				/* try with a .zip extension */
 				sprintf(name,"%s.zip\0", gamename);
-				if (cache_stat(name)==0) {
-					sprintf(name,"%sroms/%s.zip\0", gp2x_path_mame, gamename);
+				/*if (cache_stat_sample(name)==0)*/ {
+					sprintf(name,"%ssamples/%s.zip\0", gp2x_path_mame, gamename);
 					if (load_zipped_file(name, filename, &f->data, &f->length)==0) {
 						f->type = kZippedFile;
 						f->offset = 0;
@@ -120,20 +152,12 @@ void *osd_fopen(const char *game,const char *filename,int filetype,int _write)
 					}
 				}
 			}
-
-			break;
-		case OSD_FILETYPE_SAMPLE:
 			if (!found) {
-				/* try with a .zip extension */
-				sprintf(name,"%s.zip\0", gamename);
-				if (cache_stat_sample(name)==0) {
-					sprintf(name,"%ssamples/%s.zip\0", gp2x_path_mame, gamename);
-					if (load_zipped_file(name, filename, &f->data, &f->length)==0) {
-						f->type = kZippedFile;
-						f->offset = 0;
-						f->crc = crc32 (0L, f->data, f->length);
-						found = 1;
-					}
+				sprintf(name,"%ssamples/%s/%s\0",gp2x_path_mame, gamename, filename);
+				if (checksum_file (name, &f->data, &f->length, &f->crc)==0) {
+					f->type = kRAMFile;
+					f->offset = 0;
+					found = 1;
 				}
 			}
 			break;
@@ -378,6 +402,16 @@ int osd_fchecksum (const char *game, const char *filename, unsigned int *length,
 	const char *gamename = game;
 
 	if (!found) {
+		/* try with a .zip extension */
+		sprintf(name,"%s.zip\0", gamename);
+		/*if (cache_stat(name)==0)*/ {
+			sprintf(name,"%sroms/%s.zip\0", gp2x_path_mame, gamename);
+			if (checksum_zipped_file (name, filename, length, sum)==0) {
+				found = 1;
+			}
+		}
+	}
+	if (!found) {
 		if (cache_stat((char *)gamename)==0) {
 			sprintf(name,"%sroms/%s/%s\0",gp2x_path_mame, gamename, filename);
 			if (checksum_file(name,0,length,sum)==0) {
@@ -386,16 +420,6 @@ int osd_fchecksum (const char *game, const char *filename, unsigned int *length,
 		}
 	}
 
-	if (!found) {
-		/* try with a .zip extension */
-		sprintf(name,"%s.zip\0", gamename);
-		if (cache_stat(name)==0) {
-			sprintf(name,"%sroms/%s.zip\0", gp2x_path_mame, gamename);
-			if (checksum_zipped_file (name, filename, length, sum)==0) {
-				found = 1;
-			}
-		}
-	}
 
 	if (!found)
 		return -1;

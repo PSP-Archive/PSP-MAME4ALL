@@ -1,9 +1,9 @@
 NAME   = mame4all
 O      = o
 RM     = rm -f
-CC     = gcc
-CXX    = g++
-AS     = c++
+CC     = gcc-3.4
+CXX    = g++-3.4
+AS     = as
 STRIP  = strip
 
 PROG   = $(NAME)
@@ -20,6 +20,7 @@ else
 MAME4ALL_AGED=1
 MAME4ALL_CLASSIC=1
 MAME4ALL_GOLD=1
+MAME4ALL_ALL=1
 endif
 endif
 endif
@@ -51,6 +52,11 @@ CPPFLAGS  = $(DEFAULT_CFLAGS) $(MORE_CFLAGS)
 all: $(PROG)
 
 NASM_OPTS=-f elf -DUSE_MAME_FETCH  -DELF_OBJECT_CODE
+
+ifndef MAME4ALL_GOLD
+NASM_OPTS+=-DUSE_MAME_CHANGE_PC
+endif
+
 
 src/fame/fame.o: src/fame/fame.asm
 	nasm -f elf -o src/fame/fame.o src/fame/fame.asm

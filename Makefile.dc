@@ -12,9 +12,10 @@ endif
 
 RAZE_IS_FAZE=1
 
-KOS_AS = $(KOS_CCPLUS) -ml -m4-single-only  -c
+#KOS_AS = $(KOS_CCPLUS) -ml -m4-single-only  -c
 
 OPTFLAGS=-O3 -fomit-frame-pointer -ffast-math
+#OPTFLAGS=-Os -fomit-frame-pointer -ffast-math -g0
 
 OPTFLAGS+= -falign-functions=32 -falign-labels=32 -falign-loops=32 -falign-jumps=32
 
@@ -28,8 +29,7 @@ MORE_CFLAGS+= -I$(KOS_BASE)/addons/include/SDL -I$(KOS_BASE)/addons/include $(OP
 
 #MORE_CFLAGS += -std=c99
 
-
-MORE_CFLAGS += -Isrc -Isrc/sdl -DDREAMCAST -DROM_PREFIX="/cd/" -DDATA_PREFIX="/cd/"
+MORE_CFLAGS += -Isrc -Isrc/sdl -DDREAMCAST -DROM_PREFIX="/cd/" -DDATA_PREFIX="/cd/"  -DROM_SD_PREFIX="/sd/mame4all/" -DDATA_SD_PREFIX="/sd/mame4all/"
 
 MORE_CFLAGS += -DLSB_FIRST -DSIGNED_SAMPLES -DACORN -DINLINE=STATIC_INLINE_DREAMCAST
 
@@ -42,7 +42,7 @@ MORE_CFLAGS +=	-DMITSHM $(DEFS) -DUNZIP_SUPPORT -DZLIB -DHAVE_MKSTEMP  \
 
 KOS_CFLAGS += $(MORE_CFLAGS)
 KOS_CPPFLAGS += $(MORE_CFLAGS)
-KOS_AFLAGS = $(MORE_CFLAGS)
+#KOS_AFLAGS = $(MORE_CFLAGS)
 
 
 all: $(TARGET).bin
@@ -51,10 +51,13 @@ include $(KOS_BASE)/Makefile.rules
 
 KOS_CPPFLAGS=-fno-operator-names -fno-exceptions
 
-FAZE_OPTS= -DAUTODOWN_IRQS -DUSE_MAME_FETCH -DMAME_CLOCK_FLUSHING
+FAZE_OPTS= -DAUTODOWN_IRQS -DUSE_MAME_FETCH -DMAME_CLOCK_FLUSHING -DEMULATE_UNDOC_FLAGS -DEMULATE_R_REGISTER -DNO_EXTRA_CYCLES -DAUTODOWN_IRQS -DNO_PC_LIMIT
 
 ifndef MAME4ALL_GOLD
 FAZE_OPTS+= -DMAME_SET_PC 
+#KOS_CPPFLAGS+= -DFILECACHE_TILE=4096
+else
+KOS_CPPFLAGS+= -DSOUND_USEVOLUME_SHIFTS
 endif
 
 src/raze/faze/raze.s: src/raze/faze/raze.s.m4
@@ -73,15 +76,20 @@ src/raze/faze/raze_3.s: src/raze/faze/raze.s
 src/raze/faze/raze_4.s: src/raze/faze/raze.s
 	sed -e "s/z80_set_reti/z80_set_reti_4/g" -e "s/z80_set_out/z80_set_out_4/g" -e "s/z80_set_in/z80_set_in_4/g" -e "s/z80_add_write/z80_add_write_4/g" -e "s/z80_add_read/z80_add_read_4/g" -e "s/z80_map_write/z80_map_write_4/g" -e "s/z80_map_read/z80_map_read_4/g" -e "s/z80_map_fetch/z80_map_fetch_4/g" -e "s/z80_end_memmap/z80_end_memmap_4/g" -e "s/z80_init_memmap/z80_init_memmap_4/g" -e "s/z80_set_reg/z80_set_reg_4/g" -e "s/z80_get_reg/z80_get_reg_4/g" -e "s/z80_do_wait_states/z80_do_wait_states_4/g" -e "s/z80_skip_idle/z80_skip_idle_4/g" -e "s/z80_stop_emulating/z80_stop_emulating_4/g" -e "s/z80_get_cycles_elapsed/z80_get_cycles_elapsed_4/g" -e "s/z80_get_context/z80_get_context_4/g" -e "s/z80_emulate/z80_emulate_4/g" -e "s/z80_set_fetch_callback/z80_set_fetch_callback_4/g" -e "s/z80_reset/z80_reset_4/g" -e "s/z80_raise_IRQ/z80_raise_IRQ_4/g" -e "s/z80_lower_IRQ/z80_lower_IRQ_4/g" -e "s/z80_cause_NMI/z80_cause_NMI_4/g" -e "s/z80_set_context/z80_set_context_4/g" src/raze/faze/raze.s > src/raze/faze/raze_4.s
 	
-src/z80/faze/raze.o: src/z80/faze/raze.s
+src/raze/faze/raze.o: src/raze/faze/raze.s
+	${KOS_AS} --little -o src/raze/faze/raze.o src/raze/faze/raze.s
 
 src/raze/faze/raze_1.o: src/raze/faze/raze_1.s
+	${KOS_AS} --little -o src/raze/faze/raze_1.o src/raze/faze/raze_1.s
 
 src/raze/faze/raze_2.o: src/raze/faze/raze_2.s
+	${KOS_AS} --little -o src/raze/faze/raze_2.o src/raze/faze/raze_2.s
 
 src/raze/faze/raze_3.o: src/raze/faze/raze_3.s
+	${KOS_AS} --little -o src/raze/faze/raze_3.o src/raze/faze/raze_3.s
 
 src/raze/faze/raze_4.o: src/raze/faze/raze_4.s
+	${KOS_AS} --little -o src/raze/faze/raze_4.o src/raze/faze/raze_4.s
 
 
 include objs.mk
@@ -97,21 +105,21 @@ romdisk.img:
 
 $(TARGET).elf: $(OBJS) $(OBJS_CPU) $(DRIVERS)
 	$(KOS_CC) $(KOS_CFLAGS) $(KOS_LDFLAGS) -o $(TARGET).elf $(KOS_START) \
-	$(OBJS_CPU) $(DRIVERS) $(OBJS) $(OBJEXTRA) -lSDL_mixer_126 -lSDL_129 -lz_123 -lm  $(KOS_LIBS)
+	$(OBJS_CPU) $(DRIVERS) $(OBJS) $(OBJEXTRA) -lSDL_mixer_126 -lSDL_1213 -lz_123 -lm  $(KOS_LIBS)
 
 $(TARGET).bin: $(TARGET).elf
 	$(KOS_OBJCOPY) -R .stack -O binary $(TARGET).elf $(TARGET).bin
 
-example.iso: roms
-	mkisofs -joliet-long -l -o example.iso -graft-points /roms=roms/
+#example.iso: roms
+#	mkisofs -joliet-long -l -o example.iso -graft-points /roms=roms/
 
 run: $(TARGET).bin example.iso
 	$(KOS_LOADER) $(TARGET).bin -i example.iso
 
 #run: $(TARGET).bin
-#	$(KOS_LOADER) $(TARGET).bin
+#	$(KOS_LOADER) $(TARGET).bin -o 250000
 
 
 
 clean:
-	rm -f $(OBJS) src/raze/faze/raze.s $(TARGET).elf $(TARGET).bin example.iso romdisk.o romdisk.img 
+	rm -f $(OBJS) src/raze/faze/raze.s $(TARGET).elf $(TARGET).bin romdisk.o romdisk.img 

@@ -15,6 +15,67 @@
 #include "gp2x_mame.h"
 #include "gp2x_menu.h"
 
+extern int gp2x_sound_rate;
+
+#ifdef PSP
+/* extern "C" int SDL_main( int argc, char *argv[] ); */
+#include "pspincludes.h"
+ #ifndef PSP_USERMODE
+	PSP_MODULE_INFO("Mame4All", 0x1000, 1, 0); 
+	PSP_MAIN_THREAD_ATTR(0); 
+	/* PSP_MAIN_THREAD_STACK_SIZE_KB(32); */
+ #else
+	PSP_MODULE_INFO("Mame4All", 0, 1, 0);
+	PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER); 
+	
+	/* Exit callback */
+	int exit_callback(int arg1, int arg2, void *common) {
+		sceKernelExitGame();
+		return 0;
+	}
+
+	/* Callback thread */
+	int CallbackThread(SceSize args, void *argp) {
+		int cbid;
+
+		cbid = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
+		sceKernelRegisterExitCallback(cbid);
+
+		sceKernelSleepThreadCB();
+
+		return 0;
+	}
+
+	/* Sets up the callback thread and returns its thread id */
+	int SetupCallbacks(void) {
+		int thid = 0;
+
+		thid = sceKernelCreateThread("update_thread", CallbackThread, 0x11, 0xFA0, 0, 0);
+		if(thid >= 0) {
+				sceKernelStartThread(thid, 0, 0);
+		}
+
+		return thid;
+	}
+  #endif
+
+#define printf	pspDebugScreenPrintf
+
+int FileExist(char * fileName)
+{
+   FILE * infile;
+   int ret = 0;
+   infile = fopen(fileName, "r");
+   if (infile == NULL)
+      ret = (1);
+      
+   sceKernelDelayThread(2*1000000); // 2 sec to read error       
+   fclose (infile);
+   return (ret);
+}
+
+#endif
+
 #if !defined(GP2X) && defined(USE_FILECACHE)
 void filecache_init(void);
 void filecache_disable(void);
@@ -83,6 +144,7 @@ static __inline void parse_cmdline (int myargc, char **myargv, struct GameOption
 
 	/* read sound configuration */
 	soundcard=gp2x_sound_enable; /* 0 Sound OFF, 1-5 Sound ON */
+#ifdef GP2X
 	switch (soundcard)
 	{
 		case 0: break;
@@ -93,6 +155,7 @@ static __inline void parse_cmdline (int myargc, char **myargv, struct GameOption
 		case 5: gp2x_sound_rate=11025; break;
 	}
 	options->samplerate = gp2x_sound_rate;
+#endif
 	options->samplebits = 16;
 
 	/* misc configuration */
@@ -119,6 +182,15 @@ static __inline void parse_cmdline (int myargc, char **myargv, struct GameOption
 
 int main(int argc,char **argv)
 {
+#ifdef PSP
+	pspDebugScreenInit();
+	#ifdef PSP_USERMODE
+		SetupCallbacks();
+	#endif
+	#ifdef WIFI 
+		net_io_init();
+	#endif
+#endif
 	char text[64];
 	int res, i, game_index;
 
@@ -151,7 +223,11 @@ int main(int argc,char **argv)
 #endif
 
 	/* Set Video Mode */
+#ifdef PSP_RES
+	SetVideoScaling(480,480,272);
+#else
 	SetVideoScaling(320,320,240);
+#endif
 
 #ifdef GP2X
 	/* Zaq121 07/05/2006 Alternative frontend support -> */
@@ -257,7 +333,11 @@ int main(int argc,char **argv)
 		/* Error? */
 		if( res != 0 )
 		{
+#ifdef PSP
+			gp2x_text_log("LOAD FAILED: Press [] button...");
+#else
 			gp2x_text_log("LOAD FAILED: Press A button...");
+#endif
 			while (!(gp2x_joystick_read()&GP2X_A));
 			while ((gp2x_joystick_read()&GP2X_A));
 		}

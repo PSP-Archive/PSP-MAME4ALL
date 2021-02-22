@@ -8,7 +8,7 @@
 ! This may only be distributed as part of the complete RAZE package.
 ! See RAZE.TXT for license information.
 ! Starting date: Around first quarter of 2005
-! Last update: 10/30/2006
+! Last update: 12/18/2006
 !----------------------------------------------------------------------------!
 
 ! You are not expected to understand this.
@@ -31,7 +31,9 @@ define(`AUTODOWN_IRQS')            ! autodown IRQ feature
 !define(`IRQ_CYCLES')		    ! spend cycles for IRQs
 define(`NO_PC_LIMIT')
 !define(`BASED_PC')
-define(`USE_MAME_FETCH')
+!define(`USE_MAME_FETCH')        ! use MAME fetching pointers
+!define(`MAME_CLOCK_FLUSHING')   ! flush the clock counter on core exiting
+!define(`MAME_SET_PC')           ! special MAME callback when setting a new PC
 !----------------------------------------------------------------------------!
 
 ! Notas de desarrollo
@@ -45,7 +47,8 @@ define(`lntag',`0')
 !
 ! GCC wants [r0-r7] to be preserved at all times
 
-ifdef(`USE_MAME_FETCH',`.extern _OP_ROM, _OP_RAM')
+ifdef(`USE_MAME_FETCH',`.extern _OP_ROM, _Z80_ICount')
+ifdef(`MAME_SET_PC',`.extern _mame_change_pc16')
 
 .data
 
@@ -136,7 +139,7 @@ context_end:
 fill: .long 0     ! safety gap, so z80_reset can use 32-bit transfers
 
 ! Variables
-_z80_ICount: .long 0
+_z80_ICount: .long ifdef(`USE_MAME_FETCH',`_Z80_ICount',`0')
 _z80_Initial_ICount: .long 0
 _z80_TempICount: .long 0
 _z80_afterEI: .long 0
@@ -255,44 +258,20 @@ define(`GEN_MT',`$1_$2: .long $1')
 ! CALLGCC_START
 define(`CALLGCC_START',
 `
-	ifdef(`USE_FETCH_CALLBACK',
-	`
-		! An extra precaution
-		SAVE_REG(`r0')
-		SAVE_REG(`r1')
-		SAVE_REG(`r2')
-	')
-
-	ifdef(`BASED_PC',`sub FETCH_REG,zPC')
-	mov.l zPC,ezPC_MEM
-	SAVE_REG(`r3')
-	SAVE_REG(`r4')
-	SAVE_REG(`r5')
-	SAVE_REG(`r7')
-	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
 	sts.l pr,@-r15          ! saving SH procedure register
+	mov.l `z80_callgcc_start_'ln,DIRT_REG
+	jsr @DIRT_REG
+	nop
 ')
 
 ! Return from a GCC function
 ! CALLGCC_END
 define(`CALLGCC_END',
 `
+	mov.l `z80_callgcc_end_'ln,DIRT_REG
+	jsr @DIRT_REG
+	nop
 	lds.l @r15+,pr          ! restoring SH procedure register
-	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
-	RESTORE_REG(`r7')
-	RESTORE_REG(`r5')
-	RESTORE_REG(`r4')
-	RESTORE_REG(`r3')
-	mov.l ezPC_MEM,zPC
-	ifdef(`BASED_PC',`add FETCH_REG,zPC')
-
-	ifdef(`USE_FETCH_CALLBACK',
-	`
-		! An extra precaution
-		RESTORE_REG(`r2')
-		RESTORE_REG(`r1')
-		RESTORE_REG(`r0')
-	')
 ')
 
 
@@ -309,9 +288,23 @@ ifdef(`USE_MAME_FETCH',
 	define(`GETDISP_FIRST',
 	`
 		mov.l @FETCH_REG,r0    ! OP_ROM
-		mov.l @r0,r0
 		mov.b @(r0,zPC),$1
 		add #1,zPC
+	')
+')
+
+! Special MAME callback when setting a new PC
+define(`CALL_MAME_SET_NEW_PC',
+`
+	ifdef(`MAME_SET_PC',
+	`
+		CALLGCC_START
+
+		mov.l `_mame_change_pc16_'ln,DIRT_REG
+		jsr @DIRT_REG
+		mov zPC,r4
+
+		CALLGCC_END
 	')
 ')
 
@@ -323,7 +316,6 @@ define(`GETDISP',
 	ifdef(`USE_MAME_FETCH',
 	`
 		mov.l @(4,FETCH_REG),r0    ! r0 = OP_RAM
-		mov.l @r0,r0
 		mov.b @(r0,zPC),$1
 		add #1,zPC		
 	',
@@ -1552,6 +1544,8 @@ ALIGN
 ! INX operation
 define(`INX',
 `
+	DEF_LN
+
 	! In from BC
 	mov.b zC,r0
 	extu.b r0,r0            ! high byte clear? (documentation is fuzzy)
@@ -3074,12 +3068,24 @@ define(`SET_mXY_b_R',
 ! JP_NN
 define(`JP_NN',
 `
+	DEF_LN
+
 	GETWORD(`r0')
 	extu.w r0,zPC
 
 ifdef(`BASED_PC',`add FETCH_REG,zPC')
 
+	CALL_MAME_SET_NEW_PC
+
 	DO_CYCLES_NEXT
+
+ifdef(`MAME_SET_PC',
+`
+	ALIGN_DATA
+	GEN_MT(`_mame_change_pc16',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
+')
 ')
 
 ! Jump to an absolute address, conditionally
@@ -3095,7 +3101,17 @@ define(`JP_cc_NN',
 	extu.w TMP_REG,zPC
 ifdef(`BASED_PC',`add FETCH_REG,zPC')
 
+	CALL_MAME_SET_NEW_PC
+
 	DO_CYCLES_NEXT
+
+ifdef(`MAME_SET_PC',
+`
+	ALIGN_DATA
+	GEN_MT(`_mame_change_pc16',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
+')
 
 	ALIGN
 `dont_take_jump'ln:
@@ -3109,26 +3125,38 @@ ifdef(`BASED_PC',`add FETCH_REG,zPC')
 ! JR_N
 define(`JR_N',
 `
+	DEF_LN
+
 	GETDISP(`r0')
 	add r0,zPC
 	ifdef(`NO_PC_LIMIT',`',`extu.w zPC,zPC')
 
+	CALL_MAME_SET_NEW_PC
+
 	DO_CYCLES_NEXT
+
+ifdef(`MAME_SET_PC',
+`
+	ALIGN_DATA
+	GEN_MT(`_mame_change_pc16',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
+')
 ')
 
 ! Jump to an relative address, conditionally
 ! JR_cc_N nz,cc
 define(`JR_cc_N',
 `
-	DEF_LN
+	define(`jrln',lntag)
 
 	TEST_CONDITION(`$2')
-	b$1 `dont_take_jump'ln
+	b$1 `dont_take_jump'jrln
 
 	JR_N
 
 	ALIGN
-`dont_take_jump'ln:
+`dont_take_jump'jrln:
 	add #1,zPC        ! skip over the displacement
 	ifdef(`NO_PC_LIMIT',`',`extu.w zPC,zPC')
 
@@ -3139,11 +3167,23 @@ define(`JR_cc_N',
 ! JP_RR addr16
 define(`JP_RR',
 `
+	DEF_LN
+
 	mov.l z$1,r0
 	extu.w r0,zPC
 ifdef(`BASED_PC',`add FETCH_REG,zPC')
 
+	CALL_MAME_SET_NEW_PC
+
 	DO_CYCLES_NEXT
+
+ifdef(`MAME_SET_PC',
+`
+	ALIGN_DATA
+	GEN_MT(`_mame_change_pc16',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
+')
 ')
 
 ! Decrease B, if non-zero, jump to a relative address
@@ -3161,7 +3201,17 @@ define(`DJNZ_N',
 	add r0,zPC
 	ifdef(`NO_PC_LIMIT',`',`extu.w zPC,zPC')
 
+	CALL_MAME_SET_NEW_PC
+
 	DO_EXTRA_CYCLES_NEXT
+
+ifdef(`MAME_SET_PC',
+`
+	ALIGN_DATA
+	GEN_MT(`_mame_change_pc16',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
+')
 
 	ALIGN
 `dont_take_jump'ln:
@@ -3175,6 +3225,8 @@ define(`DJNZ_N',
 ! CALL_NN
 define(`CALL_NN',
 `
+	DEF_LN
+
 	GETWORD(`TMP_REG')
 
 	! Write the PC
@@ -3196,21 +3248,32 @@ ifdef(`BASED_PC',`sub FETCH_REG,zPC')       ! Un-base PC
 	extu.w zPC,zPC          ! Prepare PC
 ifdef(`BASED_PC',`add FETCH_REG,zPC')       ! Base PC
 
+	CALL_MAME_SET_NEW_PC
+
 	DO_CYCLES_NEXT
+
+ifdef(`MAME_SET_PC',
+`
+	ALIGN_DATA
+	GEN_MT(`_mame_change_pc16',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
+')
 ')
 
 ! Call an absolute address, conditionally
 ! CALL_cc_NN
 define(`CALL_cc_NN',
 `
-	DEF_LN
+!	DEF_LN
+	define(`call_ln',lntag)
 
 	TEST_CONDITION(`$2')
-	b$1 `dont_take_call_'ln
+	b$1 `dont_take_call_'call_ln
 	
 	CALL_NN
 
-`dont_take_call_'ln:
+`dont_take_call_'call_ln:
 	add #2,zPC
 	ifdef(`NO_PC_LIMIT',`',`extu.w zPC,zPC')
 
@@ -3221,23 +3284,35 @@ define(`CALL_cc_NN',
 ! RET
 define(`RET',
 `
+	DEF_LN
+
 	POP_PC
 
+	CALL_MAME_SET_NEW_PC
+
 	DO_CYCLES_NEXT
+
+ifdef(`MAME_SET_PC',
+`
+	ALIGN_DATA
+	GEN_MT(`_mame_change_pc16',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
+')
 ')
 
 ! Pop the PC, conditionally
 ! RET_cc
 define(`RET_cc',
 `
-	DEF_LN
+	define(`retln',lntag)
 
 	TEST_CONDITION(`$2')
-	b$1 `dont_take_ret_'ln
+	b$1 `dont_take_ret_'retln
 
 	RET
 
-`dont_take_ret_'ln:
+`dont_take_ret_'retln:
 	DO_CYCLES_NEXT
 ')
 
@@ -3291,6 +3366,8 @@ ALIGN_DATA
 ! RST addr8
 define(`RST',
 `
+	DEF_LN
+
 	! Write the PC
 	mov.w zSP,r0
 	mov zPC,TMP_REG
@@ -3306,7 +3383,17 @@ ifdef(`BASED_PC',`sub FETCH_REG,TMP_REG')    ! Un-base PC
 	mov.w r0,zSP            ! Writeback SP
 	ifdef(`BASED_PC',`add FETCH_REG,ezPC')    ! Base PC
 
+	CALL_MAME_SET_NEW_PC
+
 	DO_CYCLES_NEXT
+
+ifdef(`MAME_SET_PC',
+`
+	ALIGN_DATA
+	GEN_MT(`_mame_change_pc16',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
+')
 ')
 
 ! Out R to R*256+N
@@ -3334,6 +3421,8 @@ define(`OUT_N_R',
 
 ALIGN_DATA
 	GEN_MT(`_z80_Out',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
 ')
 
 ! In from R*256+N, into R
@@ -3348,11 +3437,11 @@ define(`IN_R_N',
 	or DIRT_REG,r0
 
 	ifelse($1,`A',
-		`
+	`
 		IOREAD(`r0')
 		mov r0,z$1
-		',
-		`
+	',
+	`
 		IOREAD(`r0')
 		mov.b r0,z$1
 	')
@@ -3361,6 +3450,8 @@ define(`IN_R_N',
 
 ALIGN_DATA
 	GEN_MT(`_z80_In',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
 ')
 
 ! In from BC
@@ -3373,11 +3464,11 @@ define(`IN_R',
 	mov #0,zF
 
 	ifelse($1,`A',
-		`
+	`
 		IOREAD(`r0')
 		mov r0,z$1
-		',
-		`
+	',
+	`
 		IOREAD(`r0')
 		mov.b r0,z$1          ! write the result
 	')
@@ -3389,6 +3480,8 @@ define(`IN_R',
 
 ALIGN_DATA
 	GEN_MT(`_z80_In',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
 ')
 
 ! In from BC, ignore result
@@ -3408,6 +3501,8 @@ define(`IN_F',
 
 ALIGN_DATA
 	GEN_MT(`_z80_In',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
 ')
 
 ! Out to BC
@@ -3430,6 +3525,8 @@ define(`OUT_R',
 
 ALIGN_DATA
 	GEN_MT(`_z80_Out',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
 ')
 
 ! Out zero to BC
@@ -3446,6 +3543,8 @@ define(`OUT_0',
 
 ALIGN_DATA
 	GEN_MT(`_z80_Out',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
 ')
 
 ! In from BC into (HL), increase HL, decrease B
@@ -3461,6 +3560,8 @@ define(`INI',
 
 ALIGN_DATA
 	GEN_MT(`_z80_In',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
 ')
 
 ! In from BC into (HL), decrease HL, decrease B
@@ -3476,6 +3577,8 @@ define(`IND',
 
 ALIGN_DATA
 	GEN_MT(`_z80_In',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
 ')
 
 ! In from BC into (HL), increase HL, decrease B, repeat
@@ -3507,6 +3610,8 @@ define(`OUTI',
 
 ALIGN_DATA
 	GEN_MT(`_z80_Out',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
 ')
 
 ! Out from (HL) into BC, decrease HL, decrease B
@@ -3522,6 +3627,8 @@ define(`OUTD',
 
 ALIGN_DATA
 	GEN_MT(`_z80_Out',ln)
+	GEN_MT(`z80_callgcc_start',ln)
+	GEN_MT(`z80_callgcc_end',ln)
 ')
 
 ! Out from (HL) into BC, increase HL, decrease B, repeat
@@ -3831,6 +3938,67 @@ DEF(`fd',`xx',`0',`0')
    DO_CYCLES_NEXT
 
 
+! callgcc start procedure
+ALIGN
+z80_callgcc_start:
+	ifdef(`USE_FETCH_CALLBACK',
+	`
+		! An extra precaution
+		SAVE_REG(`r0')
+		SAVE_REG(`r1')
+		SAVE_REG(`r2')
+	')
+
+	ifdef(`BASED_PC',`sub FETCH_REG,zPC')
+ifdef(`MAME_CLOCK_FLUSHING',
+`
+	mov.l _z80_ICount_cgs, DIRT_REG
+	mov.l @DIRT_REG,DIRT_REG
+	mov.l ICOUNT_REG,@DIRT_REG
+')
+	mov.l zPC,ezPC_MEM
+	SAVE_REG(`r3')
+	SAVE_REG(`r4')
+	SAVE_REG(`r5')
+ifdef(`MAME_CLOCK_FLUSHINGS',`',`SAVE_REG(`r7')')
+	ifdef(`EMULATE_BITS_3_5',`SALVAR MACL')
+	rts
+	nop
+
+ALIGN_DATA
+	_z80_ICount_cgs: .long _z80_ICount
+
+! callgcc end procedure
+ALIGN
+z80_callgcc_end:
+	ifdef(`EMULATE_BITS_3_5',`RESTAURAR MACL')
+ifdef(`MAME_CLOCK_FLUSHINGS',`',`RESTORE_REG(`r7')')
+	RESTORE_REG(`r5')
+	RESTORE_REG(`r4')
+	RESTORE_REG(`r3')
+	mov.l ezPC_MEM,zPC
+	ifdef(`BASED_PC',`add FETCH_REG,zPC')
+ifdef(`MAME_CLOCK_FLUSHING',
+`
+	mov.l _z80_ICount_cge, DIRT_REG
+	mov.l @DIRT_REG,DIRT_REG
+	mov.l @DIRT_REG,ICOUNT_REG
+')
+
+	ifdef(`USE_FETCH_CALLBACK',
+	`
+		! An extra precaution
+		RESTORE_REG(`r2')
+		RESTORE_REG(`r1')
+		RESTORE_REG(`r0')
+	')
+	rts
+	nop
+
+ALIGN_DATA
+	_z80_ICount_cge: .long _z80_ICount
+
+
 ! called when out-of-cycles
 ALIGN
 z80_finish:
@@ -3879,8 +4047,10 @@ really_finish:
 
 	! Writeback PC & calculate cycles executed
 	mov.l _z80_ICount_zf,r0
+	ifdef(`USE_MAME_FETCH',`mov.l @r0,r0')
 	mov.l ICOUNT_REG,@r0
 	extu.w zPC,zPC
+	ifdef(`USE_MAME_FETCH',`mov.l _z80_ICount_zf,r0')
 	mov.l @(_z80_Initial_ICount - _z80_ICount,r0),r0
 	mov.l zPC,ezPC_MEM
 	sub ICOUNT_REG,r0
@@ -3927,6 +4097,7 @@ ifdef(`SINGLE_MEM_BLOCK',`',
 ! Memread
 ALIGN
 _z80_memread:
+
 	ifdef(`SINGLE_MEM_HANDLER',
 	`
 		CALLGCC_START
@@ -3942,6 +4113,8 @@ _z80_memread:
 		_z80_Read_mr: .long _z80_Read
 	',
 	`
+		DEF_LN
+
 		extu.w r0,r0
 		mov r0,TMP_REG    ! Load address into TMP_REG
 		shlr8 TMP_REG
@@ -3973,6 +4146,8 @@ _z80_memread:
 	ALIGN_DATA
 		_z80_Read_mr:    .long _z80_Read
 		_z80_memread_mr: .long _z80_Mem_Handlers
+		GEN_MT(`z80_callgcc_start',ln)
+		GEN_MT(`z80_callgcc_end',ln)
 	')
 
 
@@ -3996,6 +4171,8 @@ _z80_memwrite:
 		_z80_Write_mr: .long _z80_Write
 	',
 	`
+		DEF_LN
+
 		extu.w r0,r0
 		mov r0,DIRT_REG    ! Load address into DIRT_REG
 		shlr8 DIRT_REG
@@ -4027,6 +4204,8 @@ _z80_memwrite:
 	ALIGN_DATA
 		_z80_Write_mw:    .long _z80_Write
 		_z80_memwrite_mw: .long _z80_Mem_Handlers
+		GEN_MT(`z80_callgcc_start',ln)
+		GEN_MT(`z80_callgcc_end',ln)
 	')
 ')
 
@@ -4075,7 +4254,9 @@ _z80_emulate:
 	ifdef(`NO_EXTRA_CYCLES',`',`add r1,ICOUNT_REG')
 
 	mov.l _z80_ICount_emul,r0
+	ifdef(`USE_MAME_FETCH',`mov.l @r0,r0')
 	mov.l ICOUNT_REG,@r0        ! ICount set up
+	ifdef(`USE_MAME_FETCH',`mov.l _z80_ICount_emul,r0')
 	mov.l ICOUNT_REG,@(_z80_Initial_ICount - _z80_ICount,r0)  ! Initial ICount
 
 	! Salvar registros a usar en la pila

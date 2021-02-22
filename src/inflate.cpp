@@ -298,13 +298,13 @@ static int inflate_NEXTBYTE(void);
 /*---------------------------------------------------------------------------*/
 /* Function prototypes */
 
-int inflate_codes (struct huft *tl, struct huft *td, int bl, int bd);
+static int inflate_codes (struct huft *tl, struct huft *td, int bl, int bd);
 static int inflate_stored (void);
 static int inflate_fixed (void);
 static int inflate_dynamic (void);
 static int inflate_block (int *e);
-int huft_build(unsigned *b, unsigned n, unsigned s, ush *d, ush *e, struct huft **t, int *m);
-int huft_free(struct huft *t);
+static int huft_build(unsigned *b, unsigned n, unsigned s, ush *d, ush *e, struct huft **t, int *m);
+static int huft_free(struct huft *t);
 
 
 /* The inflate algorithm uses a sliding 32K byte window on the uncompressed
@@ -338,7 +338,7 @@ static ush cpdext[] = {         /* Extra bits for distance codes */
 
 
 /* And'ing with mask_bits[n] masks the lower n bits */
-const ush mask_bits[] = {
+static const ush mask_bits[] = {
     0x0000,
     0x0001, 0x0003, 0x0007, 0x000f, 0x001f, 0x003f, 0x007f, 0x00ff,
     0x01ff, 0x03ff, 0x07ff, 0x0fff, 0x1fff, 0x3fff, 0x7fff, 0xffff
@@ -413,7 +413,7 @@ static int lbits = 9;           /* bits in base literal/length lookup table */
 static int dbits = 6;           /* bits in base distance lookup table */
 
 
-int inflate_codes (struct huft *tl, struct huft *td, int bl, int bd)
+static int inflate_codes (struct huft *tl, struct huft *td, int bl, int bd)
 /* inflate (decompress) the codes in a deflated (compressed) block.
    Return an error code or zero if it all goes ok. */
 /* struct huft *tl, *td;*/   /* literal/length and distance decoder tables */
@@ -901,7 +901,7 @@ int inflate_free(void)
 #define N_MAX 288       /* maximum number of codes in any set */
 
 
-int huft_build(unsigned *b, unsigned n, unsigned s, ush *d, ush *e, struct huft **t, int *m)
+static int huft_build(unsigned *b, unsigned n, unsigned s, ush *d, ush *e, struct huft **t, int *m)
 /* Given a list of code lengths and a maximum table size, make a set of
    tables to decode that set of codes.  Return zero on success, one if
    the given code set is incomplete (the tables are still built in this
@@ -1104,7 +1104,7 @@ int huft_build(unsigned *b, unsigned n, unsigned s, ush *d, ush *e, struct huft 
 
 
 
-int huft_free(struct huft *t)
+static int huft_free(struct huft *t)
 /* Free the gp2x_malloc'ed tables built by huft_build(), which makes a linked
    list of the tables it made, with the links in a dummy first entry of
    each table. */
@@ -1164,6 +1164,8 @@ static void inflate_FLUSH (unsigned char *buffer, unsigned long n)
 	}
 }
 
+size_t unzip_fread_for_inflate(void *ptr, size_t size, size_t nmemb, FILE *stream);
+
 /* Read next byte of input -- used by mame_inflate() */
 static int inflate_NEXTBYTE(void)
 {
@@ -1175,7 +1177,7 @@ static int inflate_NEXTBYTE(void)
 		inflate_input_buffer_max = inflate_input_max - inflate_input_mac;
 		if (inflate_input_buffer_max > INFLATE_INPUT_BUFFER_MAX) inflate_input_buffer_max = INFLATE_INPUT_BUFFER_MAX;
 
-		if (fread( inflate_input_buffer_map, inflate_input_buffer_max, 1, inflate_input_file ) < 1 /*!=1 FRANXIS 17-01-2005 */) {
+		if (unzip_fread_for_inflate( inflate_input_buffer_map, inflate_input_buffer_max, 1, inflate_input_file ) < 1 /*!=1 FRANXIS 17-01-2005 */) {
 			inflate_corrupt_flag = 1;
 			return 256; /* signal EOF */
 		}

@@ -102,23 +102,43 @@ void gorf_sh_stop(void)
 {
 }
 
+#ifdef USE_CZ80
+#include "cz80/cz80.h"
+extern cz80_struc *mame4all_cz80_struc;
+#else
+#ifdef USE_RAZE
+unsigned char Z80_GetB(void);
+#endif
+#endif
+
+
 int gorf_speech_r(int offset)
 {
     int Phoneme,Intonation;
     int i = 0;
 
-    Z80_Regs regs;
-	 int data;
+    int data;
 
-    totalword_ptr = totalword;
 
-	 Z80_GetRegs(&regs);
 #ifndef USE_DRZ80 /* FRANXIS 01-09-2005 */
-    data = regs.BC.B.h;
+#ifdef USE_CZ80
+	data = (Cz80_Get_BC(mame4all_cz80_struc)>>8)&0xFF;
 #else
+#ifdef USE_RAZE
+	data = Z80_GetB();
+#else
+    Z80_Regs regs;
+    Z80_GetRegs(&regs);
+    data = regs.BC.B.h;
+#endif
+#endif
+#else
+    Z80_Regs regs;
+    Z80_GetRegs(&regs);
     data = (regs.Z80BC>>24)&0xFF;
 #endif
 
+    totalword_ptr = totalword;
     Phoneme = data & 0x3F;
     Intonation = data >> 6;
 

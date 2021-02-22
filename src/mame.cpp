@@ -1,5 +1,3 @@
-#undef _LDBL_EQ_DBL  
-
 #include "driver.h"
 #include "gp2x_menu.h"
 

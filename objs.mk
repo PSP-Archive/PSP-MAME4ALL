@@ -132,12 +132,21 @@ else
 
 ifndef RAZE_IS_FAZE
 ifdef MAME4ALL_GOLD
+ifdef MAME4ALL_ALL
+OBJS_CPU +=	src/raze/raze/raze_1.o \
+		src/raze/raze/raze_2.o \
+		src/raze/raze/raze_3.o \
+		src/raze/raze/raze_4.o \
+		src/raze/mamez80/z80.o
+else
 OBJS_CPU += src/raze/raze/raze.o
+endif
 else
 OBJS_CPU +=	src/raze/raze/raze_1.o \
 		src/raze/raze/raze_2.o \
 		src/raze/raze/raze_3.o \
-		src/raze/raze/raze_4.o
+		src/raze/raze/raze_4.o \
+		src/raze/mamez80/z80.o
 endif
 else
 ifdef MAME4ALL_GOLD
@@ -146,7 +155,8 @@ else
 OBJS_CPU +=	src/raze/faze/raze_1.o \
 		src/raze/faze/raze_2.o \
 		src/raze/faze/raze_3.o \
-		src/raze/faze/raze_4.o
+		src/raze/faze/raze_4.o \
+		src/raze/mamez80/z80.o
 endif
 endif
 
@@ -1084,8 +1094,6 @@ OBJS_OTHER= \
 	src/drivers/marineb.o \
 	src/vidhrdw/canyon.o \
 	src/drivers/canyon.o \
-        src/vidhrdw/ambush.o \
-	src/drivers/ambush.o \
 	src/drivers/funkybee.o \
 	src/vidhrdw/funkybee.o \
 	src/drivers/pandoras.o \
@@ -1098,6 +1106,8 @@ DRIVERS += $(OBJS_CRTC6845)
 endif
 
 DRIVERS += \
+        src/vidhrdw/ambush.o \
+	src/drivers/ambush.o \
 	$(OBJS_PACMAN) \
 	$(OBJS_GALAXIAN) \
 	$(OBJS_SCRAMBLE) \
@@ -1253,11 +1263,10 @@ clean-drivers:
 	$(RM) $(DRIVERS)
 
 clean-cpu:
-	$(RM) $(OBJS_CPU)
+	$(RM) $(OBJS_CPU) src/cpuintrf.o src/drivers/blktiger.o src/drivers/1943.o src/drivers/mpatrol.o src/drivers/mrdo.o src/drivers/solomon.o src/machine/bosco.o
 
 clean-config:
 	$(RM) src/driver.o src/cpuintrf.o src/*/minimal.o src/*/sound.o src/mame.o src/vidhrdw/wow.o src/sndhrdw/generic.o src/sndhrdw/adpcm.o src/sndhrdw/fm.o src/fame/m68000.o src/cz80/cz80.o
 
-clean-all: clean clean-drivers clean-cpu 
-	find src -name "*.o" -exec rm {} \;
+clean-all: clean clean-drivers clean-cpu clean-config
 

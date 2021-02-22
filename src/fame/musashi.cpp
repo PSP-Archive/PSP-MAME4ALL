@@ -2,7 +2,7 @@
      Definitions for the CPU-Modules
 */
 
-#ifndef MAME4ALL_GOLD
+#if defined(MAME4ALL_AGED) || defined(MAME4ALL_CLASSIC)
 
 #ifndef __musashi000defs__
 #define __musashi000defs__
