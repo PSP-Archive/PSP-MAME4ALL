@@ -95,3 +95,6 @@ include objs.mk
 
 $(PROG): $(OBJS) $(OBJS_CPU) $(DRIVERS)
     include $(PSPSDK)/lib/build.mak
+
+clean:
+	$(RM) EBOOT.PBP PARAM.sfo $(PROG) $(OBJS) $(OBJS_CPU) $(DRIVERS)
