@@ -52,4 +52,6 @@ NOTE: File and directory names are case sensitive. Put all file and directory na
 		```
 		
 2. from the PSP-MAME4ALL folder:
-	`make -f Makefile.psp clean-all; make all -f Makefile.psp
+	```
+	make -f Makefile.psp clean-all; make all -f Makefile.psp
+	```
